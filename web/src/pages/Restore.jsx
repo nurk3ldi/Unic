@@ -77,7 +77,7 @@ export default function Restore() {
       });
     }
 
-    return navigate('/');
+    return navigate('/login');
   }
 
   const submitLabel = {
@@ -102,7 +102,7 @@ export default function Restore() {
       footer={
         step === 'done' ? null : (
           <>
-            Вспомнили пароль? <Link to="/" viewTransition>Войти</Link>
+            Вспомнили пароль? <Link to="/login" viewTransition>Войти</Link>
           </>
         )
       }

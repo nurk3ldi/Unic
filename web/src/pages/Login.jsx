@@ -1,6 +1,7 @@
 import { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { api } from '../api.js';
+import { useAuth } from '../AuthContext.jsx';
 import AuthCard from '../components/AuthCard.jsx';
 import Field from '../components/Field.jsx';
 import PasswordField from '../components/PasswordField.jsx';
@@ -9,13 +10,15 @@ import './Auth.css';
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 export default function Login() {
+  const { setUser } = useAuth();
+  const navigate = useNavigate();
+
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [emailError, setEmailError] = useState('');
   const [formError, setFormError] = useState('');
   const [remember, setRemember] = useState(true);
   const [busy, setBusy] = useState(false);
-  const [signedIn, setSignedIn] = useState(false);
 
   // Проверка по месту: подсказываем, когда пользователь ушёл из поля
   const checkEmail = () =>
@@ -36,8 +39,9 @@ export default function Login() {
     setBusy(true);
     setFormError('');
     try {
-      await api.login({ email: email.trim(), password, remember });
-      setSignedIn(true);
+      const { user } = await api.login({ email: email.trim(), password, remember });
+      setUser(user);
+      navigate('/', { replace: true });
     } catch (error) {
       setFormError(error.message);
     } finally {
@@ -58,12 +62,6 @@ export default function Login() {
         {formError && (
           <p className="auth-alert" role="alert">
             {formError}
-          </p>
-        )}
-
-        {signedIn && (
-          <p className="auth-alert auth-alert--ok" role="status">
-            Вход выполнен
           </p>
         )}
 

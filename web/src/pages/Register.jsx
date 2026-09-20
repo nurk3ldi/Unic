@@ -1,6 +1,7 @@
 import { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { api } from '../api.js';
+import { useAuth } from '../AuthContext.jsx';
 import AuthCard from '../components/AuthCard.jsx';
 import Field from '../components/Field.jsx';
 import PasswordField from '../components/PasswordField.jsx';
@@ -27,11 +28,13 @@ const validators = {
 const EMPTY = { fullName: '', username: '', phone: '', email: '', password: '' };
 
 export default function Register() {
+  const { setUser } = useAuth();
+  const navigate = useNavigate();
+
   const [values, setValues] = useState(EMPTY);
   const [errors, setErrors] = useState({});
   const [formError, setFormError] = useState('');
   const [busy, setBusy] = useState(false);
-  const [created, setCreated] = useState(false);
 
   const update = (field) => (event) => {
     setValues((prev) => ({ ...prev, [field]: event.target.value }));
@@ -55,14 +58,16 @@ export default function Register() {
     setBusy(true);
     setFormError('');
     try {
-      await api.register({
+      const { user } = await api.register({
         fullName: values.fullName.trim(),
         username: values.username.trim().toLowerCase(),
         phone: onlyPhoneChars(values.phone),
         email: values.email.trim(),
         password: values.password,
       });
-      setCreated(true);
+      // Сервер уже выдал куку — входим сразу, без повторной формы
+      setUser(user);
+      navigate('/', { replace: true });
     } catch (error) {
       setFormError(error.message);
     } finally {
@@ -75,7 +80,7 @@ export default function Register() {
       title="Создать аккаунт"
       footer={
         <>
-          Уже есть аккаунт? <Link to="/" viewTransition>Войти</Link>
+          Уже есть аккаунт? <Link to="/login" viewTransition>Войти</Link>
         </>
       }
     >
@@ -83,12 +88,6 @@ export default function Register() {
         {formError && (
           <p className="auth-alert" role="alert">
             {formError}
-          </p>
-        )}
-
-        {created && (
-          <p className="auth-alert auth-alert--ok" role="status">
-            Аккаунт успешно создан
           </p>
         )}
 

@@ -13,6 +13,8 @@ async function request(path, { method = 'GET', body } = {}) {
 }
 
 export const api = {
+  me: () => request('/auth/me'),
+  logout: () => request('/auth/logout', { method: 'POST' }),
   login: (credentials) => request('/auth/login', { method: 'POST', body: credentials }),
   register: (payload) => request('/auth/register', { method: 'POST', body: payload }),
   forgot: (payload) => request('/auth/forgot', { method: 'POST', body: payload }),
