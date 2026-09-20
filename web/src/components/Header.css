@@ -2,7 +2,7 @@
   position: sticky;
   top: 0;
   z-index: var(--z-header);
-  background: var(--material);
+  background: var(--header-bg);
   -webkit-backdrop-filter: var(--material-blur);
   backdrop-filter: var(--material-blur);
 }
@@ -38,7 +38,7 @@
   height: 2.25rem;
   flex: none;
   border-radius: var(--radius-pill);
-  color: var(--text-secondary);
+  color: var(--header-fg);
   font-size: 1.75rem;
   transition:
     background-color var(--duration-fast) var(--ease-out),
@@ -47,7 +47,7 @@
 }
 
 .header__avatar:hover {
-  background: var(--fill);
+  background: var(--header-fill);
   color: var(--text);
 }
 
