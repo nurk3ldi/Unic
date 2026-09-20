@@ -88,7 +88,7 @@ export default function Register() {
 
         {created && (
           <p className="auth-alert auth-alert--ok" role="status">
-            Аккаунт создан. Личный кабинет появится на следующем шаге.
+            Аккаунт успешно создан
           </p>
         )}
 

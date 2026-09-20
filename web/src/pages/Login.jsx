@@ -63,7 +63,7 @@ export default function Login() {
 
         {signedIn && (
           <p className="auth-alert auth-alert--ok" role="status">
-            Вход выполнен. Личный кабинет появится на следующем шаге.
+            Вход выполнен
           </p>
         )}
 
