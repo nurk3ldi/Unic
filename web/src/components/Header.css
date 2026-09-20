@@ -1,0 +1,99 @@
+.header {
+  position: sticky;
+  top: 0;
+  z-index: var(--z-header);
+  background: var(--material);
+  -webkit-backdrop-filter: var(--material-blur);
+  backdrop-filter: var(--material-blur);
+}
+
+/* Край прокрутки вместо жёсткой разделительной линии */
+.header::after {
+  content: '';
+  position: absolute;
+  inset: 100% 0 auto 0;
+  height: 1px;
+  background: var(--separator);
+}
+
+.header__inner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+  max-width: 64rem;
+  margin: 0 auto;
+  padding: var(--space-3) var(--space-6);
+}
+
+.header__logo {
+  height: auto;
+  flex: none;
+}
+
+.header__user {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  min-width: 0;
+}
+
+.header__identity {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  min-width: 0;
+}
+
+.header__name {
+  font-size: 0.9375rem;
+  font-weight: 500;
+  line-height: 1.3;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 14rem;
+}
+
+.header__role {
+  font-size: 0.75rem;
+  line-height: 1.3;
+  letter-spacing: var(--tracking-caption);
+  color: var(--text-secondary);
+}
+
+.header__signout {
+  display: grid;
+  place-items: center;
+  width: 2.25rem;
+  height: 2.25rem;
+  flex: none;
+  border-radius: var(--radius-control);
+  color: var(--text-secondary);
+  font-size: 1.1875rem;
+  transition:
+    background-color var(--duration-fast) var(--ease-out),
+    color var(--duration-fast) var(--ease-out),
+    transform var(--duration-press) var(--ease-out);
+}
+
+.header__signout:hover {
+  background: var(--fill);
+  color: var(--text);
+}
+
+/* Отклик наступает на нажатии, а не на отпускании */
+.header__signout:active {
+  transform: scale(0.92);
+  background: var(--fill-hover);
+}
+
+@media (max-width: 34rem) {
+  .header__inner {
+    padding-inline: var(--space-4);
+  }
+
+  .header__name {
+    max-width: 9rem;
+  }
+}

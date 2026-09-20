@@ -53,7 +53,7 @@ Unic/
       ├─ api.js         ← барлық fetch осы жерде
       ├─ index.css      ← токендер + reset
       ├─ assets/logo.png ← 480×213, мөлдір фон, 42 KB
-      ├─ components/    ← AuthCard, Field, PasswordField (екі бетке ортақ)
+      ├─ components/    ← AuthCard, Field, PasswordField, Header
       └─ pages/         ← Home, Login, Register, Restore + Auth.css (ортақ форма стильдері)
 ```
 
@@ -329,6 +329,13 @@ Claude серверді өзі өлтіріп қайта қоспайды — п
   тексерілді ✓, нақты хат Gmail-ге жіберілді ✓.
 - **2026-09-20** · `Home` экранына «Выйти» түймесі қойылды (жоғарғы оң жақта):
   `signOut` → cookie өшеді → маршрут қорғауы өзі `/login`-ге түсіреді.
+
+- **2026-09-20** · `Home` бетіне **Apple үлгісіндегі header** қосылды (`components/Header.jsx`):
+  sticky, транслюцентті қабат (`--material` + `backdrop-filter`), контент астынан ағып өтеді,
+  қатты сызықтың орнына scroll edge. Солда логотип, оңда аты-жөні + рөлі + шығу түймесі.
+  Жаңа токендер: `--material`, `--material-blur`, `--z-header`;
+  `prefers-reduced-transparency` өңделеді (мөлдірлік алынып, ақ фон қалады).
+  Көзбен тексерілді: контент header астынан өткенде фон реңк алады ✓
 
 ### Келесі қадам
 1. Келесі экран (тіркелу? кабинет? «Забыли пароль?») — пайдаланушының нұсқауын күту.
