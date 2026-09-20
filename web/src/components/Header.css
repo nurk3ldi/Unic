@@ -16,14 +16,14 @@
   background: var(--separator);
 }
 
+/* Панель идёт во всю ширину: логотип и профиль прижаты к краям */
 .header__inner {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: var(--space-4);
-  max-width: 64rem;
-  margin: 0 auto;
-  padding: var(--space-3) var(--space-6);
+  height: 3.5rem;
+  padding: 0 var(--space-6);
 }
 
 .header__logo {
@@ -31,61 +31,128 @@
   flex: none;
 }
 
-.header__user {
-  display: flex;
-  align-items: center;
-  gap: var(--space-3);
-  min-width: 0;
-}
-
-.header__identity {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  min-width: 0;
-}
-
-.header__name {
-  font-size: 0.9375rem;
-  font-weight: 500;
-  line-height: 1.3;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  max-width: 14rem;
-}
-
-.header__role {
-  font-size: 0.75rem;
-  line-height: 1.3;
-  letter-spacing: var(--tracking-caption);
-  color: var(--text-secondary);
-}
-
-.header__signout {
+.header__avatar {
   display: grid;
   place-items: center;
   width: 2.25rem;
   height: 2.25rem;
   flex: none;
-  border-radius: var(--radius-control);
+  border-radius: var(--radius-pill);
   color: var(--text-secondary);
-  font-size: 1.1875rem;
+  font-size: 1.75rem;
   transition:
     background-color var(--duration-fast) var(--ease-out),
     color var(--duration-fast) var(--ease-out),
     transform var(--duration-press) var(--ease-out);
 }
 
-.header__signout:hover {
+.header__avatar:hover {
   background: var(--fill);
   color: var(--text);
 }
 
 /* Отклик наступает на нажатии, а не на отпускании */
-.header__signout:active {
+.header__avatar:active {
   transform: scale(0.92);
   background: var(--fill-hover);
+}
+
+/* ── Меню профиля ───────────────────────────────────────── */
+.header__menu {
+  position: fixed;
+  inset: auto; /* гасим центрирование, заданное popover по умолчанию */
+  top: 3.25rem;
+  right: var(--space-6);
+  width: 15rem;
+  margin: 0;
+  padding: var(--space-2);
+  border: 1px solid var(--separator);
+  border-radius: var(--radius-card);
+  background: var(--surface);
+  box-shadow: var(--shadow-card);
+
+  /* Меню растёт из иконки, а не из центра экрана */
+  transform-origin: top right;
+  opacity: 0;
+  transform: scale(0.95);
+  transition:
+    opacity var(--duration-fast) var(--ease-out),
+    transform var(--duration-fast) var(--ease-out),
+    overlay var(--duration-fast) allow-discrete,
+    display var(--duration-fast) allow-discrete;
+}
+
+.header__menu:popover-open {
+  opacity: 1;
+  transform: none;
+}
+
+@starting-style {
+  .header__menu:popover-open {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+}
+
+.header__menu::backdrop {
+  background: transparent;
+}
+
+.header__menu-head {
+  display: flex;
+  flex-direction: column;
+  gap: 0.125rem;
+  padding: var(--space-2) var(--space-3) var(--space-3);
+  border-bottom: 1px solid var(--separator);
+  margin-bottom: var(--space-2);
+}
+
+.header__menu-name {
+  font-size: 0.9375rem;
+  font-weight: 500;
+  line-height: 1.3;
+}
+
+.header__menu-role {
+  font-size: 0.8125rem;
+  line-height: 1.3;
+  letter-spacing: var(--tracking-caption);
+  color: var(--text-secondary);
+}
+
+.header__menu-item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  width: 100%;
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-control);
+  font-size: 0.9375rem;
+  color: var(--text);
+  text-align: left;
+  transition: background-color var(--duration-fast) var(--ease-out);
+}
+
+.header__menu-item:hover {
+  background: var(--fill);
+}
+
+.header__menu-item:active {
+  background: var(--fill-hover);
+}
+
+.header__menu-item svg {
+  width: 1.125rem;
+  height: 1.125rem;
+  flex: none;
+  color: var(--text-secondary);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .header__menu {
+    transition: opacity 120ms linear, overlay 120ms allow-discrete, display 120ms allow-discrete;
+    transform: none;
+  }
 }
 
 @media (max-width: 34rem) {
@@ -93,7 +160,7 @@
     padding-inline: var(--space-4);
   }
 
-  .header__name {
-    max-width: 9rem;
+  .header__menu {
+    right: var(--space-4);
   }
 }

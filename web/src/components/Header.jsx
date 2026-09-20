@@ -1,4 +1,4 @@
-import { IoLogOutOutline } from 'react-icons/io5';
+import { IoLogOutOutline, IoPersonCircleOutline } from 'react-icons/io5';
 import { useAuth } from '../AuthContext.jsx';
 import logo from '../assets/logo.png';
 import './Header.css';
@@ -10,26 +10,37 @@ const ROLE_LABELS = {
   student: 'Студент',
 };
 
-/** Верхняя панель: полупрозрачный слой, контент прокручивается под ним. */
+/** Верхняя панель: полупрозрачный слой во всю ширину, контент течёт под ним. */
 export default function Header() {
   const { user, signOut } = useAuth();
 
   return (
     <header className="header">
       <div className="header__inner">
-        <img className="header__logo" src={logo} alt="Unic" width="76" />
+        <img className="header__logo" src={logo} alt="Unic" width="72" />
 
-        <div className="header__user">
-          <div className="header__identity">
-            <span className="header__name">{user.fullName}</span>
-            <span className="header__role">{ROLE_LABELS[user.role] ?? user.role}</span>
-          </div>
+        <button
+          className="header__avatar"
+          type="button"
+          popoverTarget="profile-menu"
+          title="Профиль"
+        >
+          <IoPersonCircleOutline aria-hidden="true" />
+          <span className="visually-hidden">Профиль</span>
+        </button>
+      </div>
 
-          <button className="header__signout" type="button" onClick={signOut} title="Выйти">
-            <IoLogOutOutline aria-hidden="true" />
-            <span className="visually-hidden">Выйти</span>
-          </button>
+      {/* Нативный popover: закрывается кликом вне и клавишей Esc — без своего JS */}
+      <div className="header__menu" id="profile-menu" popover="auto">
+        <div className="header__menu-head">
+          <span className="header__menu-name">{user.fullName}</span>
+          <span className="header__menu-role">{ROLE_LABELS[user.role] ?? user.role}</span>
         </div>
+
+        <button className="header__menu-item" type="button" onClick={signOut}>
+          <IoLogOutOutline aria-hidden="true" />
+          Выйти
+        </button>
       </div>
     </header>
   );
