@@ -1,0 +1,255 @@
+.login {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100dvh;
+  padding: var(--space-8) var(--space-4);
+  background: var(--bg);
+}
+
+/* Карточка «плывёт» над белым фоном: мягкая тень + едва заметный край */
+.login__card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+  max-width: 23.75rem;
+  padding: var(--space-10) var(--space-8);
+  background: var(--surface);
+  border: 1px solid var(--separator);
+  border-radius: var(--radius-card);
+  box-shadow: var(--shadow-card);
+  animation: login-rise var(--duration-base) var(--ease-out) both;
+}
+
+.login__logo {
+  height: auto;
+  margin-bottom: var(--space-5);
+}
+
+.login__title {
+  margin-bottom: var(--space-8);
+  font-size: 1.5rem;
+  font-weight: 600;
+  line-height: 1.2;
+  letter-spacing: var(--tracking-title);
+  text-align: center;
+}
+
+.login__form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-5);
+  width: 100%;
+}
+
+/* ── Поля ───────────────────────────────────────────────── */
+.login__field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.login__label {
+  font-size: 0.875rem;
+  font-weight: 500;
+  letter-spacing: var(--tracking-caption);
+  color: var(--text-secondary);
+}
+
+.login__box {
+  display: flex;
+  align-items: center;
+  background: var(--surface);
+  border: 1px solid var(--separator-strong);
+  border-radius: var(--radius-control);
+  transition:
+    border-color var(--duration-fast) var(--ease-out),
+    box-shadow var(--duration-fast) var(--ease-out);
+}
+
+.login__box:hover {
+  border-color: rgba(0, 0, 0, 0.22);
+}
+
+.login__box:focus-within {
+  border-color: var(--accent);
+  box-shadow: var(--ring-focus);
+}
+
+.login__box--error {
+  border-color: var(--red);
+}
+
+.login__box--error:focus-within {
+  box-shadow: 0 0 0 4px var(--red-soft);
+}
+
+.login__input {
+  width: 100%;
+  padding: 0.75rem var(--space-4);
+  background: none;
+  border: none;
+  font-size: 1rem;
+}
+
+.login__input:focus {
+  outline: none;
+}
+
+.login__input::placeholder {
+  color: var(--text-tertiary);
+}
+
+/* Показать / скрыть пароль */
+.login__eye {
+  display: grid;
+  place-items: center;
+  width: 2.5rem;
+  height: 2.5rem;
+  margin-right: var(--space-1);
+  flex: none;
+  border-radius: var(--radius-control);
+  color: var(--text-tertiary);
+  font-size: 1.1875rem;
+  transition:
+    color var(--duration-fast) var(--ease-out),
+    background-color var(--duration-fast) var(--ease-out),
+    transform var(--duration-press) var(--ease-out);
+}
+
+.login__eye:hover {
+  color: var(--text-secondary);
+  background: var(--fill);
+}
+
+.login__eye:active {
+  transform: scale(0.92);
+}
+
+.login__hint {
+  font-size: 0.8125rem;
+  line-height: 1.4;
+  letter-spacing: var(--tracking-caption);
+  color: var(--text-tertiary);
+}
+
+.login__hint--error {
+  color: var(--red);
+  animation: login-slip var(--duration-fast) var(--ease-out) both;
+}
+
+/* ── Забыли пароль ──────────────────────────────────────── */
+.login__forgot {
+  align-self: flex-start;
+  margin-top: calc(var(--space-2) * -1);
+  font-size: 0.875rem;
+  letter-spacing: var(--tracking-caption);
+}
+
+/* ── Кнопка входа ───────────────────────────────────────── */
+.login__submit {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 2.875rem;
+  padding: 0.75rem var(--space-6);
+  border-radius: var(--radius-control);
+  background: var(--accent);
+  color: #fff;
+  font-size: 1rem;
+  font-weight: 500;
+  transition:
+    background-color var(--duration-fast) var(--ease-out),
+    transform var(--duration-press) var(--ease-out),
+    opacity var(--duration-fast) var(--ease-out);
+}
+
+.login__submit:hover:not(:disabled) {
+  background: var(--accent-hover);
+}
+
+/* Отклик наступает на нажатии, а не на отпускании */
+.login__submit:active:not(:disabled) {
+  background: var(--accent-active);
+  transform: scale(0.97);
+}
+
+.login__submit:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.login__spinner {
+  width: 1.125rem;
+  height: 1.125rem;
+  border: 2px solid currentColor;
+  border-top-color: transparent;
+  border-radius: 50%;
+  animation: login-spin 700ms linear infinite;
+}
+
+/* ── Сообщения формы ────────────────────────────────────── */
+.login__alert {
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius-control);
+  background: var(--red-soft);
+  color: #c21c12;
+  font-size: 0.875rem;
+  line-height: 1.4;
+  animation: login-slip var(--duration-fast) var(--ease-out) both;
+}
+
+.login__alert--ok {
+  background: rgba(52, 199, 89, 0.12);
+  color: #1f7a3d;
+}
+
+/* ── Движение ───────────────────────────────────────────── */
+@keyframes login-rise {
+  from {
+    opacity: 0;
+    transform: translate3d(0, 12px, 0);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes login-slip {
+  from {
+    opacity: 0;
+    transform: translate3d(0, -6px, 0);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes login-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .login__card,
+  .login__alert,
+  .login__hint--error {
+    animation: none;
+    opacity: 1;
+    transform: none;
+  }
+
+  .login__spinner {
+    animation-duration: 1.4s;
+  }
+}
+
+@media (max-width: 26rem) {
+  .login__card {
+    padding: var(--space-8) var(--space-5);
+  }
+}
