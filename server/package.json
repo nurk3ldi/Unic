@@ -12,6 +12,7 @@
     "cookie-parser": "^1.4.7",
     "express": "^5.1.0",
     "jsonwebtoken": "^9.0.2",
+    "nodemailer": "^10.0.10",
     "pg": "^8.13.1"
   }
 }

@@ -117,12 +117,44 @@ a:hover {
   white-space: nowrap;
 }
 
+/* ── Переход между экранами (View Transitions API) ───────
+   Уходящий экран отступает назад, новый выходит вперёд — движение
+   читается как смена слоя, а не как подмена картинки. */
+::view-transition-old(root) {
+  animation: screen-out 260ms var(--ease-out) both;
+}
+
+::view-transition-new(root) {
+  animation: screen-in 380ms var(--ease-out) both;
+}
+
+@keyframes screen-out {
+  to {
+    opacity: 0;
+    transform: scale(0.97);
+  }
+}
+
+@keyframes screen-in {
+  from {
+    opacity: 0;
+    transform: scale(1.02);
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
   *::after {
     animation-duration: 0.01ms !important;
     transition-duration: 0.01ms !important;
+  }
+
+  /* Движение убираем, но сам переход оставляем — короткое растворение */
+  ::view-transition-old(root),
+  ::view-transition-new(root) {
+    animation: none !important;
+    transition: opacity 160ms linear;
   }
 }
 

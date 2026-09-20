@@ -50,7 +50,7 @@ export default function Login() {
       title="Добро пожаловать"
       footer={
         <>
-          Нет аккаунта? <Link to="/register">Зарегистрироваться</Link>
+          Нет аккаунта? <Link to="/register" viewTransition>Зарегистрироваться</Link>
         </>
       }
     >
@@ -103,13 +103,15 @@ export default function Login() {
             Запомнить меня
           </label>
 
-          <a className="auth-link" href="#restore">
+          <Link className="auth-link" to="/restore" viewTransition>
             Забыли пароль?
-          </a>
+          </Link>
         </div>
 
         <button className="auth-submit" type="submit" disabled={busy}>
-          {busy ? <span className="auth-spinner" aria-hidden="true" /> : 'Войти'}
+          <span className="auth-submit__label" key={busy ? 'busy' : 'idle'}>
+            {busy ? <span className="auth-spinner" aria-hidden="true" /> : 'Войти'}
+          </span>
           {busy && <span className="visually-hidden">Выполняется вход</span>}
         </button>
       </form>

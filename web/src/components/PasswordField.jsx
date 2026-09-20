@@ -19,7 +19,9 @@ export default function PasswordField({ label = 'Пароль', ...rest }) {
           aria-label={shown ? 'Скрыть пароль' : 'Показать пароль'}
           aria-pressed={shown}
         >
-          {shown ? <IoEyeOffOutline /> : <IoEyeOutline />}
+          <span className="password-toggle__icon" key={shown ? 'shown' : 'hidden'}>
+            {shown ? <IoEyeOffOutline /> : <IoEyeOutline />}
+          </span>
         </button>
       }
       {...rest}

@@ -13,3 +13,12 @@ create table if not exists users (
 );
 
 create index if not exists users_role_idx on users (role);
+
+-- Коды восстановления пароля. Одна строка на адрес: новый код заменяет прежний.
+create table if not exists password_resets (
+  email      text primary key,
+  code_hash  text not null,
+  expires_at timestamptz not null,
+  attempts   int not null default 0,
+  created_at timestamptz not null default now()
+);

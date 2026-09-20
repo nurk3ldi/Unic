@@ -19,7 +19,28 @@
   border: 1px solid var(--separator);
   border-radius: var(--radius-card);
   box-shadow: var(--shadow-card);
-  animation: auth-rise var(--duration-base) var(--ease-out) both;
+  animation: auth-card-in 420ms var(--ease-out) both;
+}
+
+/* Содержимое наполняет карточку по очереди — взгляд идёт сверху вниз */
+.auth__card > * {
+  animation: auth-rise 420ms var(--ease-out) both;
+}
+
+.auth__card > *:nth-child(1) {
+  animation-delay: 40ms;
+}
+
+.auth__card > *:nth-child(2) {
+  animation-delay: 90ms;
+}
+
+.auth__card > *:nth-child(3) {
+  animation-delay: 140ms;
+}
+
+.auth__card > *:nth-child(4) {
+  animation-delay: 190ms;
 }
 
 .auth__logo {
@@ -29,11 +50,32 @@
 
 .auth__title {
   margin-bottom: var(--space-8);
+  text-wrap: balance;
   font-size: 1.5rem;
   font-weight: 600;
   line-height: 1.2;
   letter-spacing: var(--tracking-title);
   text-align: center;
+}
+
+/* Когда есть подзаголовок, он и несёт отступ до формы */
+.auth__title--with-subtitle {
+  margin-bottom: var(--space-2);
+}
+
+.auth__subtitle {
+  margin-bottom: var(--space-8);
+  max-width: 17rem;
+  font-size: 0.9375rem;
+  line-height: 1.45;
+  color: var(--text-secondary);
+  text-align: center;
+  text-wrap: pretty;
+}
+
+/* Подзаголовок — ещё один шаг очереди */
+.auth__card > *:nth-child(5) {
+  animation-delay: 190ms;
 }
 
 /* Переход между входом и регистрацией */
@@ -47,10 +89,21 @@
   text-align: center;
 }
 
+@keyframes auth-card-in {
+  from {
+    opacity: 0;
+    transform: scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
 @keyframes auth-rise {
   from {
     opacity: 0;
-    transform: translate3d(0, 12px, 0);
+    transform: translate3d(0, 10px, 0);
   }
   to {
     opacity: 1;
@@ -59,7 +112,8 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .auth__card {
+  .auth__card,
+  .auth__card > * {
     animation: none;
   }
 }

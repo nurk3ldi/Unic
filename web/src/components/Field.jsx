@@ -6,7 +6,7 @@ import './Field.css';
  * Для скринридера остаётся скрытый <label>.
  * `trailing` — слот для кнопки справа (например, показ пароля).
  */
-export default function Field({ label, error, trailing, ...rest }) {
+export default function Field({ label, error, trailing, className = '', ...rest }) {
   const id = useId();
 
   return (
@@ -18,7 +18,7 @@ export default function Field({ label, error, trailing, ...rest }) {
       <div className={`field__box${error ? ' field__box--error' : ''}`}>
         <input
           id={id}
-          className="field__input"
+          className={`field__input ${className}`.trim()}
           placeholder={label}
           aria-invalid={error ? 'true' : undefined}
           aria-describedby={error ? `${id}-error` : undefined}

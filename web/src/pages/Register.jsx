@@ -75,7 +75,7 @@ export default function Register() {
       title="Создать аккаунт"
       footer={
         <>
-          Уже есть аккаунт? <Link to="/">Войти</Link>
+          Уже есть аккаунт? <Link to="/" viewTransition>Войти</Link>
         </>
       }
     >
@@ -146,7 +146,9 @@ export default function Register() {
         />
 
         <button className="auth-submit" type="submit" disabled={busy}>
-          {busy ? <span className="auth-spinner" aria-hidden="true" /> : 'Зарегистрироваться'}
+          <span className="auth-submit__label" key={busy ? 'busy' : 'idle'}>
+            {busy ? <span className="auth-spinner" aria-hidden="true" /> : 'Зарегистрироваться'}
+          </span>
           {busy && <span className="visually-hidden">Создаём аккаунт</span>}
         </button>
       </form>
