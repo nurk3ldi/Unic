@@ -131,12 +131,40 @@
   animation: login-slip var(--duration-fast) var(--ease-out) both;
 }
 
-/* ── Забыли пароль ──────────────────────────────────────── */
-.login__forgot {
-  align-self: flex-start;
+/* ── Строка под полями: слева галочка, справа ссылка ───── */
+.login__row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
   margin-top: calc(var(--space-2) * -1);
+}
+
+.login__remember {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
   font-size: 0.875rem;
   letter-spacing: var(--tracking-caption);
+  color: var(--text-secondary);
+  cursor: pointer;
+  user-select: none;
+}
+
+/* Системный чекбокс, перекрашенный в акцент — рисует его сама платформа */
+.login__remember input {
+  width: 1rem;
+  height: 1rem;
+  margin: 0;
+  flex: none;
+  accent-color: var(--accent);
+  cursor: pointer;
+}
+
+.login__forgot {
+  font-size: 0.875rem;
+  letter-spacing: var(--tracking-caption);
+  white-space: nowrap;
 }
 
 /* ── Кнопка входа ───────────────────────────────────────── */

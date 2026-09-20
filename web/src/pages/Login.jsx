@@ -12,6 +12,7 @@ export default function Login() {
   const [emailError, setEmailError] = useState('');
   const [formError, setFormError] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+  const [remember, setRemember] = useState(true);
   const [busy, setBusy] = useState(false);
   const [signedIn, setSignedIn] = useState(false);
 
@@ -34,7 +35,7 @@ export default function Login() {
     setBusy(true);
     setFormError('');
     try {
-      await api.login({ email: email.trim(), password });
+      await api.login({ email: email.trim(), password, remember });
       setSignedIn(true);
     } catch (error) {
       setFormError(error.message);
@@ -123,9 +124,21 @@ export default function Login() {
             </div>
           </div>
 
-          <a className="login__forgot" href="#restore">
-            Забыли пароль?
-          </a>
+          <div className="login__row">
+            <label className="login__remember">
+              <input
+                type="checkbox"
+                name="remember"
+                checked={remember}
+                onChange={(e) => setRemember(e.target.checked)}
+              />
+              Запомнить меня
+            </label>
+
+            <a className="login__forgot" href="#restore">
+              Забыли пароль?
+            </a>
+          </div>
 
           <button className="login__submit" type="submit" disabled={busy}>
             {busy ? <span className="login__spinner" aria-hidden="true" /> : 'Войти'}

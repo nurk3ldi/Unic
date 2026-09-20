@@ -55,7 +55,12 @@ router.post('/login', async (req, res) => {
     return res.status(401).json({ error: 'Неверная почта или пароль' });
   }
 
-  res.cookie(COOKIE_NAME, signToken(user), cookieOptions);
+  // Без «Запомнить меня» кука становится сеансовой: уходит с закрытием браузера
+  const remember = req.body?.remember !== false;
+  res.cookie(COOKIE_NAME, signToken(user), {
+    ...cookieOptions,
+    maxAge: remember ? cookieOptions.maxAge : undefined,
+  });
   res.json({ user: publicUser(user) });
 });
 
