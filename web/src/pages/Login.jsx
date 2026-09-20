@@ -64,7 +64,7 @@ export default function Login() {
           )}
 
           <div className="login__field">
-            <label className="login__label" htmlFor="email">
+            <label className="visually-hidden" htmlFor="email">
               Почта
             </label>
             <div className={`login__box${emailError ? ' login__box--error' : ''}`}>
@@ -74,7 +74,7 @@ export default function Login() {
                 type="email"
                 name="email"
                 autoComplete="email"
-                placeholder="student@unic.kz"
+                placeholder="Почта"
                 value={email}
                 onChange={(e) => {
                   setEmail(e.target.value);
@@ -94,7 +94,7 @@ export default function Login() {
           </div>
 
           <div className="login__field">
-            <label className="login__label" htmlFor="password">
+            <label className="visually-hidden" htmlFor="password">
               Пароль
             </label>
             <div className="login__box">
@@ -104,7 +104,7 @@ export default function Login() {
                 type={showPassword ? 'text' : 'password'}
                 name="password"
                 autoComplete="current-password"
-                placeholder="Введите пароль"
+                placeholder="Пароль"
                 value={password}
                 onChange={(e) => {
                   setPassword(e.target.value);
