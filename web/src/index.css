@@ -22,7 +22,7 @@
   --red-soft: rgba(255, 59, 48, 0.1);
 
   /* Типографика */
-  --font: -apple-system, BlinkMacSystemFont, 'Inter', 'Segoe UI', system-ui, sans-serif;
+  --font: 'Inter', -apple-system, BlinkMacSystemFont, Helvetica, Arial, sans-serif;
   --tracking-title: -0.016em;
   --tracking-caption: 0.01em;
 
