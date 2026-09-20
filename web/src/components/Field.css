@@ -36,6 +36,9 @@
   background: none;
   border: none;
   font-size: 1rem;
+  /* Радиус нужен затем, чтобы внутренняя тень автозаполнения
+     не срезала скруглённые углы поля */
+  border-radius: var(--radius-control);
 }
 
 .field__input:focus,
@@ -46,6 +49,20 @@
 
 .field__input::placeholder {
   color: var(--text-tertiary);
+}
+
+/* Автозаполнение Chrome навязывает свой голубой фон и не поддаётся background-color.
+   Перекрываем его внутренней тенью и фиксируем цвет текста и курсора. */
+.field__input:-webkit-autofill,
+.field__input:-webkit-autofill:hover,
+.field__input:-webkit-autofill:focus,
+.field__input:-webkit-autofill:active {
+  -webkit-text-fill-color: var(--text);
+  -webkit-box-shadow: 0 0 0 3rem var(--surface) inset;
+  box-shadow: 0 0 0 3rem var(--surface) inset;
+  caret-color: var(--text);
+  /* Chrome возвращает свой фон по таймеру — отодвигаем это за горизонт */
+  transition: background-color 100000s ease-out;
 }
 
 .field__error {
