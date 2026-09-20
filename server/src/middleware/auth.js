@@ -13,7 +13,7 @@ export async function requireAuth(req, res, next) {
   }
 
   const { rows } = await query(
-    'select id, email, full_name, role, created_at from users where id = $1',
+    'select id, email, username, phone, full_name, role, created_at from users where id = $1',
     [payload.sub],
   );
   if (!rows[0]) return res.status(401).json({ error: 'Пользователь не найден' });

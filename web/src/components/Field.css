@@ -1,0 +1,74 @@
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.field__box {
+  display: flex;
+  align-items: center;
+  background: var(--surface);
+  border: 1px solid var(--separator-strong);
+  border-radius: var(--radius-control);
+  /* Фокус показывает только граница — без кольца-тени */
+  transition: border-color 250ms var(--ease-out);
+}
+
+.field__box:hover {
+  border-color: rgba(0, 0, 0, 0.22);
+}
+
+.field__box:focus-within {
+  border-color: var(--accent);
+}
+
+.field__box--error {
+  border-color: var(--red);
+}
+
+.field__box--error:focus-within {
+  border-color: var(--red);
+}
+
+.field__input {
+  width: 100%;
+  padding: 0.75rem var(--space-5);
+  background: none;
+  border: none;
+  font-size: 1rem;
+}
+
+.field__input:focus,
+.field__input:focus-visible {
+  outline: none;
+  box-shadow: none;
+}
+
+.field__input::placeholder {
+  color: var(--text-tertiary);
+}
+
+.field__error {
+  font-size: 0.8125rem;
+  line-height: 1.4;
+  letter-spacing: var(--tracking-caption);
+  color: var(--red);
+  animation: field-slip var(--duration-fast) var(--ease-out) both;
+}
+
+@keyframes field-slip {
+  from {
+    opacity: 0;
+    transform: translate3d(0, -6px, 0);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .field__error {
+    animation: none;
+  }
+}

@@ -27,18 +27,18 @@ await db.query(await readFile(join(here, 'schema.sql'), 'utf8'));
 console.log('Схема применена');
 
 const demo = [
-  ['admin@unic.kz', 'Админ Системы', 'admin'],
-  ['university@unic.kz', 'Университет KBTU', 'university'],
-  ['lead@unic.kz', 'Айгерим Нурланова', 'club_lead'],
-  ['student@unic.kz', 'Нуркелди Студент', 'student'],
+  ['admin@unic.kz', 'admin', '+77010000001', 'Админ Системы', 'admin'],
+  ['university@unic.kz', 'kbtu', '+77010000002', 'Университет KBTU', 'university'],
+  ['lead@unic.kz', 'aigerim', '+77010000003', 'Нурланова Айгерим Ержанқызы', 'club_lead'],
+  ['student@unic.kz', 'nurkeldi', '+77010000004', 'Студент Нуркелди Ерланұлы', 'student'],
 ];
 
-for (const [email, fullName, role] of demo) {
+for (const [email, username, phone, fullName, role] of demo) {
   await db.query(
-    `insert into users (email, password_hash, full_name, role)
-     values ($1, $2, $3, $4)
+    `insert into users (email, username, phone, password_hash, full_name, role)
+     values ($1, $2, $3, $4, $5, $6)
      on conflict (email) do nothing`,
-    [email, await hashPassword('password123'), fullName, role],
+    [email, username, phone, await hashPassword('password123'), fullName, role],
   );
 }
 console.log('Демо-пользователи готовы (пароль у всех: password123)');

@@ -1,0 +1,129 @@
+/* Общие стили форм входа и регистрации. */
+
+.auth-form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  width: 100%;
+}
+
+/* Строка под полями: слева галочка, справа ссылка */
+.auth-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+
+.auth-remember {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: 0.875rem;
+  letter-spacing: var(--tracking-caption);
+  color: var(--text-secondary);
+  cursor: pointer;
+  user-select: none;
+}
+
+/* Системный чекбокс, перекрашенный в акцент — рисует его сама платформа */
+.auth-remember input {
+  width: 1rem;
+  height: 1rem;
+  margin: 0;
+  flex: none;
+  accent-color: var(--accent);
+  cursor: pointer;
+}
+
+.auth-link {
+  font-size: 0.875rem;
+  letter-spacing: var(--tracking-caption);
+  white-space: nowrap;
+}
+
+/* Действие отделяется от ввода */
+.auth-submit {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-top: var(--space-2);
+  min-height: 3rem;
+  padding: 0.6875rem var(--space-6);
+  border-radius: var(--radius-control);
+  background: var(--accent);
+  color: #fff;
+  font-size: 1rem;
+  font-weight: 500;
+  transition:
+    background-color var(--duration-fast) var(--ease-out),
+    transform var(--duration-press) var(--ease-out),
+    opacity var(--duration-fast) var(--ease-out);
+}
+
+.auth-submit:hover:not(:disabled) {
+  background: var(--accent-hover);
+}
+
+/* Отклик наступает на нажатии, а не на отпускании */
+.auth-submit:active:not(:disabled) {
+  background: var(--accent-active);
+  transform: scale(0.97);
+}
+
+.auth-submit:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.auth-spinner {
+  width: 1.125rem;
+  height: 1.125rem;
+  border: 2px solid currentColor;
+  border-top-color: transparent;
+  border-radius: 50%;
+  animation: auth-spin 700ms linear infinite;
+}
+
+/* Сообщения уровня формы */
+.auth-alert {
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius-control);
+  background: var(--red-soft);
+  color: #c21c12;
+  font-size: 0.875rem;
+  line-height: 1.4;
+  animation: auth-slip var(--duration-fast) var(--ease-out) both;
+}
+
+.auth-alert--ok {
+  background: rgba(52, 199, 89, 0.12);
+  color: #1f7a3d;
+}
+
+@keyframes auth-slip {
+  from {
+    opacity: 0;
+    transform: translate3d(0, -6px, 0);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes auth-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .auth-alert {
+    animation: none;
+  }
+
+  .auth-spinner {
+    animation-duration: 1.4s;
+  }
+}

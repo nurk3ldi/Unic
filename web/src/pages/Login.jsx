@@ -1,8 +1,10 @@
 import { useState } from 'react';
-import { IoEyeOffOutline, IoEyeOutline } from 'react-icons/io5';
+import { Link } from 'react-router-dom';
 import { api } from '../api.js';
-import logo from '../assets/logo.png';
-import './Login.css';
+import AuthCard from '../components/AuthCard.jsx';
+import Field from '../components/Field.jsx';
+import PasswordField from '../components/PasswordField.jsx';
+import './Auth.css';
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -11,7 +13,6 @@ export default function Login() {
   const [password, setPassword] = useState('');
   const [emailError, setEmailError] = useState('');
   const [formError, setFormError] = useState('');
-  const [showPassword, setShowPassword] = useState(false);
   const [remember, setRemember] = useState(true);
   const [busy, setBusy] = useState(false);
   const [signedIn, setSignedIn] = useState(false);
@@ -45,107 +46,73 @@ export default function Login() {
   }
 
   return (
-    <main className="login">
-      <section className="login__card">
-        <img className="login__logo" src={logo} alt="Unic" width="150" />
+    <AuthCard
+      title="Добро пожаловать"
+      footer={
+        <>
+          Нет аккаунта? <Link to="/register">Зарегистрироваться</Link>
+        </>
+      }
+    >
+      <form className="auth-form" onSubmit={handleSubmit} noValidate>
+        {formError && (
+          <p className="auth-alert" role="alert">
+            {formError}
+          </p>
+        )}
 
-        <h1 className="login__title">Добро пожаловать</h1>
+        {signedIn && (
+          <p className="auth-alert auth-alert--ok" role="status">
+            Вход выполнен. Личный кабинет появится на следующем шаге.
+          </p>
+        )}
 
-        <form className="login__form" onSubmit={handleSubmit} noValidate>
-          {formError && (
-            <p className="login__alert" role="alert">
-              {formError}
-            </p>
-          )}
+        <Field
+          label="Почта"
+          type="email"
+          name="email"
+          autoComplete="email"
+          value={email}
+          error={emailError}
+          onChange={(e) => {
+            setEmail(e.target.value);
+            setEmailError('');
+            setFormError('');
+          }}
+          onBlur={checkEmail}
+        />
 
-          {signedIn && (
-            <p className="login__alert login__alert--ok" role="status">
-              Вход выполнен. Личный кабинет появится на следующем шаге.
-            </p>
-          )}
+        <PasswordField
+          name="password"
+          autoComplete="current-password"
+          value={password}
+          onChange={(e) => {
+            setPassword(e.target.value);
+            setFormError('');
+          }}
+        />
 
-          <div className="login__field">
-            <label className="visually-hidden" htmlFor="email">
-              Почта
-            </label>
-            <div className={`login__box${emailError ? ' login__box--error' : ''}`}>
-              <input
-                className="login__input"
-                id="email"
-                type="email"
-                name="email"
-                autoComplete="email"
-                placeholder="Почта"
-                value={email}
-                onChange={(e) => {
-                  setEmail(e.target.value);
-                  setEmailError('');
-                  setFormError('');
-                }}
-                onBlur={checkEmail}
-                aria-invalid={emailError ? 'true' : undefined}
-                aria-describedby={emailError ? 'email-error' : undefined}
-              />
-            </div>
-            {emailError && (
-              <p className="login__hint login__hint--error" id="email-error">
-                {emailError}
-              </p>
-            )}
-          </div>
+        <div className="auth-row">
+          <label className="auth-remember">
+            <input
+              type="checkbox"
+              name="remember"
+              checked={remember}
+              onChange={(e) => setRemember(e.target.checked)}
+            />
+            Запомнить меня
+          </label>
 
-          <div className="login__field">
-            <label className="visually-hidden" htmlFor="password">
-              Пароль
-            </label>
-            <div className="login__box">
-              <input
-                className="login__input"
-                id="password"
-                type={showPassword ? 'text' : 'password'}
-                name="password"
-                autoComplete="current-password"
-                placeholder="Пароль"
-                value={password}
-                onChange={(e) => {
-                  setPassword(e.target.value);
-                  setFormError('');
-                }}
-              />
-              <button
-                className="login__eye"
-                type="button"
-                onClick={() => setShowPassword((shown) => !shown)}
-                aria-label={showPassword ? 'Скрыть пароль' : 'Показать пароль'}
-                aria-pressed={showPassword}
-              >
-                {showPassword ? <IoEyeOffOutline /> : <IoEyeOutline />}
-              </button>
-            </div>
-          </div>
+          <a className="auth-link" href="#restore">
+            Забыли пароль?
+          </a>
+        </div>
 
-          <div className="login__row">
-            <label className="login__remember">
-              <input
-                type="checkbox"
-                name="remember"
-                checked={remember}
-                onChange={(e) => setRemember(e.target.checked)}
-              />
-              Запомнить меня
-            </label>
-
-            <a className="login__forgot" href="#restore">
-              Забыли пароль?
-            </a>
-          </div>
-
-          <button className="login__submit" type="submit" disabled={busy}>
-            {busy ? <span className="login__spinner" aria-hidden="true" /> : 'Войти'}
-            {busy && <span className="visually-hidden">Выполняется вход</span>}
-          </button>
-        </form>
-      </section>
-    </main>
+        <button className="auth-submit" type="submit" disabled={busy}>
+          {busy ? <span className="auth-spinner" aria-hidden="true" /> : 'Войти'}
+          {busy && <span className="visually-hidden">Выполняется вход</span>}
+        </button>
+      </form>
+    </AuthCard>
   );
 }

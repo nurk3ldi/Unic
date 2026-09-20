@@ -3,6 +3,8 @@
 create table if not exists users (
   id            uuid primary key default gen_random_uuid(),
   email         text not null unique,
+  username      text not null unique,
+  phone         text not null unique,
   password_hash text not null,
   full_name     text not null,
   role          text not null default 'student'

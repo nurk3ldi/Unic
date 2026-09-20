@@ -1,0 +1,71 @@
+.auth {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100dvh;
+  padding: var(--space-8) var(--space-4);
+  background: var(--bg);
+}
+
+/* Карточка «плывёт» над белым фоном: мягкая тень + едва заметный край */
+.auth__card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+  max-width: 23.75rem;
+  padding: var(--space-10) var(--space-8) var(--space-8);
+  background: var(--surface);
+  border: 1px solid var(--separator);
+  border-radius: var(--radius-card);
+  box-shadow: var(--shadow-card);
+  animation: auth-rise var(--duration-base) var(--ease-out) both;
+}
+
+.auth__logo {
+  height: auto;
+  margin-bottom: var(--space-4);
+}
+
+.auth__title {
+  margin-bottom: var(--space-8);
+  font-size: 1.5rem;
+  font-weight: 600;
+  line-height: 1.2;
+  letter-spacing: var(--tracking-title);
+  text-align: center;
+}
+
+/* Переход между входом и регистрацией */
+.auth__footer {
+  margin-top: var(--space-6);
+  padding-top: var(--space-5);
+  width: 100%;
+  border-top: 1px solid var(--separator);
+  font-size: 0.875rem;
+  color: var(--text-secondary);
+  text-align: center;
+}
+
+@keyframes auth-rise {
+  from {
+    opacity: 0;
+    transform: translate3d(0, 12px, 0);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .auth__card {
+    animation: none;
+  }
+}
+
+@media (max-width: 26rem) {
+  .auth__card {
+    padding: var(--space-8) var(--space-5) var(--space-6);
+  }
+}
