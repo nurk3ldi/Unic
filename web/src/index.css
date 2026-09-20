@@ -17,6 +17,7 @@
   --separator: rgba(0, 0, 0, 0.08);
   --separator-strong: rgba(0, 0, 0, 0.14);
   --fill: rgba(0, 0, 0, 0.04);
+  --fill-hover: rgba(0, 0, 0, 0.06);
   --red: #ff3b30;
   --red-soft: rgba(255, 59, 48, 0.1);
 
