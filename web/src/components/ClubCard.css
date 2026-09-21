@@ -3,6 +3,13 @@
   flex-direction: column;
   background: var(--surface);
   border-radius: var(--radius-widget);
+  /* Анимируем только transform — он не вызывает перерисовку макета */
+  transition: transform 250ms var(--ease-out);
+}
+
+/* Карточка чуть подаётся навстречу курсору */
+.club:hover {
+  transform: scale(1.02);
 }
 
 /* Шапка карточки — как у виджетов: своя полоса поверх содержимого */
@@ -62,4 +69,14 @@
   width: 100%;
   height: 100%;
   object-fit: cover;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .club {
+    transition: none;
+  }
+
+  .club:hover {
+    transform: none;
+  }
 }
