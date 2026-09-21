@@ -33,6 +33,9 @@
   --material-blur: saturate(180%) blur(20px);
   --z-header: 100;
   --header-height: 3.5rem;
+  /* Клубная карточка: квадрат фото + своя шапка */
+  --club-size: calc((100dvh - var(--header-height)) / 2);
+  --club-header-height: 4.4375rem;
 
   /* Типографика */
   --font: 'Inter', -apple-system, BlinkMacSystemFont, Helvetica, Arial, sans-serif;

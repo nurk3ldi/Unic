@@ -18,8 +18,8 @@ export default function Clubs() {
       .catch((failure) => setError(failure.message));
   }, []);
 
-  async function addClub({ name }) {
-    const { club } = await api.createClub({ name });
+  async function addClub({ name, photo }) {
+    const { club } = await api.createClub({ name, photo });
     setClubs((prev) => [...prev, club]);
   }
 

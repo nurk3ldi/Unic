@@ -19,18 +19,28 @@ router.get('/', requireAuth, async (_req, res) => {
 });
 
 // Создавать клубы может университет; студенческие заявки добавим отдельно
+// Фото приходит строкой data URL: клиент уже ужал его до квадрата 400×400
+const PHOTO_LIMIT = 700_000;
+
 router.post('/', requireAuth, requireRole('university', 'admin'), async (req, res) => {
   const name = String(req.body?.name ?? '').trim().replace(/\s+/g, ' ');
+  const photo = req.body?.photo ? String(req.body.photo) : null;
 
   if (name.length < 2) {
     return res.status(400).json({ error: 'Укажите название клуба' });
   }
+  if (photo && !photo.startsWith('data:image/')) {
+    return res.status(400).json({ error: 'Некорректный формат изображения' });
+  }
+  if (photo && photo.length > PHOTO_LIMIT) {
+    return res.status(400).json({ error: 'Изображение слишком большое' });
+  }
 
   const { rows } = await query(
-    `insert into clubs (name, created_by)
-     values ($1, $2)
+    `insert into clubs (name, photo_url, created_by)
+     values ($1, $2, $3)
      returning *`,
-    [name, req.user.id],
+    [name, photo, req.user.id],
   );
 
   res.status(201).json({ club: publicClub(rows[0]) });

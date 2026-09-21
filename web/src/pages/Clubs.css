@@ -1,13 +1,15 @@
 /* auto-fit схлопывает пустые колонки — иначе карточка висла бы в первой из них */
 .clubs {
   display: grid;
-  grid-template-columns: repeat(auto-fit, calc((100dvh - var(--header-height)) / 2));
+  grid-template-columns: repeat(auto-fit, var(--club-size));
   gap: var(--space-4);
   justify-content: start; /* карточки прижаты к левому краю */
 }
 
 /* Кнопка создания: высоту задаёт сетка — она равна соседней карточке */
 .club-add {
+  /* Держит размер карточки даже когда клубов ещё нет */
+  min-height: calc(var(--club-size) + var(--club-header-height));
   display: flex;
   flex-direction: column;
   align-items: center;

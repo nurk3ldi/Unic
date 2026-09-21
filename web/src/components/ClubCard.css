@@ -13,7 +13,8 @@
   justify-content: space-between;
   gap: var(--space-3);
   flex: none;
-  padding: var(--space-3) var(--space-5);
+  height: var(--club-header-height);
+  padding: 0 var(--space-5);
   background: var(--accent);
   color: var(--text-on-accent);
   border-radius: var(--radius-widget) var(--radius-widget) 0 0;
