@@ -1,0 +1,21 @@
+/* Общий контейнер внутренних экранов. */
+
+.page {
+  max-width: 64rem;
+  margin: 0 auto;
+  padding: var(--space-8) var(--space-6);
+  min-height: 60dvh;
+}
+
+.page__title {
+  font-size: 1.75rem;
+  font-weight: 600;
+  line-height: 1.15;
+  letter-spacing: var(--tracking-title);
+}
+
+@media (max-width: 34rem) {
+  .page {
+    padding: var(--space-6) var(--space-4);
+  }
+}

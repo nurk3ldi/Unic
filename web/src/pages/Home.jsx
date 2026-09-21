@@ -1,12 +1,6 @@
-import Header from '../components/Header.jsx';
-import './Home.css';
+import './Page.css';
 
 /** Главный экран. Пока пустой — наполним на следующем шаге. */
 export default function Home() {
-  return (
-    <>
-      <Header />
-      <main className="home" />
-    </>
-  );
+  return <main className="page" />;
 }

@@ -25,6 +25,10 @@ export default function Header() {
             <NavLink className="header__link" to="/" end viewTransition>
               Главная
             </NavLink>
+
+            <NavLink className="header__link" to="/clubs" viewTransition>
+              Клубы
+            </NavLink>
           </nav>
         </div>
 

@@ -1,5 +1,7 @@
 import { Navigate, Route, Routes } from 'react-router-dom';
 import { useAuth } from './AuthContext.jsx';
+import AppLayout from './components/AppLayout.jsx';
+import Clubs from './pages/Clubs.jsx';
 import Home from './pages/Home.jsx';
 import Login from './pages/Login.jsx';
 import Register from './pages/Register.jsx';
@@ -16,7 +18,10 @@ export default function App() {
 
   return (
     <Routes>
-      <Route path="/" element={user ? <Home /> : <Navigate to="/login" replace />} />
+      <Route element={user ? <AppLayout /> : <Navigate to="/login" replace />}>
+        <Route path="/" element={<Home />} />
+        <Route path="/clubs" element={<Clubs />} />
+      </Route>
       <Route path="/login" element={guestOnly(<Login />)} />
       <Route path="/register" element={guestOnly(<Register />)} />
       <Route path="/restore" element={guestOnly(<Restore />)} />
