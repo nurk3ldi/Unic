@@ -4,7 +4,7 @@
   aspect-ratio: 1; /* ширину задаёт колонка сетки, высота повторяет её */
   background: var(--surface);
   border: 1px solid var(--separator);
-  border-radius: var(--radius-card);
+  border-radius: var(--radius-widget);
   overflow: hidden; /* чтобы шапка не вылезала за скругление */
   transition: border-color var(--duration-fast) var(--ease-out);
 }
@@ -27,81 +27,4 @@
   flex: 1;
   min-height: 0;
   padding: var(--space-5);
-}
-
-.club:hover {
-  border-color: var(--separator-strong);
-}
-
-.club__logo {
-  display: grid;
-  place-items: center;
-  width: 3.5rem;
-  height: 3.5rem;
-  margin-bottom: var(--space-4);
-  border-radius: 14px;
-  background: var(--accent-soft);
-  color: var(--accent);
-  font-size: 1.375rem;
-  font-weight: 600;
-  letter-spacing: var(--tracking-title);
-}
-
-.club__name {
-  font-size: 1.0625rem;
-  font-weight: 600;
-  line-height: 1.3;
-  letter-spacing: var(--tracking-title);
-  text-wrap: balance;
-}
-
-.club__lead {
-  margin-top: 0.125rem;
-  font-size: 0.8125rem;
-  line-height: 1.4;
-  letter-spacing: var(--tracking-caption);
-  color: var(--text-secondary);
-}
-
-.club__members {
-  margin-top: var(--space-4);
-  font-size: 0.8125rem;
-  line-height: 1.4;
-  letter-spacing: var(--tracking-caption);
-  color: var(--text-secondary);
-}
-
-/* Статус: точка несёт цвет, текст остаётся читаемым */
-.club__status {
-  display: flex;
-  align-items: center;
-  gap: var(--space-2);
-  margin-top: 0.25rem;
-  font-size: 0.8125rem;
-  line-height: 1.4;
-  letter-spacing: var(--tracking-caption);
-  color: var(--text);
-}
-
-.club__dot {
-  width: 0.4375rem;
-  height: 0.4375rem;
-  flex: none;
-  border-radius: 50%;
-}
-
-.club__status--active .club__dot {
-  background: var(--green);
-}
-
-.club__status--pending .club__dot {
-  background: var(--orange);
-}
-
-.club__status--suspended .club__dot {
-  background: var(--text-tertiary);
-}
-
-.club__status--suspended {
-  color: var(--text-secondary);
 }
