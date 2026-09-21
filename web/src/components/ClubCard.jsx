@@ -23,20 +23,27 @@ export default function ClubCard({ club }) {
 
   return (
     <article className="club">
-      {/* Пока логотипов нет — первая буква названия на фирменном фоне */}
-      <div className="club__logo" aria-hidden="true">
-        {club.name.trim()[0].toUpperCase()}
+      {/* Собственная шапка карточки. Пока пустая — наполним на следующем шаге */}
+      <div className="club__header" />
+
+      <div className="club__body">
+        {/* Пока логотипов нет — первая буква названия на фирменном фоне */}
+        <div className="club__logo" aria-hidden="true">
+          {club.name.trim()[0].toUpperCase()}
+        </div>
+
+        <h2 className="club__name">{club.name}</h2>
+        <p className="club__lead">
+          {club.lead ? shortName(club.lead) : 'Руководитель не назначен'}
+        </p>
+
+        <p className="club__members">{members(club.members)}</p>
+
+        <p className={`club__status club__status--${status.tone}`}>
+          <span className="club__dot" aria-hidden="true" />
+          {status.label}
+        </p>
       </div>
-
-      <h2 className="club__name">{club.name}</h2>
-      <p className="club__lead">{club.lead ? shortName(club.lead) : 'Руководитель не назначен'}</p>
-
-      <p className="club__members">{members(club.members)}</p>
-
-      <p className={`club__status club__status--${status.tone}`}>
-        <span className="club__dot" aria-hidden="true" />
-        {status.label}
-      </p>
     </article>
   );
 }
