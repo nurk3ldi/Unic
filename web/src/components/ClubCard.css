@@ -1,7 +1,6 @@
 .club {
   display: flex;
   flex-direction: column;
-  aspect-ratio: 1; /* ширину задаёт колонка сетки, высота повторяет её */
   background: var(--surface);
   border: 1px solid var(--separator);
   border-radius: var(--radius-widget);
@@ -52,9 +51,18 @@
 .club__body {
   display: flex;
   flex-direction: column;
-  flex: 1;
-  min-height: 0;
-  padding: var(--space-5);
+  flex: none;
+  aspect-ratio: 1; /* область фото всегда квадратная; шапка идёт сверх неё */
+  /* нижние углы режет само тело: у карточки overflow снят ради меню */
+  overflow: hidden;
+  border-radius: 0 0 var(--radius-widget) var(--radius-widget);
+}
+
+/* Фото клуба заполняет свободную часть карточки */
+.club__photo {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
 }
 
 /* Кнопка действий */

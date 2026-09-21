@@ -23,7 +23,7 @@ function membersLabel(count) {
 }
 
 /** Карточка клуба. Шапка по образцу виджетов: название, строка контекста, действие. */
-export default function ClubCard({ name, members = 0, status = 'active' }) {
+export default function ClubCard({ name, members = 0, status = 'active', photo }) {
   const [menuOpen, setMenuOpen] = useState(false);
 
   // Меню закрывается кликом вне и клавишей Esc
@@ -78,7 +78,9 @@ export default function ClubCard({ name, members = 0, status = 'active' }) {
         )}
       </div>
 
-      <div className="club__body" />
+      <div className="club__body">
+        {photo && <img className="club__photo" src={photo} alt="" />}
+      </div>
     </article>
   );
 }
