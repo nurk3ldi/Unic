@@ -21,6 +21,17 @@
   color: var(--text-on-accent);
 }
 
+/* Название крупно и белым — шапка несёт фирменный фон */
+.club__name {
+  font-size: 1.375rem;
+  font-weight: 600;
+  line-height: 1.2;
+  letter-spacing: var(--tracking-title);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
 .club__body {
   display: flex;
   flex-direction: column;
