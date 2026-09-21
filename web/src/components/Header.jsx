@@ -1,3 +1,4 @@
+import { NavLink } from 'react-router-dom';
 import { IoLogOutOutline, IoPersonCircleOutline } from 'react-icons/io5';
 import { useAuth } from '../AuthContext.jsx';
 import logo from '../assets/logo.png';
@@ -17,7 +18,15 @@ export default function Header() {
   return (
     <header className="header">
       <div className="header__inner">
-        <img className="header__logo" src={logo} alt="Unic" width="72" />
+        <div className="header__left">
+          <img className="header__logo" src={logo} alt="Unic" width="72" />
+
+          <nav className="header__nav">
+            <NavLink className="header__link" to="/" end viewTransition>
+              Главная
+            </NavLink>
+          </nav>
+        </div>
 
         <button
           className="header__avatar"

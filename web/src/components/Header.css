@@ -26,9 +26,42 @@
   padding: 0 var(--space-6);
 }
 
+.header__left {
+  display: flex;
+  align-items: center;
+  gap: var(--space-6);
+  min-width: 0;
+}
+
 .header__logo {
   height: auto;
   flex: none;
+}
+
+.header__nav {
+  display: flex;
+  align-items: center;
+  gap: var(--space-5);
+}
+
+/* Навигация — только текст; активный раздел темнее остальных */
+.header__link {
+  font-size: 0.9375rem;
+  font-weight: 500;
+  letter-spacing: var(--tracking-caption);
+  color: var(--text-secondary);
+  white-space: nowrap;
+  transition: color var(--duration-fast) var(--ease-out);
+}
+
+.header__link:hover {
+  color: var(--text);
+  text-decoration: none;
+}
+
+/* NavLink сам ставит aria-current — отдельный класс не нужен */
+.header__link[aria-current='page'] {
+  color: var(--text);
 }
 
 .header__avatar {
@@ -158,6 +191,10 @@
 @media (max-width: 34rem) {
   .header__inner {
     padding-inline: var(--space-4);
+  }
+
+  .header__left {
+    gap: var(--space-4);
   }
 
   .header__menu {
