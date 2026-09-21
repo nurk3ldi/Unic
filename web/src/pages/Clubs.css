@@ -1,6 +1,7 @@
-/* Сетка подстраивается сама: колонки добавляются по мере ширины */
+/* auto-fit схлопывает пустые колонки — иначе карточка висла бы в первой из них */
 .clubs {
   display: grid;
-  grid-template-columns: repeat(auto-fill, calc((100dvh - var(--header-height)) / 2));
+  grid-template-columns: repeat(auto-fit, calc((100dvh - var(--header-height)) / 2));
   gap: var(--space-4);
+  justify-content: start; /* карточки прижаты к левому краю */
 }
