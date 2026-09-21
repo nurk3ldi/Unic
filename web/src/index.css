@@ -27,7 +27,7 @@
   /* Материал: полупрозрачный слой, контент течёт под ним */
   --material: rgba(255, 255, 255, 0.72);
   /* Панель несёт фирменный цвет: синий логотипа с лёгкой прозрачностью */
-  --header-bg: rgba(247, 247, 250, 0.82);
+  --header-bg: rgba(239, 244, 255, 0.85); /* почти белая, но с брендовым подтоном */
   --header-fg: var(--text-secondary);
   --header-fill: var(--fill);
   --material-blur: saturate(180%) blur(20px);
@@ -178,7 +178,7 @@ a:hover {
   :root {
     --material: #ffffff;
     --material-blur: none;
-    --header-bg: #f7f7fa;
+    --header-bg: #eff4ff;
   }
 }
 
