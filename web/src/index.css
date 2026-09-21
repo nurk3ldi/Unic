@@ -31,6 +31,7 @@
   --header-fill: var(--fill);
   --material-blur: saturate(180%) blur(20px);
   --z-header: 100;
+  --header-height: 3.5rem;
 
   /* Типографика */
   --font: 'Inter', -apple-system, BlinkMacSystemFont, Helvetica, Arial, sans-serif;

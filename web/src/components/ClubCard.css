@@ -1,6 +1,7 @@
 .club {
   display: flex;
   flex-direction: column;
+  height: calc((100dvh - var(--header-height)) / 2);
   padding: var(--space-5);
   background: var(--surface);
   border: 1px solid var(--separator);
