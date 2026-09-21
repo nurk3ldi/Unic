@@ -17,8 +17,8 @@
   height: 3.25rem;
   flex: none;
   padding: 0 var(--space-5);
-  background: var(--bg-secondary);
-  border-bottom: 1px solid var(--separator);
+  background: var(--accent);
+  color: var(--text-on-accent);
 }
 
 .club__body {
