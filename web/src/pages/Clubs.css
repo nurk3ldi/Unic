@@ -1,6 +1,6 @@
 /* Сетка подстраивается сама: колонки добавляются по мере ширины */
 .clubs {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(15rem, 1fr));
+  grid-template-columns: repeat(auto-fill, calc((100dvh - var(--header-height)) / 2));
   gap: var(--space-4);
 }

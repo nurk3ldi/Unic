@@ -1,7 +1,7 @@
 .club {
   display: flex;
   flex-direction: column;
-  height: calc((100dvh - var(--header-height)) / 2);
+  aspect-ratio: 1; /* ширину задаёт колонка сетки, высота повторяет её */
   padding: var(--space-5);
   background: var(--surface);
   border: 1px solid var(--separator);
