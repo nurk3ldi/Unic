@@ -2,9 +2,7 @@
   display: flex;
   flex-direction: column;
   background: var(--surface);
-  border: 1px solid var(--separator);
   border-radius: var(--radius-widget);
-  transition: border-color var(--duration-fast) var(--ease-out);
 }
 
 /* Шапка карточки — как у виджетов: своя полоса поверх содержимого */
@@ -15,7 +13,7 @@
   justify-content: space-between;
   gap: var(--space-3);
   flex: none;
-  padding: var(--space-4) var(--space-5);
+  padding: var(--space-3) var(--space-5);
   background: var(--accent);
   color: var(--text-on-accent);
   border-radius: var(--radius-widget) var(--radius-widget) 0 0;
