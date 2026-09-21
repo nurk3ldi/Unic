@@ -1,26 +1,36 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { IoAdd } from 'react-icons/io5';
+import { api } from '../api.js';
 import ClubCard from '../components/ClubCard.jsx';
 import ClubFormModal from '../components/ClubFormModal.jsx';
-import airecLogo from '../assets/airec_logo.png';
 import './Page.css';
 import './Clubs.css';
 
-// Временные данные: заменим на запрос к API, когда появится таблица clubs
-const INITIAL_CLUBS = [
-  { id: 1, name: 'AIREC', members: 42, status: 'active', photo: airecLogo },
-];
-
 export default function Clubs() {
-  const [clubs, setClubs] = useState(INITIAL_CLUBS);
+  const [clubs, setClubs] = useState([]);
   const [formOpen, setFormOpen] = useState(false);
+  const [error, setError] = useState('');
 
-  function addClub({ name, photo }) {
-    setClubs((prev) => [...prev, { id: Date.now(), name, members: 0, status: 'active', photo }]);
+  useEffect(() => {
+    api
+      .clubs()
+      .then(({ clubs }) => setClubs(clubs))
+      .catch((failure) => setError(failure.message));
+  }, []);
+
+  async function addClub({ name }) {
+    const { club } = await api.createClub({ name });
+    setClubs((prev) => [...prev, club]);
   }
 
   return (
     <main className="page">
+      {error && (
+        <p className="clubs__error" role="alert">
+          {error}
+        </p>
+      )}
+
       <div className="clubs">
         {clubs.map((club) => (
           <ClubCard

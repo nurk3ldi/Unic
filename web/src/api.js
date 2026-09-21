@@ -20,4 +20,7 @@ export const api = {
   forgot: (payload) => request('/auth/forgot', { method: 'POST', body: payload }),
   verifyCode: (payload) => request('/auth/verify-code', { method: 'POST', body: payload }),
   reset: (payload) => request('/auth/reset', { method: 'POST', body: payload }),
+
+  clubs: () => request('/clubs'),
+  createClub: (payload) => request('/clubs', { method: 'POST', body: payload }),
 };

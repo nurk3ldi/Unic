@@ -1,6 +1,7 @@
 import express from 'express';
 import cookieParser from 'cookie-parser';
 import authRoutes from './routes/auth.js';
+import clubRoutes from './routes/clubs.js';
 
 const app = express();
 
@@ -9,6 +10,7 @@ app.use(cookieParser());
 
 app.get('/api/health', (_req, res) => res.json({ ok: true }));
 app.use('/api/auth', authRoutes);
+app.use('/api/clubs', clubRoutes);
 
 app.use('/api', (_req, res) => res.status(404).json({ error: 'Ресурс не найден' }));
 

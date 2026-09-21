@@ -1,9 +1,3 @@
-import { useEffect, useState } from 'react';
-import {
-  IoEllipsisHorizontal,
-  IoInformationCircleOutline,
-  IoSettingsOutline,
-} from 'react-icons/io5';
 import './ClubCard.css';
 
 const STATUS_LABELS = {
@@ -24,23 +18,6 @@ function membersLabel(count) {
 
 /** Карточка клуба. Шапка по образцу виджетов: название, строка контекста, действие. */
 export default function ClubCard({ name, members = 0, status = 'active', photo }) {
-  const [menuOpen, setMenuOpen] = useState(false);
-
-  // Меню закрывается кликом вне и клавишей Esc
-  useEffect(() => {
-    if (!menuOpen) return undefined;
-
-    const close = () => setMenuOpen(false);
-    const onKey = (event) => event.key === 'Escape' && close();
-
-    document.addEventListener('click', close);
-    document.addEventListener('keydown', onKey);
-    return () => {
-      document.removeEventListener('click', close);
-      document.removeEventListener('keydown', onKey);
-    };
-  }, [menuOpen]);
-
   return (
     <article className="club">
       <div className="club__header">
@@ -50,32 +27,6 @@ export default function ClubCard({ name, members = 0, status = 'active', photo }
             {membersLabel(members)} · {STATUS_LABELS[status] ?? status}
           </p>
         </div>
-
-        <button
-          className="club__more"
-          type="button"
-          aria-expanded={menuOpen}
-          aria-label="Действия с клубом"
-          onClick={(event) => {
-            event.stopPropagation(); // иначе тот же клик сразу закроет меню
-            setMenuOpen((open) => !open);
-          }}
-        >
-          <IoEllipsisHorizontal aria-hidden="true" />
-        </button>
-
-        {menuOpen && (
-          <div className="club__menu" role="menu">
-            <button className="club__menu-item" type="button" role="menuitem">
-              <IoSettingsOutline aria-hidden="true" />
-              Опция 1
-            </button>
-            <button className="club__menu-item" type="button" role="menuitem">
-              <IoInformationCircleOutline aria-hidden="true" />
-              Опция 2
-            </button>
-          </div>
-        )}
       </div>
 
       <div className="club__body">

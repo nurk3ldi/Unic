@@ -14,6 +14,7 @@ export default function ClubFormModal({ open, onClose, onCreate }) {
   const [name, setName] = useState('');
   const [photo, setPhoto] = useState(null);
   const [error, setError] = useState('');
+  const [busy, setBusy] = useState(false);
 
   // Открываем и закрываем средствами самого элемента, иначе не будет backdrop и фокуса
   useEffect(() => {
@@ -43,7 +44,7 @@ export default function ClubFormModal({ open, onClose, onCreate }) {
     event.target.value = ''; // чтобы тот же файл можно было выбрать снова
   }
 
-  function handleSubmit(event) {
+  async function handleSubmit(event) {
     event.preventDefault();
 
     if (name.trim().length < 2) {
@@ -51,9 +52,16 @@ export default function ClubFormModal({ open, onClose, onCreate }) {
       return;
     }
 
-    onCreate({ name: name.trim(), photo: photo?.url ?? null });
-    reset();
-    onClose();
+    setBusy(true);
+    try {
+      await onCreate({ name: name.trim(), photo: photo?.url ?? null });
+      reset();
+      onClose();
+    } catch (failure) {
+      setError(failure.message);
+    } finally {
+      setBusy(false);
+    }
   }
 
   function handleClose() {
@@ -104,9 +112,13 @@ export default function ClubFormModal({ open, onClose, onCreate }) {
           <button className="modal__button" type="button" onClick={handleClose}>
             Отмена
           </button>
-          <button className="modal__button modal__button--primary" type="submit">
+          <button
+            className="modal__button modal__button--primary"
+            type="submit"
+            disabled={busy}
+          >
             <IoAdd aria-hidden="true" />
-            Создать
+            {busy ? 'Создаём…' : 'Создать'}
           </button>
         </div>
       </form>

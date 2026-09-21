@@ -41,3 +41,12 @@
   width: 1.75rem;
   height: 1.75rem;
 }
+
+.clubs__error {
+  margin-bottom: var(--space-4);
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius-control);
+  background: var(--red-soft);
+  color: #c21c12;
+  font-size: 0.875rem;
+}
