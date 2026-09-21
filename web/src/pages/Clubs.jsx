@@ -6,7 +6,7 @@ export default function Clubs() {
   return (
     <main className="page">
       <div className="clubs">
-        <ClubCard name="IT Club" />
+        <ClubCard name="IT Club" members={42} status="active" />
       </div>
     </main>
   );
