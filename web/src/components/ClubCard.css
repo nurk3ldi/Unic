@@ -5,19 +5,21 @@
   background: var(--surface);
   border: 1px solid var(--separator);
   border-radius: var(--radius-widget);
-  overflow: hidden; /* чтобы шапка не вылезала за скругление */
   transition: border-color var(--duration-fast) var(--ease-out);
 }
 
 /* Шапка карточки — как у виджетов: своя полоса поверх содержимого */
 .club__header {
+  position: relative; /* якорь для меню */
   display: flex;
   align-items: center;
+  justify-content: space-between;
   gap: var(--space-3);
   flex: none;
   padding: var(--space-4) var(--space-5);
   background: var(--accent);
   color: var(--text-on-accent);
+  border-radius: var(--radius-widget) var(--radius-widget) 0 0;
 }
 
 .club__title {
@@ -53,4 +55,90 @@
   flex: 1;
   min-height: 0;
   padding: var(--space-5);
+}
+
+/* Кнопка действий */
+.club__more {
+  display: grid;
+  place-items: center;
+  width: 2rem;
+  height: 2rem;
+  flex: none;
+  border-radius: var(--radius-pill);
+  color: var(--text-on-accent);
+  font-size: 1.125rem;
+  transition:
+    background-color var(--duration-fast) var(--ease-out),
+    transform var(--duration-press) var(--ease-out);
+}
+
+.club__more:hover {
+  background: rgba(255, 255, 255, 0.18);
+}
+
+/* Отклик наступает на нажатии, а не на отпускании */
+.club__more:active {
+  transform: scale(0.92);
+  background: rgba(255, 255, 255, 0.26);
+}
+
+/* Меню растёт из кнопки, а не из центра карточки */
+.club__menu {
+  position: absolute;
+  top: calc(100% - var(--space-2));
+  right: var(--space-4);
+  z-index: 1;
+  width: 12rem;
+  padding: var(--space-2);
+  background: var(--surface);
+  border: 1px solid var(--separator);
+  border-radius: var(--radius-card);
+  box-shadow: var(--shadow-card);
+  transform-origin: top right;
+  animation: club-menu-in var(--duration-fast) var(--ease-out) both;
+}
+
+.club__menu-item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  width: 100%;
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-control);
+  font-size: 0.9375rem;
+  color: var(--text);
+  text-align: left;
+  transition: background-color var(--duration-fast) var(--ease-out);
+}
+
+.club__menu-item:hover {
+  background: var(--fill);
+}
+
+.club__menu-item:active {
+  background: var(--fill-hover);
+}
+
+.club__menu-item svg {
+  width: 1.125rem;
+  height: 1.125rem;
+  flex: none;
+  color: var(--text-secondary);
+}
+
+@keyframes club-menu-in {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .club__menu {
+    animation: none;
+  }
 }
