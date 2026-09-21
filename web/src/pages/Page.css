@@ -7,6 +7,12 @@
   min-height: 60dvh;
 }
 
+.page__head {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
 .page__title {
   font-size: 1.75rem;
   font-weight: 600;
@@ -18,4 +24,10 @@
   .page {
     padding: var(--space-6) var(--space-4);
   }
+}
+
+.page__subtitle {
+  font-size: 0.9375rem;
+  line-height: 1.45;
+  color: var(--text-secondary);
 }

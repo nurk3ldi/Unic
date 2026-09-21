@@ -1,0 +1,7 @@
+/* Сетка подстраивается сама: колонки добавляются по мере ширины */
+.clubs {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(15rem, 1fr));
+  gap: var(--space-4);
+  margin-top: var(--space-6);
+}
