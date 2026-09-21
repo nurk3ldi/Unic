@@ -5,3 +5,39 @@
   gap: var(--space-4);
   justify-content: start; /* карточки прижаты к левому краю */
 }
+
+/* Кнопка создания: высоту задаёт сетка — она равна соседней карточке */
+.club-add {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  border: 2px dashed var(--separator-strong);
+  border-radius: var(--radius-widget);
+  color: var(--text-secondary);
+  font-size: 0.9375rem;
+  font-weight: 500;
+  letter-spacing: var(--tracking-caption);
+  transition:
+    border-color var(--duration-fast) var(--ease-out),
+    background-color var(--duration-fast) var(--ease-out),
+    color var(--duration-fast) var(--ease-out),
+    transform var(--duration-press) var(--ease-out);
+}
+
+.club-add:hover {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+
+/* Отклик наступает на нажатии, а не на отпускании */
+.club-add:active {
+  transform: scale(0.98);
+}
+
+.club-add svg {
+  width: 1.75rem;
+  height: 1.75rem;
+}
