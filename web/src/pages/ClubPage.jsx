@@ -79,20 +79,28 @@ export default function ClubPage() {
               )}
             </div>
 
-            {/* Правая карточка верхнего ряда: наполним на следующем шаге */}
+            {/* Управление самим клубом — рядом с управлением участниками */}
             <div className="club-card">
-              <div className="card-header" />
+              <div className="card-header">
+                <h2 className="card-header__title">Управление клубом</h2>
+              </div>
             </div>
           </div>
 
           {/* Нижний ряд: слева квадрат, справа — остаток ширины */}
           <div className="club-bottom">
+            {/* Чат клуба: здесь будет свёрнутый вид, по нажатию — переход в чат */}
             <div className="club-card">
-              <div className="card-header" />
+              <div className="card-header">
+                <h2 className="card-header__title">Чат</h2>
+              </div>
             </div>
 
+            {/* События клуба — наполним, когда появится таблица */}
             <div className="club-card">
-              <div className="card-header" />
+              <div className="card-header">
+                <h2 className="card-header__title">События</h2>
+              </div>
             </div>
           </div>
         </div>

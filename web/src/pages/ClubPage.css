@@ -127,7 +127,8 @@
   color: var(--text-on-accent);
 }
 
-.side-header__title {
+.side-header__title,
+.card-header__title {
   font-size: 0.9375rem;
   font-weight: 600;
   letter-spacing: var(--tracking-caption);
