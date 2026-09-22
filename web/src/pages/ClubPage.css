@@ -12,7 +12,7 @@
   display: flex;
   flex-direction: column;
   margin-top: calc(var(--space-4) - var(--space-8));
-  padding: var(--space-3) var(--space-5) var(--space-5);
+  overflow: hidden; /* скругление режет собственную шапку карточки */
   /* Две карточки + отступы сверху, между ними и снизу должны уместиться в экран */
   height: calc(
     (100dvh - var(--header-height) - var(--space-4) * 2 - var(--space-8)) / 2
@@ -27,9 +27,47 @@
   margin-top: var(--space-4);
 }
 
-/* Внутри карточки ссылка прижата к краю и не тянет лишний отступ */
-.club-card .page__back {
-  margin-bottom: var(--space-1);
+/* Своя шапка карточки — как у боковой панели */
+.card-header {
+  display: flex;
+  align-items: center;
+  flex: none;
+  height: 3rem;
+  padding: 0 var(--space-4);
+  background: var(--accent);
+  color: var(--text-on-accent);
+}
+
+/* Возврат на синем фоне: белый, без подчёркивания */
+.card-header__back {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.125rem;
+  margin-left: calc(var(--space-2) * -1);
+  padding: var(--space-2);
+  border-radius: var(--radius-control);
+  color: var(--text-on-accent);
+  font-size: 0.9375rem;
+  font-weight: 500;
+  letter-spacing: var(--tracking-caption);
+  transition:
+    background-color var(--duration-fast) var(--ease-out),
+    transform var(--duration-press) var(--ease-out);
+}
+
+.card-header__back:hover {
+  background: rgba(255, 255, 255, 0.18);
+  text-decoration: none;
+}
+
+/* Отклик наступает на нажатии, а не на отпускании */
+.card-header__back:active {
+  transform: scale(0.97);
+}
+
+.card-header__back svg {
+  width: 1.125rem;
+  height: 1.125rem;
 }
 
 /* Карточка подтянута к шапке, но не впритык — остаётся воздух */
@@ -89,13 +127,13 @@
   }
 }
 
-/* Верхняя карточка делится надвое: слева фото, справа — кто это */
+/* Тело карточки делится надвое: слева фото, справа — кто это */
 .club-hero {
   display: flex;
   gap: var(--space-5);
   flex: 1;
   min-height: 0;
-  margin-top: var(--space-3);
+  padding: var(--space-5);
 }
 
 /* Квадрат — та же пропорция, что в карточке списка */
@@ -124,9 +162,12 @@
   color: var(--accent);
 }
 
+/* Разделитель отделяет фото от сведений */
 .club-hero__info {
   min-width: 0;
-  padding-top: var(--space-1);
+  flex: 1;
+  padding-left: var(--space-5);
+  border-left: 1px solid var(--separator);
 }
 
 /* Цвет несёт точка, текст остаётся читаемым */
@@ -167,5 +208,10 @@
   .club-hero__photo {
     width: 10rem;
     height: auto;
+  }
+
+  .club-hero__info {
+    padding-left: 0;
+    border-left: none;
   }
 }

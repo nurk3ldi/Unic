@@ -45,11 +45,13 @@ export default function ClubPage() {
 
           {/* Возврат, название и сведения о клубе — одна карточка */}
           <div className="club-card">
-            {/* Возврат назван разделом, а не «Назад»: так видно, куда именно ведёт */}
-            <Link className="page__back" to="/clubs" viewTransition>
-              <IoChevronBack aria-hidden="true" />
-              Клубы
-            </Link>
+            <div className="card-header">
+              {/* Возврат назван разделом, а не «Назад»: так видно, куда именно ведёт */}
+              <Link className="card-header__back" to="/clubs" viewTransition>
+                <IoChevronBack aria-hidden="true" />
+                Клубы
+              </Link>
+            </div>
 
             {club && (
               <div className="club-hero">
