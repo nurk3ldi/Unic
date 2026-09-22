@@ -6,26 +6,22 @@
   align-items: start;
 }
 
-/* Возврат и название живут в одной карточке — шапка страницы */
-.club-head {
-  padding: var(--space-3) var(--space-5) var(--space-4);
+/* Возврат, название и сведения — одна карточка.
+   Верхний отступ такой же, как у боковой: обе висят на --space-4 от шапки */
+.club-card {
+  display: flex;
+  flex-direction: column;
+  margin-top: calc(var(--space-4) - var(--space-8));
+  padding: var(--space-3) var(--space-5) var(--space-5);
+  min-height: calc((100dvh - var(--header-height)) / 2);
   background: var(--surface);
   border: 1px solid var(--separator);
   border-radius: var(--radius-widget);
 }
 
 /* Внутри карточки ссылка прижата к краю и не тянет лишний отступ */
-.club-head .page__back {
+.club-card .page__back {
   margin-bottom: var(--space-1);
-}
-
-/* Карточка сведений: половина экрана по высоте */
-.club-page__card {
-  height: calc((100dvh - var(--header-height)) / 2);
-  margin-top: var(--space-5);
-  background: var(--surface);
-  border: 1px solid var(--separator);
-  border-radius: var(--radius-widget);
 }
 
 /* Карточка подтянута к шапке, но не впритык — остаётся воздух */
