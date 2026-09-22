@@ -49,6 +49,9 @@ export default function ClubPage() {
           )}
 
           {club && <h1 className="page__title">{club.name}</h1>}
+
+          {/* Карточка сведений о клубе: наполним на следующем шаге */}
+          <div className="club-page__card" />
         </div>
 
         <aside className="club-page__side">
