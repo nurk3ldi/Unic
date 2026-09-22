@@ -11,17 +11,23 @@
   align-items: start;
 }
 
-/* Верхний ряд: правая карточка — квадрат (ширина равна высоте),
-   вся оставшаяся ширина достаётся левой */
-.club-top {
+/* Два ряда по две карточки: одна — квадрат (ширина равна высоте ряда),
+   второй достаётся вся оставшаяся ширина */
+.club-top,
+.club-bottom {
   display: grid;
-  grid-template-columns: 1fr var(--card-height);
   gap: var(--space-4);
+}
+
+/* Сведения о клубе широкие, квадрат справа */
+.club-top {
+  grid-template-columns: 1fr var(--card-height);
   margin-top: calc(var(--space-4) - var(--space-8));
 }
 
-/* Нижняя карточка идёт обычным шагом */
-.club-top + .club-card {
+/* Внизу квадрат слева — ряды не повторяют друг друга */
+.club-bottom {
+  grid-template-columns: var(--card-height) 1fr;
   margin-top: var(--space-4);
 }
 
@@ -46,7 +52,9 @@
 /* В верхнем ряду отступ держит сам ряд — обе карточки стоят вровень.
    Сброс идёт после правила выше: специфичность у них одинаковая, решает порядок */
 .club-top .club-card,
-.club-top .club-card + .club-card {
+.club-top .club-card + .club-card,
+.club-bottom .club-card,
+.club-bottom .club-card + .club-card {
   margin-top: 0;
 }
 
@@ -142,7 +150,8 @@
     grid-template-columns: 1fr;
   }
 
-  .club-top {
+  .club-top,
+  .club-bottom {
     grid-template-columns: 1fr;
   }
 
