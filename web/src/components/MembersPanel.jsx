@@ -4,6 +4,7 @@ import {
   IoCheckmark,
   IoClose,
   IoEllipsisHorizontal,
+  IoPersonRemoveOutline,
   IoSearchOutline,
   IoSwapHorizontalOutline,
 } from 'react-icons/io5';
@@ -17,14 +18,13 @@ function shortName(fullName) {
 
 const initial = (fullName) => fullName.trim()[0].toUpperCase();
 
-/** Управление участниками клуба. Руководитель всегда первый в списке. */
+/** Управление участниками клуба. Руководитель вынесен наверх отдельным блоком. */
 export default function MembersPanel({ members = [], requests = [] }) {
   const [search, setSearch] = useState('');
-  const [leadMenu, setLeadMenu] = useState(false);
+  const [openMenu, setOpenMenu] = useState(null); // id участника либо 'lead'
 
   const lead = members.find((member) => member.role === 'lead') ?? null;
 
-  // Руководитель вынесен отдельным блоком, поэтому в списке его нет
   const visible = useMemo(() => {
     const query = search.trim().toLowerCase();
     const rest = members.filter((member) => member.role !== 'lead');
@@ -33,9 +33,9 @@ export default function MembersPanel({ members = [], requests = [] }) {
 
   // Меню закрывается кликом вне и клавишей Esc
   useEffect(() => {
-    if (!leadMenu) return undefined;
+    if (openMenu === null) return undefined;
 
-    const close = () => setLeadMenu(false);
+    const close = () => setOpenMenu(null);
     const onKey = (event) => event.key === 'Escape' && close();
 
     document.addEventListener('click', close);
@@ -44,24 +44,32 @@ export default function MembersPanel({ members = [], requests = [] }) {
       document.removeEventListener('click', close);
       document.removeEventListener('keydown', onKey);
     };
-  }, [leadMenu]);
+  }, [openMenu]);
+
+  const toggleMenu = (key) => (event) => {
+    event.stopPropagation(); // иначе тот же клик сразу закроет меню
+    setOpenMenu((current) => (current === key ? null : key));
+  };
 
   return (
     <>
       <div className="side-search">
-        <IoSearchOutline aria-hidden="true" />
-        <input
-          className="side-search__input"
-          type="search"
-          placeholder="Поиск"
-          value={search}
-          onChange={(event) => setSearch(event.target.value)}
-        />
+        <span className="side-search__field">
+          <IoSearchOutline aria-hidden="true" />
+          <input
+            className="side-search__input"
+            type="search"
+            placeholder="Поиск"
+            aria-label="Поиск участников"
+            value={search}
+            onChange={(event) => setSearch(event.target.value)}
+          />
+        </span>
       </div>
 
       {lead && (
         <div className="lead-block">
-          <h3 className="side-section__title">Руководитель</h3>
+          <h3 className="side-title">Руководитель</h3>
 
           <div className="lead">
             <span className="lead__avatar" aria-hidden="true">
@@ -70,34 +78,31 @@ export default function MembersPanel({ members = [], requests = [] }) {
             <span className="lead__name">{shortName(lead.name)}</span>
 
             <button
-              className="lead__more"
+              className="icon-button icon-button--accent"
               type="button"
-              aria-expanded={leadMenu}
-              title="Действия"
-              onClick={(event) => {
-                event.stopPropagation(); // иначе тот же клик сразу закроет меню
-                setLeadMenu((open) => !open);
-              }}
+              aria-expanded={openMenu === 'lead'}
+              aria-label={`Действия: ${shortName(lead.name)}`}
+              onClick={toggleMenu('lead')}
             >
               <IoEllipsisHorizontal aria-hidden="true" />
             </button>
-
-            {leadMenu && (
-              <div className="lead__menu" role="menu">
-                <button className="lead__menu-item" type="button" role="menuitem">
-                  <IoSwapHorizontalOutline aria-hidden="true" />
-                  Изменить руководителя
-                </button>
-              </div>
-            )}
           </div>
+
+          {openMenu === 'lead' && (
+            <div className="row-menu" role="menu">
+              <button className="row-menu__item" type="button" role="menuitem">
+                <IoSwapHorizontalOutline aria-hidden="true" />
+                Изменить руководителя
+              </button>
+            </div>
+          )}
         </div>
       )}
 
       <div className="side-body">
         {requests.length > 0 && (
           <section className="side-section">
-            <h3 className="side-section__title">Заявки · {requests.length}</h3>
+            <h3 className="side-title">Заявки · {requests.length}</h3>
 
             <ul className="members">
               {requests.map((person) => (
@@ -107,11 +112,19 @@ export default function MembersPanel({ members = [], requests = [] }) {
                   </span>
                   <span className="member__name">{shortName(person.name)}</span>
 
-                  {/* Решение по заявке — основная работа роли, прячем в меню нельзя */}
-                  <button className="member__act member__act--yes" type="button" title="Одобрить">
+                  {/* Решение по заявке — основная работа роли, в меню не прячем */}
+                  <button
+                    className="icon-button icon-button--yes"
+                    type="button"
+                    aria-label={`Одобрить заявку: ${shortName(person.name)}`}
+                  >
                     <IoCheckmark aria-hidden="true" />
                   </button>
-                  <button className="member__act member__act--no" type="button" title="Отклонить">
+                  <button
+                    className="icon-button icon-button--no"
+                    type="button"
+                    aria-label={`Отклонить заявку: ${shortName(person.name)}`}
+                  >
                     <IoClose aria-hidden="true" />
                   </button>
                 </li>
@@ -121,7 +134,7 @@ export default function MembersPanel({ members = [], requests = [] }) {
         )}
 
         <section className="side-section">
-          <h3 className="side-section__title">Участники · {visible.length}</h3>
+          <h3 className="side-title">Участники · {visible.length}</h3>
 
           {visible.length === 0 ? (
             <p className="side-empty">Никого не нашли</p>
@@ -134,9 +147,33 @@ export default function MembersPanel({ members = [], requests = [] }) {
                   </span>
                   <span className="member__name">{shortName(person.name)}</span>
 
-                  <button className="member__more" type="button" title="Действия">
+                  <button
+                    className="icon-button"
+                    type="button"
+                    aria-expanded={openMenu === person.id}
+                    aria-label={`Действия: ${shortName(person.name)}`}
+                    onClick={toggleMenu(person.id)}
+                  >
                     <IoEllipsisHorizontal aria-hidden="true" />
                   </button>
+
+                  {/* Меню раскрывается в строке: панель прокручивается, выпадающее обрезалось бы */}
+                  {openMenu === person.id && (
+                    <div className="row-menu row-menu--inline" role="menu">
+                      <button className="row-menu__item" type="button" role="menuitem">
+                        <IoSwapHorizontalOutline aria-hidden="true" />
+                        Сделать руководителем
+                      </button>
+                      <button
+                        className="row-menu__item row-menu__item--danger"
+                        type="button"
+                        role="menuitem"
+                      >
+                        <IoPersonRemoveOutline aria-hidden="true" />
+                        Исключить из клуба
+                      </button>
+                    </div>
+                  )}
                 </li>
               ))}
             </ul>
