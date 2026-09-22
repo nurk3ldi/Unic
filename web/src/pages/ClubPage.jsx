@@ -2,10 +2,24 @@ import { useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { IoChevronBack } from 'react-icons/io5';
 import { api } from '../api.js';
+import MembersPanel from '../components/MembersPanel.jsx';
 import './Page.css';
 import './ClubPage.css';
 
-/** Страница клуба. Пока только название — управление добавим следующим шагом. */
+// Временные данные: заменим на API, когда появится таблица club_members
+const DEMO_MEMBERS = [
+  { id: 1, name: 'Ким Тимур Андреевич', role: 'member' },
+  { id: 2, name: 'Нурланова Айгерим Ержанқызы', role: 'lead' },
+  { id: 3, name: 'Бекова Марат Сериковна', role: 'member' },
+  { id: 4, name: 'Жумабаева Асель Бекқызы', role: 'member' },
+];
+
+const DEMO_REQUESTS = [
+  { id: 11, name: 'Сапаров Ерлан Маратович' },
+  { id: 12, name: 'Абенова Дана Сериковна' },
+];
+
+/** Страница клуба. Слева — сведения, справа — управление участниками. */
 export default function ClubPage() {
   const { id } = useParams();
   const [club, setClub] = useState(null);
@@ -42,8 +56,7 @@ export default function ClubPage() {
             <h2 className="side-header__title">Управление участниками</h2>
           </div>
 
-          {/* Список участников появится здесь */}
-          <div className="side-body" />
+          <MembersPanel members={DEMO_MEMBERS} requests={DEMO_REQUESTS} />
         </aside>
       </div>
     </main>

@@ -1,0 +1,171 @@
+/* Поиск не уезжает вместе со списком */
+.side-search {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  flex: none;
+  padding: var(--space-3) var(--space-4);
+  border-bottom: 1px solid var(--separator);
+  color: var(--text-tertiary);
+}
+
+.side-search svg {
+  width: 1.0625rem;
+  height: 1.0625rem;
+  flex: none;
+}
+
+.side-search__input {
+  width: 100%;
+  border: none;
+  background: none;
+  font-size: 0.9375rem;
+  color: var(--text);
+}
+
+.side-search__input:focus,
+.side-search__input:focus-visible {
+  outline: none;
+  box-shadow: none;
+}
+
+.side-search__input::placeholder {
+  color: var(--text-tertiary);
+}
+
+/* Прокручивается только список */
+.side-body {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: var(--space-3) 0;
+}
+
+.side-section + .side-section {
+  margin-top: var(--space-4);
+}
+
+.side-section__title {
+  padding: 0 var(--space-4) var(--space-2);
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text-tertiary);
+}
+
+.members {
+  list-style: none;
+}
+
+/* Строка не ниже 44px — минимальная зона нажатия Apple */
+.member {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  min-height: 2.75rem;
+  padding: var(--space-2) var(--space-4);
+}
+
+.member__avatar {
+  display: grid;
+  place-items: center;
+  width: 1.75rem;
+  height: 1.75rem;
+  flex: none;
+  border-radius: var(--radius-pill);
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-size: 0.8125rem;
+  font-weight: 600;
+}
+
+.member__name {
+  flex: 1;
+  min-width: 0;
+  font-size: 0.9375rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.member__role {
+  flex: none;
+  font-size: 0.75rem;
+  letter-spacing: var(--tracking-caption);
+  color: var(--text-secondary);
+}
+
+/* Решения по заявке — видимые кнопки, а не скрытое меню */
+.member__act,
+.member__more {
+  display: grid;
+  place-items: center;
+  width: 1.75rem;
+  height: 1.75rem;
+  flex: none;
+  border-radius: var(--radius-pill);
+  font-size: 1rem;
+  color: var(--text-secondary);
+  transition:
+    background-color var(--duration-fast) var(--ease-out),
+    color var(--duration-fast) var(--ease-out),
+    transform var(--duration-press) var(--ease-out);
+}
+
+.member__act--yes:hover {
+  background: rgba(52, 199, 89, 0.14);
+  color: #1f7a3d;
+}
+
+.member__act--no:hover {
+  background: var(--red-soft);
+  color: var(--red);
+}
+
+.member__more:hover {
+  background: var(--fill);
+  color: var(--text);
+}
+
+/* Отклик наступает на нажатии, а не на отпускании */
+.member__act:active,
+.member__more:active {
+  transform: scale(0.92);
+}
+
+.side-empty {
+  padding: var(--space-2) var(--space-4);
+  font-size: 0.875rem;
+  color: var(--text-tertiary);
+}
+
+/* Главное действие закреплено внизу карточки */
+.side-add {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  flex: none;
+  min-height: 2.75rem;
+  border-top: 1px solid var(--separator);
+  color: var(--accent);
+  font-size: 0.9375rem;
+  font-weight: 500;
+  transition:
+    background-color var(--duration-fast) var(--ease-out),
+    transform var(--duration-press) var(--ease-out);
+}
+
+.side-add:hover {
+  background: var(--accent-soft);
+}
+
+.side-add:active {
+  transform: scale(0.98);
+}
+
+.side-add svg {
+  width: 1.125rem;
+  height: 1.125rem;
+}
