@@ -35,6 +35,7 @@ export default function Clubs() {
         {clubs.map((club) => (
           <ClubCard
             key={club.id}
+            id={club.id}
             name={club.name}
             members={club.members}
             status={club.status}

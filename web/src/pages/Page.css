@@ -30,3 +30,43 @@
   line-height: 1.45;
   color: var(--text-secondary);
 }
+
+/* Возврат к разделу: шеврон вплотную к названию, как в Apple-навигации */
+.page__back {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.125rem;
+  margin-bottom: var(--space-5);
+  margin-left: calc(var(--space-2) * -1); /* шеврон визуально съедает отступ */
+  padding: var(--space-2);
+  border-radius: var(--radius-control);
+  font-size: 0.9375rem;
+  font-weight: 500;
+  letter-spacing: var(--tracking-caption);
+  transition:
+    background-color var(--duration-fast) var(--ease-out),
+    transform var(--duration-press) var(--ease-out);
+}
+
+.page__back:hover {
+  background: var(--fill);
+  text-decoration: none;
+}
+
+/* Отклик наступает на нажатии, а не на отпускании */
+.page__back:active {
+  transform: scale(0.97);
+}
+
+.page__back svg {
+  width: 1.125rem;
+  height: 1.125rem;
+}
+
+.page__error {
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius-control);
+  background: var(--red-soft);
+  color: #c21c12;
+  font-size: 0.875rem;
+}

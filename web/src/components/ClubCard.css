@@ -1,4 +1,6 @@
 .club {
+  color: inherit;
+  text-decoration: none;
   display: flex;
   flex-direction: column;
   background: var(--surface);
@@ -10,6 +12,7 @@
 /* Карточка чуть подаётся навстречу курсору */
 .club:hover {
   transform: scale(1.02);
+  text-decoration: none;
 }
 
 /* Шапка карточки — как у виджетов: своя полоса поверх содержимого */

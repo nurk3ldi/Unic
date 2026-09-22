@@ -22,5 +22,6 @@ export const api = {
   reset: (payload) => request('/auth/reset', { method: 'POST', body: payload }),
 
   clubs: () => request('/clubs'),
+  club: (id) => request(`/clubs/${id}`),
   createClub: (payload) => request('/clubs', { method: 'POST', body: payload }),
 };

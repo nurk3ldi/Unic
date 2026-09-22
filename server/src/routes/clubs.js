@@ -13,9 +13,23 @@ const publicClub = (row) => ({
   createdAt: row.created_at,
 });
 
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
 router.get('/', requireAuth, async (_req, res) => {
   const { rows } = await query('select * from clubs order by created_at');
   res.json({ clubs: rows.map(publicClub) });
+});
+
+router.get('/:id', requireAuth, async (req, res) => {
+  // Без проверки Postgres ответит ошибкой синтаксиса на «кривом» id
+  if (!UUID_RE.test(req.params.id)) {
+    return res.status(404).json({ error: 'Клуб не найден' });
+  }
+
+  const { rows } = await query('select * from clubs where id = $1', [req.params.id]);
+  if (!rows[0]) return res.status(404).json({ error: 'Клуб не найден' });
+
+  res.json({ club: publicClub(rows[0]) });
 });
 
 // Создавать клубы может университет; студенческие заявки добавим отдельно

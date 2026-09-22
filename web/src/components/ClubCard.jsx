@@ -1,3 +1,4 @@
+import { Link } from 'react-router-dom';
 import './ClubCard.css';
 
 const STATUS_LABELS = {
@@ -17,9 +18,9 @@ function membersLabel(count) {
 }
 
 /** Карточка клуба. Шапка по образцу виджетов: название, строка контекста, действие. */
-export default function ClubCard({ name, members = 0, status = 'active', photo }) {
+export default function ClubCard({ id, name, members = 0, status = 'active', photo }) {
   return (
-    <article className="club">
+    <Link className="club" to={`/clubs/${id}`} viewTransition>
       <div className="club__header">
         <div className="club__title">
           <h2 className="club__name">{name}</h2>
@@ -32,6 +33,6 @@ export default function ClubCard({ name, members = 0, status = 'active', photo }
       <div className="club__body">
         {photo && <img className="club__photo" src={photo} alt="" />}
       </div>
-    </article>
+    </Link>
   );
 }
