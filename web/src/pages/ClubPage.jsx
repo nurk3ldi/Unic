@@ -52,6 +52,9 @@ export default function ClubPage() {
 
             {club && <h1 className="page__title">{club.name}</h1>}
           </div>
+
+          {/* Вторая карточка: наполним на следующем шаге */}
+          <div className="club-card" />
         </div>
 
         <aside className="club-page__side">
