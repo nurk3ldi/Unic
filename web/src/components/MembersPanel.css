@@ -33,6 +33,131 @@
   color: var(--text-tertiary);
 }
 
+/* Руководитель стоит над списком и не уезжает при прокрутке */
+.lead-block {
+  flex: none;
+  padding: var(--space-3) 0 var(--space-2);
+  border-bottom: 1px solid var(--separator);
+}
+
+/* Выделен заливкой — это не рядовая строка списка */
+.lead {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  margin: 0 var(--space-3);
+  padding: var(--space-2) var(--space-3);
+  min-height: 2.75rem;
+  border-radius: var(--radius-control);
+  background: var(--accent-soft);
+}
+
+.lead__avatar {
+  display: grid;
+  place-items: center;
+  width: 2rem;
+  height: 2rem;
+  flex: none;
+  border-radius: var(--radius-pill);
+  background: var(--accent);
+  color: var(--text-on-accent);
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
+.lead__name {
+  flex: 1;
+  min-width: 0;
+  font-size: 0.9375rem;
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.lead__more {
+  display: grid;
+  place-items: center;
+  width: 1.75rem;
+  height: 1.75rem;
+  flex: none;
+  border-radius: var(--radius-pill);
+  color: var(--accent);
+  font-size: 1rem;
+  transition:
+    background-color var(--duration-fast) var(--ease-out),
+    transform var(--duration-press) var(--ease-out);
+}
+
+.lead__more:hover {
+  background: rgba(0, 99, 253, 0.16);
+}
+
+/* Отклик наступает на нажатии, а не на отпускании */
+.lead__more:active {
+  transform: scale(0.92);
+}
+
+/* Меню растёт из кнопки, а не из центра панели */
+.lead__menu {
+  position: absolute;
+  top: calc(100% + var(--space-1));
+  right: 0;
+  z-index: 1;
+  width: max-content;
+  max-width: 100%;
+  padding: var(--space-2);
+  background: var(--surface);
+  border: 1px solid var(--separator);
+  border-radius: var(--radius-card);
+  box-shadow: var(--shadow-card);
+  transform-origin: top right;
+  animation: lead-menu-in var(--duration-fast) var(--ease-out) both;
+}
+
+.lead__menu-item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  width: 100%;
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-control);
+  font-size: 0.9375rem;
+  color: var(--text);
+  text-align: left;
+  white-space: nowrap;
+  transition: background-color var(--duration-fast) var(--ease-out);
+}
+
+.lead__menu-item:hover {
+  background: var(--fill);
+}
+
+.lead__menu-item svg {
+  width: 1.125rem;
+  height: 1.125rem;
+  flex: none;
+  color: var(--text-secondary);
+}
+
+@keyframes lead-menu-in {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .lead__menu {
+    animation: none;
+  }
+}
+
 /* Прокручивается только список */
 .side-body {
   flex: 1;

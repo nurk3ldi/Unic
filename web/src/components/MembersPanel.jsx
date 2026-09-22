@@ -1,10 +1,11 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import {
   IoAdd,
   IoCheckmark,
   IoClose,
   IoEllipsisHorizontal,
   IoSearchOutline,
+  IoSwapHorizontalOutline,
 } from 'react-icons/io5';
 import './MembersPanel.css';
 
@@ -19,16 +20,31 @@ const initial = (fullName) => fullName.trim()[0].toUpperCase();
 /** Управление участниками клуба. Руководитель всегда первый в списке. */
 export default function MembersPanel({ members = [], requests = [] }) {
   const [search, setSearch] = useState('');
+  const [leadMenu, setLeadMenu] = useState(false);
 
+  const lead = members.find((member) => member.role === 'lead') ?? null;
+
+  // Руководитель вынесен отдельным блоком, поэтому в списке его нет
   const visible = useMemo(() => {
     const query = search.trim().toLowerCase();
-    const found = query
-      ? members.filter((member) => member.name.toLowerCase().includes(query))
-      : members;
-
-    // Руководителя держим наверху независимо от порядка данных
-    return [...found].sort((a, b) => Number(b.role === 'lead') - Number(a.role === 'lead'));
+    const rest = members.filter((member) => member.role !== 'lead');
+    return query ? rest.filter((member) => member.name.toLowerCase().includes(query)) : rest;
   }, [members, search]);
+
+  // Меню закрывается кликом вне и клавишей Esc
+  useEffect(() => {
+    if (!leadMenu) return undefined;
+
+    const close = () => setLeadMenu(false);
+    const onKey = (event) => event.key === 'Escape' && close();
+
+    document.addEventListener('click', close);
+    document.addEventListener('keydown', onKey);
+    return () => {
+      document.removeEventListener('click', close);
+      document.removeEventListener('keydown', onKey);
+    };
+  }, [leadMenu]);
 
   return (
     <>
@@ -42,6 +58,41 @@ export default function MembersPanel({ members = [], requests = [] }) {
           onChange={(event) => setSearch(event.target.value)}
         />
       </div>
+
+      {lead && (
+        <div className="lead-block">
+          <h3 className="side-section__title">Руководитель</h3>
+
+          <div className="lead">
+            <span className="lead__avatar" aria-hidden="true">
+              {initial(lead.name)}
+            </span>
+            <span className="lead__name">{shortName(lead.name)}</span>
+
+            <button
+              className="lead__more"
+              type="button"
+              aria-expanded={leadMenu}
+              title="Действия"
+              onClick={(event) => {
+                event.stopPropagation(); // иначе тот же клик сразу закроет меню
+                setLeadMenu((open) => !open);
+              }}
+            >
+              <IoEllipsisHorizontal aria-hidden="true" />
+            </button>
+
+            {leadMenu && (
+              <div className="lead__menu" role="menu">
+                <button className="lead__menu-item" type="button" role="menuitem">
+                  <IoSwapHorizontalOutline aria-hidden="true" />
+                  Изменить руководителя
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
 
       <div className="side-body">
         {requests.length > 0 && (
@@ -70,7 +121,7 @@ export default function MembersPanel({ members = [], requests = [] }) {
         )}
 
         <section className="side-section">
-          <h3 className="side-section__title">Участники · {members.length}</h3>
+          <h3 className="side-section__title">Участники · {visible.length}</h3>
 
           {visible.length === 0 ? (
             <p className="side-empty">Никого не нашли</p>
@@ -83,13 +134,9 @@ export default function MembersPanel({ members = [], requests = [] }) {
                   </span>
                   <span className="member__name">{shortName(person.name)}</span>
 
-                  {person.role === 'lead' ? (
-                    <span className="member__role">Руководитель</span>
-                  ) : (
-                    <button className="member__more" type="button" title="Действия">
-                      <IoEllipsisHorizontal aria-hidden="true" />
-                    </button>
-                  )}
+                  <button className="member__more" type="button" title="Действия">
+                    <IoEllipsisHorizontal aria-hidden="true" />
+                  </button>
                 </li>
               ))}
             </ul>
