@@ -13,7 +13,10 @@
   flex-direction: column;
   margin-top: calc(var(--space-4) - var(--space-8));
   padding: var(--space-3) var(--space-5) var(--space-5);
-  min-height: calc((100dvh - var(--header-height)) / 2);
+  /* Две карточки + отступы сверху, между ними и снизу должны уместиться в экран */
+  height: calc(
+    (100dvh - var(--header-height) - var(--space-4) * 2 - var(--space-8)) / 2
+  );
   background: var(--surface);
   border: 1px solid var(--separator);
   border-radius: var(--radius-widget);
@@ -34,7 +37,8 @@
   margin-top: calc(var(--space-4) - var(--space-8));
   position: sticky;
   top: calc(var(--header-height) + var(--space-4));
-  height: calc(100dvh - var(--header-height) - var(--space-4));
+  /* Нижний отступ страницы тоже вычитаем — иначе колонка выходит за экран */
+  height: calc(100dvh - var(--header-height) - var(--space-4) - var(--space-8));
   display: flex;
   flex-direction: column;
   background: var(--surface);
