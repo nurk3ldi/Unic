@@ -37,8 +37,14 @@ export default function ClubPage() {
           {club && <h1 className="page__title">{club.name}</h1>}
         </div>
 
-        {/* Боковая карточка: наполним на следующем шаге */}
-        <aside className="club-page__side" />
+        <aside className="club-page__side">
+          <div className="side-header">
+            <h2 className="side-header__title">Управление участниками</h2>
+          </div>
+
+          {/* Список участников появится здесь */}
+          <div className="side-body" />
+        </aside>
       </div>
     </main>
   );

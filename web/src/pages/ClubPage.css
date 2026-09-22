@@ -12,9 +12,40 @@
   position: sticky;
   top: calc(var(--header-height) + var(--space-4));
   height: calc(100dvh - var(--header-height) - var(--space-4));
+  display: flex;
+  flex-direction: column;
   background: var(--surface);
   border: 1px solid var(--separator);
   border-radius: var(--radius-widget);
+  overflow: hidden; /* скругление режет и шапку карточки */
+}
+
+/* Своя шапка — как у клубной карточки, только мельче */
+.side-header {
+  display: flex;
+  align-items: center;
+  flex: none;
+  height: 3rem;
+  padding: 0 var(--space-4);
+  background: var(--accent);
+  color: var(--text-on-accent);
+}
+
+.side-header__title {
+  font-size: 0.9375rem;
+  font-weight: 600;
+  letter-spacing: var(--tracking-caption);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Список будет длинным — прокручиваем его внутри карточки */
+.side-body {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: var(--space-4);
 }
 
 /* На узком экране колонка уходит вниз и перестаёт тянуться на всю высоту */
