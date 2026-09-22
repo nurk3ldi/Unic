@@ -6,6 +6,19 @@
   align-items: start;
 }
 
+/* Возврат и название живут в одной карточке — шапка страницы */
+.club-head {
+  padding: var(--space-3) var(--space-5) var(--space-4);
+  background: var(--surface);
+  border: 1px solid var(--separator);
+  border-radius: var(--radius-widget);
+}
+
+/* Внутри карточки ссылка прижата к краю и не тянет лишний отступ */
+.club-head .page__back {
+  margin-bottom: var(--space-1);
+}
+
 /* Карточка сведений: половина экрана по высоте */
 .club-page__card {
   height: calc((100dvh - var(--header-height)) / 2);

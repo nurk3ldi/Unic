@@ -36,19 +36,21 @@ export default function ClubPage() {
     <main className="page">
       <div className="club-page">
         <div className="club-page__main">
-          {/* Возврат назван разделом, а не «Назад»: так видно, куда именно ведёт */}
-          <Link className="page__back" to="/clubs" viewTransition>
-            <IoChevronBack aria-hidden="true" />
-            Клубы
-          </Link>
+          <div className="club-head">
+            {/* Возврат назван разделом, а не «Назад»: так видно, куда именно ведёт */}
+            <Link className="page__back" to="/clubs" viewTransition>
+              <IoChevronBack aria-hidden="true" />
+              Клубы
+            </Link>
+
+            {club && <h1 className="page__title">{club.name}</h1>}
+          </div>
 
           {error && (
             <p className="page__error" role="alert">
               {error}
             </p>
           )}
-
-          {club && <h1 className="page__title">{club.name}</h1>}
 
           {/* Карточка сведений о клубе: наполним на следующем шаге */}
           <div className="club-page__card" />
