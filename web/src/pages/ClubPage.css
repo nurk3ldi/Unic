@@ -1,16 +1,21 @@
 /* Две колонки: содержимое и боковая карточка в 30% ширины */
 .club-page {
+  /* Две карточки + отступы сверху, между ними и снизу должны уместиться в экран.
+     Высота живёт в переменной: правая карточка верхнего ряда берёт её же как ширину */
+  --card-height: calc(
+    (100dvh - var(--header-height) - var(--space-4) * 2 - var(--space-8)) / 2
+  );
   display: grid;
   grid-template-columns: 1fr 30%;
   gap: var(--space-6);
   align-items: start;
 }
 
-/* Верхний ряд: сведения о клубе и вторая карточка делят ширину.
-   Левой нужно больше: в ней квадратное фото плюс название */
+/* Верхний ряд: правая карточка — квадрат (ширина равна высоте),
+   вся оставшаяся ширина достаётся левой */
 .club-top {
   display: grid;
-  grid-template-columns: 1.6fr 1fr;
+  grid-template-columns: 1fr var(--card-height);
   gap: var(--space-4);
   margin-top: calc(var(--space-4) - var(--space-8));
 }
@@ -27,10 +32,7 @@
   flex-direction: column;
   margin-top: calc(var(--space-4) - var(--space-8));
   overflow: hidden; /* скругление режет собственную шапку карточки */
-  /* Две карточки + отступы сверху, между ними и снизу должны уместиться в экран */
-  height: calc(
-    (100dvh - var(--header-height) - var(--space-4) * 2 - var(--space-8)) / 2
-  );
+  height: var(--card-height);
   background: var(--surface);
   border: 1px solid var(--separator);
   border-radius: var(--radius-widget);
