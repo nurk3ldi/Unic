@@ -87,8 +87,13 @@ export default function ClubPage() {
 
           {/* Нижний ряд: слева квадрат, справа — остаток ширины */}
           <div className="club-bottom">
-            <div className="club-card" />
-            <div className="club-card" />
+            <div className="club-card">
+              <div className="card-header" />
+            </div>
+
+            <div className="club-card">
+              <div className="card-header" />
+            </div>
           </div>
         </div>
 
