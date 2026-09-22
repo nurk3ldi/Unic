@@ -6,7 +6,26 @@
   align-items: start;
 }
 
-/* Возврат, название и сведения — одна карточка.
+/* Верхний ряд: сведения о клубе и вторая карточка делят ширину.
+   Левой нужно больше: в ней квадратное фото плюс название */
+.club-top {
+  display: grid;
+  grid-template-columns: 1.6fr 1fr;
+  gap: var(--space-4);
+  margin-top: calc(var(--space-4) - var(--space-8));
+}
+
+/* Отступ взят самим рядом — карточки внутри него стоят вровень */
+.club-top .club-card {
+  margin-top: 0;
+}
+
+/* Нижняя карточка идёт обычным шагом */
+.club-top + .club-card {
+  margin-top: var(--space-4);
+}
+
+/* Карточка содержимого.
    Верхний отступ такой же, как у боковой: обе висят на --space-4 от шапки */
 .club-card {
   display: flex;
@@ -119,6 +138,10 @@
     grid-template-columns: 1fr;
   }
 
+  .club-top {
+    grid-template-columns: 1fr;
+  }
+
   .club-page__side {
     margin-top: 0;
     position: static;
@@ -142,6 +165,7 @@
   place-items: center;
   height: 100%;
   aspect-ratio: 1;
+  max-width: 50%; /* карточка стала уже — фото не выталкивает текст */
   flex: none;
   overflow: hidden;
   border-radius: var(--radius-widget);

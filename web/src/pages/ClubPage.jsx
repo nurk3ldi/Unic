@@ -43,41 +43,47 @@ export default function ClubPage() {
             </p>
           )}
 
-          {/* Возврат, название и сведения о клубе — одна карточка */}
-          <div className="club-card">
-            <div className="card-header">
+          {/* Верхний ряд делится по ширине на две отдельные карточки */}
+          <div className="club-top">
+            {/* Возврат, название, фото и сведения о клубе */}
+            <div className="club-card">
               {/* Возврат назван разделом, а не «Назад»: так видно, куда именно ведёт */}
-              <Link className="card-header__back" to="/clubs" viewTransition>
-                <IoChevronBack aria-hidden="true" />
-                Клубы
-              </Link>
+              <div className="card-header">
+                <Link className="card-header__back" to="/clubs" viewTransition>
+                  <IoChevronBack aria-hidden="true" />
+                  Клубы
+                </Link>
+              </div>
+
+              {club && (
+                <div className="club-hero">
+                  <div className="club-hero__photo">
+                    {club.photo ? (
+                      <img className="club-hero__image" src={club.photo} alt="" />
+                    ) : (
+                      <span className="club-hero__letter" aria-hidden="true">
+                        {club.name.trim()[0].toUpperCase()}
+                      </span>
+                    )}
+                  </div>
+
+                  <div className="club-hero__info">
+                    <h1 className="page__title">{club.name}</h1>
+
+                    <p className={`club-hero__status club-hero__status--${club.status}`}>
+                      <span className="club-hero__dot" aria-hidden="true" />
+                      {STATUS_LABELS[club.status] ?? club.status} · {membersLabel(club.members)}
+                    </p>
+                  </div>
+                </div>
+              )}
             </div>
 
-            {club && (
-              <div className="club-hero">
-                <div className="club-hero__photo">
-                  {club.photo ? (
-                    <img className="club-hero__image" src={club.photo} alt="" />
-                  ) : (
-                    <span className="club-hero__letter" aria-hidden="true">
-                      {club.name.trim()[0].toUpperCase()}
-                    </span>
-                  )}
-                </div>
-
-                <div className="club-hero__info">
-                  <h1 className="page__title">{club.name}</h1>
-
-                  <p className={`club-hero__status club-hero__status--${club.status}`}>
-                    <span className="club-hero__dot" aria-hidden="true" />
-                    {STATUS_LABELS[club.status] ?? club.status} · {membersLabel(club.members)}
-                  </p>
-                </div>
-              </div>
-            )}
+            {/* Правая карточка верхнего ряда: наполним на следующем шаге */}
+            <div className="club-card" />
           </div>
 
-          {/* Вторая карточка: наполним на следующем шаге */}
+          {/* Нижняя карточка: наполним на следующем шаге */}
           <div className="club-card" />
         </div>
 
