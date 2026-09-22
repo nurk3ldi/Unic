@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { IoChevronBack } from 'react-icons/io5';
 import { api } from '../api.js';
+import { STATUS_LABELS, membersLabel } from '../club.js';
 import MembersPanel from '../components/MembersPanel.jsx';
 import './Page.css';
 import './ClubPage.css';
@@ -50,7 +51,28 @@ export default function ClubPage() {
               Клубы
             </Link>
 
-            {club && <h1 className="page__title">{club.name}</h1>}
+            {club && (
+              <div className="club-hero">
+                <div className="club-hero__photo">
+                  {club.photo ? (
+                    <img className="club-hero__image" src={club.photo} alt="" />
+                  ) : (
+                    <span className="club-hero__letter" aria-hidden="true">
+                      {club.name.trim()[0].toUpperCase()}
+                    </span>
+                  )}
+                </div>
+
+                <div className="club-hero__info">
+                  <h1 className="page__title">{club.name}</h1>
+
+                  <p className={`club-hero__status club-hero__status--${club.status}`}>
+                    <span className="club-hero__dot" aria-hidden="true" />
+                    {STATUS_LABELS[club.status] ?? club.status} · {membersLabel(club.members)}
+                  </p>
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Вторая карточка: наполним на следующем шаге */}
