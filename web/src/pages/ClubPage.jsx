@@ -80,7 +80,9 @@ export default function ClubPage() {
             </div>
 
             {/* Правая карточка верхнего ряда: наполним на следующем шаге */}
-            <div className="club-card" />
+            <div className="club-card">
+              <div className="card-header" />
+            </div>
           </div>
 
           {/* Нижняя карточка: наполним на следующем шаге */}
