@@ -1,0 +1,32 @@
+/* Две колонки: содержимое и боковая карточка в 30% ширины */
+.club-page {
+  display: grid;
+  grid-template-columns: 1fr 30%;
+  gap: var(--space-6);
+  align-items: start;
+}
+
+/* Карточка подтянута к шапке, но не впритык — остаётся воздух */
+.club-page__side {
+  margin-top: calc(var(--space-4) - var(--space-8));
+  position: sticky;
+  top: calc(var(--header-height) + var(--space-4));
+  height: calc(100dvh - var(--header-height) - var(--space-4));
+  background: var(--surface);
+  border: 1px solid var(--separator);
+  border-radius: var(--radius-widget);
+}
+
+/* На узком экране колонка уходит вниз и перестаёт тянуться на всю высоту */
+@media (max-width: 60rem) {
+  .club-page {
+    grid-template-columns: 1fr;
+  }
+
+  .club-page__side {
+    margin-top: 0;
+    position: static;
+    height: auto;
+    min-height: 20rem;
+  }
+}
