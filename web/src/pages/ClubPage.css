@@ -285,13 +285,19 @@
   white-space: nowrap;
   cursor: pointer;
   transition:
-    background-color var(--duration-fast) var(--ease-out),
     opacity var(--duration-fast) var(--ease-out),
     transform var(--duration-press) var(--ease-out);
 }
 
-.card-header__action:hover {
-  background: rgba(255, 255, 255, 0.18);
+/* Подсветки-подложки нет: на синем она читалась как вторая кнопка.
+   Отклик несёт прозрачность, фокус — она же, без кольца-тени (§4.5) */
+.card-header__action:hover,
+.card-header__action:focus-visible {
+  opacity: 0.7;
+}
+
+.card-header__action:focus-visible {
+  box-shadow: none;
 }
 
 /* Отклик наступает на нажатии, а не на отпускании */
