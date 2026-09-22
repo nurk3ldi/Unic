@@ -25,14 +25,19 @@ create table if not exists password_resets (
 
 -- Клубы университета. «Заявка» — это клуб со статусом pending, отдельной таблицы нет.
 create table if not exists clubs (
-  id         uuid primary key default gen_random_uuid(),
-  name       text not null,
-  photo_url  text,
-  status     text not null default 'active'
-             check (status in ('active', 'pending', 'suspended')),
-  lead_id    uuid references users (id) on delete set null,
-  created_by uuid references users (id) on delete set null,
-  created_at timestamptz not null default now()
+  id          uuid primary key default gen_random_uuid(),
+  name        text not null,
+  photo_url   text,
+  description text,
+  status      text not null default 'active'
+              check (status in ('active', 'pending', 'suspended')),
+  lead_id     uuid references users (id) on delete set null,
+  created_by  uuid references users (id) on delete set null,
+  created_at  timestamptz not null default now()
 );
+
+-- Схема применяется поверх существующей базы: create table её не тронет,
+-- поэтому новые столбцы добавляются отдельно
+alter table clubs add column if not exists description text;
 
 create index if not exists clubs_status_idx on clubs (status);

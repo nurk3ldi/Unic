@@ -62,6 +62,9 @@
 .card-header {
   display: flex;
   align-items: center;
+  /* Возврат слева, действие справа; с одним ребёнком ничего не меняется */
+  justify-content: space-between;
+  gap: var(--space-3);
   flex: none;
   height: 3rem;
   padding: 0 var(--space-4);
@@ -202,6 +205,8 @@
 
 /* Разделитель отделяет фото от сведений */
 .club-hero__info {
+  display: flex;
+  flex-direction: column;
   min-width: 0;
   flex: 1;
   padding-left: var(--space-5);
@@ -252,4 +257,140 @@
     padding-left: 0;
     border-left: none;
   }
+}
+
+/* Действие в шапке: белым по синему, зона нажатия 44px */
+.card-header__action {
+  display: inline-flex;
+  align-items: center;
+  min-height: 2.75rem;
+  padding: 0 var(--space-3);
+  border: none;
+  border-radius: var(--radius-control);
+  background: none;
+  color: var(--text-on-accent);
+  font: inherit;
+  font-size: 0.9375rem;
+  letter-spacing: var(--tracking-caption);
+  cursor: pointer;
+  transition:
+    background-color var(--duration-fast) var(--ease-out),
+    opacity var(--duration-fast) var(--ease-out),
+    transform var(--duration-press) var(--ease-out);
+}
+
+.card-header__action:first-child {
+  margin-left: calc(var(--space-3) * -1);
+}
+
+.card-header__action:last-child {
+  margin-right: calc(var(--space-3) * -1);
+}
+
+.card-header__action:hover {
+  background: rgba(255, 255, 255, 0.18);
+}
+
+/* Отклик наступает на нажатии, а не на отпускании */
+.card-header__action:active {
+  transform: scale(0.97);
+}
+
+.card-header__action:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+/* Главное действие весомее по начертанию — приём Apple вместо второй кнопки-заливки */
+.card-header__action--primary {
+  font-weight: 600;
+}
+
+/* Фото в правке — кнопка выбора файла */
+.club-hero__photo--editable {
+  position: relative;
+  padding: 0;
+  border: none;
+  cursor: pointer;
+  transition: transform var(--duration-press) var(--ease-out);
+}
+
+.club-hero__photo--editable:active {
+  transform: scale(0.97);
+}
+
+/* Подсказка лежит поверх снимка — иначе непонятно, что фото меняется */
+.club-hero__change {
+  position: absolute;
+  inset: auto 0 0 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  padding: var(--space-3);
+  background: var(--scrim);
+  color: var(--text-on-accent);
+  font-size: 0.875rem;
+  letter-spacing: var(--tracking-caption);
+}
+
+.club-hero__change svg {
+  width: 1.125rem;
+  height: 1.125rem;
+}
+
+/* Поля правки: подпись внутри, фокус показывает только граница (§4.5) */
+.club-input {
+  width: 100%;
+  padding: var(--space-3) var(--space-4);
+  background: var(--surface);
+  border: 1px solid var(--separator-strong);
+  border-radius: var(--radius-control);
+  font: inherit;
+  color: var(--text);
+  transition: border-color 250ms var(--ease-out);
+}
+
+.club-input::placeholder {
+  color: var(--text-tertiary);
+}
+
+.club-input:focus,
+.club-input:focus-visible {
+  outline: none;
+  border-color: var(--accent);
+}
+
+.club-input--name {
+  font-size: 1.375rem;
+  font-weight: 600;
+  letter-spacing: var(--tracking-title);
+}
+
+/* Описание занимает остаток карточки: тянуть его ручкой некуда */
+.club-input--about {
+  flex: 1;
+  min-height: 0;
+  margin-top: var(--space-3);
+  line-height: 1.47;
+  resize: none;
+}
+
+.club-hero__error {
+  margin-top: var(--space-2);
+  font-size: 0.8125rem;
+  letter-spacing: var(--tracking-caption);
+  color: var(--red);
+}
+
+/* Длинное описание прокручивается внутри карточки, а не растягивает её */
+.club-hero__about {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  margin-top: var(--space-3);
+  font-size: 0.9375rem;
+  line-height: 1.47;
+  color: var(--text-secondary);
+  white-space: pre-line;
 }
