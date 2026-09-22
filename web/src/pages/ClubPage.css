@@ -218,7 +218,9 @@
   display: flex;
   align-items: center;
   gap: var(--space-2);
+  /* Поля держат собственный отступ, и строка состояния встаёт по ним */
   margin-top: var(--space-2);
+  padding: 0 var(--space-3);
   font-size: 0.9375rem;
   color: var(--text-secondary);
 }
@@ -259,6 +261,14 @@
   }
 }
 
+/* Группа действий справа в шапке карточки */
+.card-header__actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  margin-right: calc(var(--space-3) * -1);
+}
+
 /* Действие в шапке: белым по синему, зона нажатия 44px */
 .card-header__action {
   display: inline-flex;
@@ -272,19 +282,12 @@
   font: inherit;
   font-size: 0.9375rem;
   letter-spacing: var(--tracking-caption);
+  white-space: nowrap;
   cursor: pointer;
   transition:
     background-color var(--duration-fast) var(--ease-out),
     opacity var(--duration-fast) var(--ease-out),
     transform var(--duration-press) var(--ease-out);
-}
-
-.card-header__action:first-child {
-  margin-left: calc(var(--space-3) * -1);
-}
-
-.card-header__action:last-child {
-  margin-right: calc(var(--space-3) * -1);
 }
 
 .card-header__action:hover {
@@ -306,20 +309,65 @@
   font-weight: 600;
 }
 
-/* Фото в правке — кнопка выбора файла */
-.club-hero__photo--editable {
+/* Полоса, которую ряд раскрывает по ширине: «Отмена» приезжает из ряда,
+   а не возникает на месте. Элемент остаётся в разметке — иначе закрытие
+   нечему проигрывать. Единственное исключение из «только transform и opacity»:
+   до содержимого можно доехать только треком грида. */
+.reveal-x,
+.reveal-y {
+  display: grid;
+  opacity: 0;
+  transition:
+    grid-template-columns var(--duration-fast) var(--ease-out),
+    grid-template-rows var(--duration-fast) var(--ease-out),
+    opacity var(--duration-fast) var(--ease-out);
+}
+
+.reveal-x {
+  grid-template-columns: 0fr;
+}
+
+.reveal-x--open {
+  grid-template-columns: 1fr;
+  opacity: 1;
+}
+
+.reveal-y {
+  grid-template-rows: 0fr;
+}
+
+.reveal-y--open {
+  grid-template-rows: 1fr;
+  opacity: 1;
+}
+
+/* То, обо что зажимается свёрнутый трек */
+.reveal-x__clip,
+.reveal-y__clip {
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+}
+
+/* Фото: кнопка всегда, но нажимается только в правке */
+.club-hero__photo {
   position: relative;
   padding: 0;
   border: none;
-  cursor: pointer;
+  cursor: default;
   transition: transform var(--duration-press) var(--ease-out);
 }
 
-.club-hero__photo--editable:active {
+.club-hero__photo--editing {
+  cursor: pointer;
+}
+
+.club-hero__photo--editing:active {
   transform: scale(0.97);
 }
 
-/* Подсказка лежит поверх снимка — иначе непонятно, что фото меняется */
+/* Подсказка проявляется вместе с режимом правки — иначе непонятно,
+   что у снимка вообще есть что нажать */
 .club-hero__change {
   position: absolute;
   inset: auto 0 0 0;
@@ -332,6 +380,13 @@
   color: var(--text-on-accent);
   font-size: 0.875rem;
   letter-spacing: var(--tracking-caption);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity var(--duration-fast) var(--ease-out);
+}
+
+.club-hero__photo--editing .club-hero__change {
+  opacity: 1;
 }
 
 .club-hero__change svg {
@@ -339,58 +394,60 @@
   height: 1.125rem;
 }
 
-/* Поля правки: подпись внутри, фокус показывает только граница (§4.5) */
-.club-input {
+/* Поле не подменяется на текст и обратно: значение видно всегда, правка лишь
+   снимает запрет на ввод. Рамка прозрачна вне правки — размеры не скачут. */
+.club-field {
   width: 100%;
-  padding: var(--space-3) var(--space-4);
-  background: var(--surface);
-  border: 1px solid var(--separator-strong);
+  padding: var(--space-2) var(--space-3);
+  background: none;
+  border: 1px solid transparent;
   border-radius: var(--radius-control);
   font: inherit;
   color: var(--text);
-  transition: border-color 250ms var(--ease-out);
+  cursor: default;
+  transition:
+    background-color var(--duration-fast) var(--ease-out),
+    border-color var(--duration-fast) var(--ease-out);
 }
 
-.club-input::placeholder {
+.club-field::placeholder {
   color: var(--text-tertiary);
 }
 
-.club-input:focus,
-.club-input:focus-visible {
+.club-field--editing {
+  background: var(--surface);
+  border-color: var(--separator-strong);
+  cursor: auto;
+}
+
+.club-field--editing:focus,
+.club-field--editing:focus-visible {
   outline: none;
   border-color: var(--accent);
 }
 
-.club-input--name {
-  font-size: 1.375rem;
+/* Название держит размер заголовка страницы в обоих состояниях */
+.club-field--name {
+  font-size: 1.75rem;
   font-weight: 600;
+  line-height: 1.15;
   letter-spacing: var(--tracking-title);
 }
 
 /* Описание занимает остаток карточки: тянуть его ручкой некуда */
-.club-input--about {
+.club-field--about {
   flex: 1;
   min-height: 0;
-  margin-top: var(--space-3);
-  line-height: 1.47;
-  resize: none;
-}
-
-.club-hero__error {
-  margin-top: var(--space-2);
-  font-size: 0.8125rem;
-  letter-spacing: var(--tracking-caption);
-  color: var(--red);
-}
-
-/* Длинное описание прокручивается внутри карточки, а не растягивает её */
-.club-hero__about {
-  flex: 1;
-  min-height: 0;
-  overflow-y: auto;
   margin-top: var(--space-3);
   font-size: 0.9375rem;
   line-height: 1.47;
   color: var(--text-secondary);
-  white-space: pre-line;
+  resize: none;
+}
+
+.club-hero__error {
+  padding: var(--space-2) var(--space-3) 0;
+  font-size: 0.8125rem;
+  letter-spacing: var(--tracking-caption);
+  color: var(--red);
 }

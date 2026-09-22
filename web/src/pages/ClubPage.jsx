@@ -25,6 +25,13 @@ const DEMO_REQUESTS = [
 // Правят клуб те же роли, что и создают его
 const CAN_EDIT = ['university', 'admin'];
 
+/** Что держит форма, прочитанное из записи клуба. */
+const formOf = (club) => ({
+  name: club?.name ?? '',
+  description: club?.description ?? '',
+  photo: club?.photo ?? null,
+});
+
 /** Страница клуба. Слева — сведения, справа — управление участниками. */
 export default function ClubPage() {
   const { id } = useParams();
@@ -34,9 +41,9 @@ export default function ClubPage() {
   const [club, setClub] = useState(null);
   const [error, setError] = useState('');
 
-  // Правка живёт в черновике: «Отмена» просто выбрасывает его
-  const [draft, setDraft] = useState(null);
-  const [busy, setBusy] = useState(false);
+  const [form, setForm] = useState(() => formOf(null));
+  const [editing, setEditing] = useState(false);
+  const [saving, setSaving] = useState(false);
   const [formError, setFormError] = useState('');
 
   useEffect(() => {
@@ -46,13 +53,18 @@ export default function ClubPage() {
       .catch((failure) => setError(failure.message));
   }, [id]);
 
-  const editing = draft !== null;
+  // Запись приходит после первого рендера — без этого форма осталась бы пустой.
+  // Клуб меняется только при загрузке и после сохранения, так что поверх
+  // набираемого текста это не ляжет.
+  useEffect(() => {
+    setForm(formOf(club));
+  }, [club]);
+
   const mayEdit = club && CAN_EDIT.includes(user?.role);
 
-  function startEdit() {
-    setDraft({ name: club.name, description: club.description ?? '', photo: club.photo });
-    setFormError('');
-  }
+  // Сравнение с записью, а не отдельный флаг: флаг надо гасить в каждом пути,
+  // который сохраняет или откатывает, а сравнение не может устареть.
+  const isDirty = JSON.stringify(form) !== JSON.stringify(formOf(club));
 
   async function pickPhoto(event) {
     const file = event.target.files?.[0];
@@ -61,28 +73,55 @@ export default function ClubPage() {
 
     try {
       const photo = await squareDataUrl(file);
-      setDraft((current) => ({ ...current, photo }));
+      setForm((was) => ({ ...was, photo }));
       setFormError('');
     } catch {
       setFormError('Не удалось прочитать изображение');
     }
   }
 
-  async function save() {
-    setBusy(true);
+  /**
+   * «Готово» и есть сохранение: отдельная кнопка «Сохранить» была бы второй
+   * кнопкой для одного намерения — ты закончил править и хочешь, чтобы это
+   * осталось. Ничего не менялось — ничего не отправляется.
+   */
+  async function commit() {
+    if (!isDirty) return true;
+
+    if (form.name.trim().length < 2) {
+      setFormError('Укажите название клуба');
+      return false;
+    }
+
+    setSaving(true);
     try {
       const { club: saved } = await api.updateClub(id, {
-        name: draft.name.trim(),
-        description: draft.description.trim() || null,
-        photo: draft.photo,
+        name: form.name.trim(),
+        description: form.description.trim() || null,
+        photo: form.photo,
       });
       setClub(saved);
-      setDraft(null);
+      setFormError('');
+      return true;
     } catch (failure) {
+      // Оставляем как набрано: неудавшееся сохранение всё ещё хотят сохранить
       setFormError(failure.message);
+      return false;
     } finally {
-      setBusy(false);
+      setSaving(false);
     }
+  }
+
+  async function done() {
+    if (await commit()) setEditing(false);
+  }
+
+  // Назад к записи, а не в пустоту: форма — копия записи, поэтому отказ от
+  // правки это просто перечитать её
+  function cancel() {
+    setForm(formOf(club));
+    setFormError('');
+    setEditing(false);
   }
 
   return (
@@ -100,116 +139,115 @@ export default function ClubPage() {
             {/* Возврат, название, фото и сведения о клубе */}
             <div className="club-card">
               <div className="card-header">
-                {editing ? (
-                  <button
-                    className="card-header__action"
-                    type="button"
-                    onClick={() => setDraft(null)}
-                    disabled={busy}
-                  >
-                    Отмена
-                  </button>
-                ) : (
-                  /* Возврат назван разделом, а не «Назад»: так видно, куда именно ведёт */
-                  <Link className="card-header__back" to="/clubs" viewTransition>
-                    <IoChevronBack aria-hidden="true" />
-                    Клубы
-                  </Link>
-                )}
+                {/* Возврат назван разделом, а не «Назад»: так видно, куда именно ведёт */}
+                <Link className="card-header__back" to="/clubs" viewTransition>
+                  <IoChevronBack aria-hidden="true" />
+                  Клубы
+                </Link>
 
                 {mayEdit && (
-                  <button
-                    className={`card-header__action${editing ? ' card-header__action--primary' : ''}`}
-                    type="button"
-                    onClick={editing ? save : startEdit}
-                    disabled={busy}
-                  >
-                    {editing ? (busy ? 'Сохраняем…' : 'Сохранить') : 'Редактировать'}
-                  </button>
+                  <div className="card-header__actions">
+                    {/* Ряд раскрывается, чтобы впустить «Отмену»: она — прямое
+                        следствие нажатия «Редактировать», поэтому должна откуда-то
+                        приехать, а не оказаться на месте следующим кадром */}
+                    <div className={`reveal-x${editing ? ' reveal-x--open' : ''}`}>
+                      <div className="reveal-x__clip">
+                        <button
+                          className="card-header__action"
+                          type="button"
+                          onClick={cancel}
+                          disabled={saving}
+                          tabIndex={editing ? undefined : -1}
+                        >
+                          Отмена
+                        </button>
+                      </div>
+                    </div>
+
+                    <button
+                      className={`card-header__action${editing ? ' card-header__action--primary' : ''}`}
+                      type="button"
+                      onClick={() => (editing ? done() : setEditing(true))}
+                      disabled={saving}
+                    >
+                      {saving ? 'Сохраняем…' : editing ? 'Готово' : 'Редактировать'}
+                    </button>
+                  </div>
                 )}
               </div>
 
               {club && (
                 <div className="club-hero">
-                  {editing ? (
-                    <button
-                      className="club-hero__photo club-hero__photo--editable"
-                      type="button"
-                      onClick={() => fileRef.current?.click()}
-                    >
-                      {draft.photo ? (
-                        <img className="club-hero__image" src={draft.photo} alt="" />
-                      ) : (
-                        <span className="club-hero__letter" aria-hidden="true">
-                          {draft.name.trim()[0]?.toUpperCase() ?? '?'}
-                        </span>
-                      )}
-
-                      <span className="club-hero__change">
-                        <IoCameraOutline aria-hidden="true" />
-                        Изменить фото
+                  {/* Фото остаётся на месте, меняется только то, что оно кликабельно */}
+                  <button
+                    className={`club-hero__photo${editing ? ' club-hero__photo--editing' : ''}`}
+                    type="button"
+                    onClick={() => fileRef.current?.click()}
+                    aria-label="Изменить фото клуба"
+                    /* Вне правки снимок — просто снимок: inert убирает его
+                       и из фокуса, и из дерева доступности, и из-под курсора */
+                    inert={!editing || undefined}
+                  >
+                    {form.photo ? (
+                      <img className="club-hero__image" src={form.photo} alt="" />
+                    ) : (
+                      <span className="club-hero__letter" aria-hidden="true">
+                        {(form.name.trim()[0] ?? '?').toUpperCase()}
                       </span>
-                    </button>
-                  ) : (
-                    <div className="club-hero__photo">
-                      {club.photo ? (
-                        <img className="club-hero__image" src={club.photo} alt="" />
-                      ) : (
-                        <span className="club-hero__letter" aria-hidden="true">
-                          {club.name.trim()[0].toUpperCase()}
-                        </span>
-                      )}
-                    </div>
-                  )}
+                    )}
+
+                    <span className="club-hero__change">
+                      <IoCameraOutline aria-hidden="true" />
+                      Изменить фото
+                    </span>
+                  </button>
 
                   <div className="club-hero__info">
-                    {editing ? (
-                      <>
-                        <label className="visually-hidden" htmlFor="club-name">
-                          Название клуба
-                        </label>
-                        <input
-                          id="club-name"
-                          className="club-input club-input--name"
-                          value={draft.name}
-                          placeholder="Название клуба"
-                          onChange={(event) => {
-                            setDraft({ ...draft, name: event.target.value });
-                            setFormError('');
-                          }}
-                        />
+                    {/* Поля не подменяются на текст и обратно: значение видно всегда,
+                        а правка снимает с них только запрет на ввод (readOnly, не disabled —
+                        disabled гасит ровно то, что пришли прочитать) */}
+                    <label className="visually-hidden" htmlFor="club-name">
+                      Название клуба
+                    </label>
+                    <input
+                      id="club-name"
+                      className={`club-field club-field--name${editing ? ' club-field--editing' : ''}`}
+                      value={form.name}
+                      readOnly={!editing}
+                      tabIndex={editing ? undefined : -1}
+                      onChange={(event) => {
+                        setForm((was) => ({ ...was, name: event.target.value }));
+                        setFormError('');
+                      }}
+                    />
 
-                        <label className="visually-hidden" htmlFor="club-about">
-                          Информация о клубе
-                        </label>
-                        <textarea
-                          id="club-about"
-                          className="club-input club-input--about"
-                          value={draft.description}
-                          placeholder="Информация о клубе"
-                          onChange={(event) =>
-                            setDraft({ ...draft, description: event.target.value })
-                          }
-                        />
+                    <p className={`club-hero__status club-hero__status--${club.status}`}>
+                      <span className="club-hero__dot" aria-hidden="true" />
+                      {STATUS_LABELS[club.status] ?? club.status} · {membersLabel(club.members)}
+                    </p>
 
-                        {formError && (
-                          <p className="club-hero__error" role="alert">
-                            {formError}
-                          </p>
-                        )}
-                      </>
-                    ) : (
-                      <>
-                        <h1 className="page__title">{club.name}</h1>
+                    <label className="visually-hidden" htmlFor="club-about">
+                      Информация о клубе
+                    </label>
+                    <textarea
+                      id="club-about"
+                      className={`club-field club-field--about${editing ? ' club-field--editing' : ''}`}
+                      value={form.description}
+                      placeholder={editing ? 'Информация о клубе' : ''}
+                      readOnly={!editing}
+                      tabIndex={editing ? undefined : -1}
+                      onChange={(event) =>
+                        setForm((was) => ({ ...was, description: event.target.value }))
+                      }
+                    />
 
-                        <p className={`club-hero__status club-hero__status--${club.status}`}>
-                          <span className="club-hero__dot" aria-hidden="true" />
-                          {STATUS_LABELS[club.status] ?? club.status} · {membersLabel(club.members)}
+                    <div className={`reveal-y${formError ? ' reveal-y--open' : ''}`}>
+                      <div className="reveal-y__clip">
+                        <p className="club-hero__error" role="alert">
+                          {formError}
                         </p>
-
-                        {club.description && <p className="club-hero__about">{club.description}</p>}
-                      </>
-                    )}
+                      </div>
+                    </div>
                   </div>
 
                   <input
