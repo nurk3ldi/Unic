@@ -147,7 +147,7 @@ export default function ClubControls({ club, canManage, onUpdated }) {
             Отмена
           </button>
           <button
-            className={`alert__button${ask.danger ? ' alert__button--danger' : ''}`}
+            className={`alert__button alert__button--${ask.danger ? 'danger' : 'confirm'}`}
             type="button"
             disabled={busy}
             onClick={ask.run}

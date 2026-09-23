@@ -180,38 +180,51 @@
   color: var(--text-secondary);
 }
 
-/* Две кнопки в ряд, разделённые волоском — раскладка системного оповещения */
+/* Две кнопки в ряд — каждая своёй плашкой, без разделительного волоска:
+   заливка сама показывает, где граница и что здесь главное */
 .alert__actions {
-  display: grid;
-  /* minmax(0, 1fr), а не 1fr: иначе длинное слово распирает свою половину
-     и кнопки перестают быть равными */
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  border-top: 1px solid var(--separator);
+  display: flex;
+  gap: var(--space-2);
+  padding: 0 var(--space-4) var(--space-4);
 }
 
 .alert__button {
+  /* flex-basis: 0 — иначе длинное слово распирает свою половину */
+  flex: 1 1 0;
+  min-width: 0;
   min-height: 2.75rem;
   padding: 0 var(--space-3);
-  font-size: 1.0625rem;
-  color: var(--accent);
-  transition: background-color var(--duration-press) var(--ease-out);
+  border-radius: var(--radius-control);
+  background: var(--fill);
+  color: var(--text);
+  font-size: 1rem;
+  font-weight: 500;
+  transition:
+    opacity var(--duration-fast) var(--ease-out),
+    transform var(--duration-press) var(--ease-out);
 }
 
-.alert__button + .alert__button {
-  border-left: 1px solid var(--separator);
+/* Отклик наступает на нажатии, а не на отпускании */
+.alert__button:active {
+  transform: scale(0.97);
 }
 
-/* Отказ выделен начертанием: промах не должен стоить клуба */
-.alert__button--cancel {
+.alert__button:hover {
+  opacity: 0.9;
+}
+
+/* Подтверждение залито акцентом — цвет говорит, что именно произойдёт */
+.alert__button--confirm {
+  background: var(--accent);
+  color: var(--text-on-accent);
   font-weight: 600;
 }
 
+/* Необратимое — красное */
 .alert__button--danger {
-  color: var(--red);
-}
-
-.alert__button:active {
-  background: var(--fill);
+  background: var(--red);
+  color: var(--text-on-accent);
+  font-weight: 600;
 }
 
 .alert__button:disabled {
