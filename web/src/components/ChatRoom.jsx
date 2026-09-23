@@ -3,7 +3,7 @@ import { IoArrowUp } from 'react-icons/io5';
 import { api } from '../api.js';
 import { useAuth } from '../AuthContext.jsx';
 import { POLL_MS, messageTime } from '../chat.js';
-import { initial, shortName } from '../people.js';
+import { authorColor, initial, shortName } from '../people.js';
 import './ChatRoom.css';
 
 /**
@@ -102,11 +102,20 @@ export default function ChatRoom({ clubId }) {
                 )}
 
                 <div className="msg__bubble">
-                  {!own && <span className="msg__author">{shortName(message.author)}</span>}
-                  <p className="msg__text">{message.text}</p>
-                  <time className="msg__time" dateTime={message.createdAt}>
-                    {messageTime.format(new Date(message.createdAt))}
-                  </time>
+                  {!own && (
+                    <span className="msg__author" style={{ color: authorColor(message.authorId) }}>
+                      {shortName(message.author)}
+                    </span>
+                  )}
+
+                  {/* Время плывёт вправо и садится в конец последней строки —
+                      короткая реплика не занимает из-за него вторую */}
+                  <p className="msg__text">
+                    {message.text}
+                    <time className="msg__time" dateTime={message.createdAt}>
+                      {messageTime.format(new Date(message.createdAt))}
+                    </time>
+                  </p>
                 </div>
               </div>
             );
