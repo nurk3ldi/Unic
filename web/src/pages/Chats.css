@@ -60,12 +60,6 @@
   gap: var(--space-3);
   min-width: 0;
   color: var(--text-on-accent);
-  transition: opacity var(--duration-fast) var(--ease-out);
-}
-
-.chat-head:hover {
-  opacity: 0.85;
-  text-decoration: none;
 }
 
 .chat-head__photo {
@@ -107,13 +101,6 @@
   text-overflow: ellipsis;
   font-size: 0.8125rem;
   color: rgba(255, 255, 255, 0.78);
-}
-
-.chat-head svg {
-  width: 1rem;
-  height: 1rem;
-  flex: none;
-  opacity: 0.7;
 }
 
 /* ── Строка разговора ───────────────────────────────────── */

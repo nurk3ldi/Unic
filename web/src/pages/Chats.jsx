@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link, NavLink, useParams } from 'react-router-dom';
-import { IoChevronBack, IoChevronForward } from 'react-icons/io5';
+import { IoChevronBack } from 'react-icons/io5';
 import { api } from '../api.js';
 import { POLL_MS, chatStamp } from '../chat.js';
 import { initial, shortName } from '../people.js';
@@ -166,9 +166,9 @@ export default function Chats() {
                   Чаты
                 </Link>
 
-                {/* Шапка ведёт в клуб: разговор — это часть клуба, а не остров.
-                    Вторая строка — кто здесь, как в групповом чате */}
-                <Link className="chat-head" to={`/clubs/${id}`} viewTransition>
+                {/* Шапка только говорит, где ты и кто здесь — никуда не ведёт:
+                    в клуб ходят через раздел «Клубы» */}
+                <div className="chat-head">
                   <span className="chat-head__photo">
                     {open?.photo ? (
                       <img className="chat-head__image" src={open.photo} alt="" />
@@ -186,8 +186,7 @@ export default function Chats() {
                     </span>
                   </span>
 
-                  <IoChevronForward aria-hidden="true" />
-                </Link>
+                </div>
               </div>
 
               {/* key: смена разговора начинает ленту заново, а не дописывает чужую */}
