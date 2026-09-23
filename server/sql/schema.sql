@@ -62,3 +62,16 @@ create unique index if not exists club_members_lead_idx
   where role = 'lead';
 
 create index if not exists club_members_user_idx on club_members (user_id);
+
+-- Сообщения клубного чата. Автор обнуляется, а не удаляется вместе с человеком:
+-- переписка остаётся связной, даже когда аккаунта уже нет
+create table if not exists club_messages (
+  id         uuid primary key default gen_random_uuid(),
+  club_id    uuid not null references clubs (id) on delete cascade,
+  author_id  uuid references users (id) on delete set null,
+  body       text not null,
+  created_at timestamptz not null default now()
+);
+
+-- Чат всегда читают одним клубом и по времени
+create index if not exists club_messages_club_idx on club_messages (club_id, created_at);

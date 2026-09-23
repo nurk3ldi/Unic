@@ -5,6 +5,7 @@ import { api } from '../api.js';
 import { useAuth } from '../AuthContext.jsx';
 import { squareDataUrl } from '../photo.js';
 import { STATUS_LABELS, membersLabel } from '../club.js';
+import ClubChatCard from '../components/ClubChatCard.jsx';
 import ClubControls from '../components/ClubControls.jsx';
 import MembersPanel from '../components/MembersPanel.jsx';
 import './Page.css';
@@ -268,12 +269,14 @@ export default function ClubPage() {
           </div>
 
           <div className="club-bottom">
-            {/* Чат клуба: здесь будет свёрнутый вид, по нажатию — переход в чат */}
-            <div className="club-card">
+            {/* Карточка целиком ведёт в чат: свёрнутый вид только читают */}
+            <Link className="club-card club-card--tap" to={`/clubs/${id}/chat`} viewTransition>
               <div className="card-header">
                 <h2 className="card-header__title">Чат</h2>
               </div>
-            </div>
+
+              <ClubChatCard clubId={id} />
+            </Link>
 
             {/* События клуба — наполним, когда появится таблица */}
             <div className="club-card">

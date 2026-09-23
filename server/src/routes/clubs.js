@@ -23,6 +23,11 @@ const PHOTO_LIMIT = 700_000;
 const ABOUT_LIMIT = 2000;
 const STATUSES = ['active', 'pending', 'suspended'];
 
+// Длина сообщения: столько же, сколько у описания клуба — предел один на проект
+const MESSAGE_LIMIT = 2000;
+// Сколько сообщений отдаём за раз: чат клуба читают с конца
+const MESSAGE_PAGE = 50;
+
 // Участниками распоряжаются те же роли, что правят сам клуб
 const MANAGE_ROLES = ['university', 'admin'];
 const canManage = (user) => MANAGE_ROLES.includes(user.role);
@@ -319,5 +324,80 @@ router.delete(
     res.json({ ok: true });
   },
 );
+
+/** Состоит ли человек в клубе. Те, кто клубом управляет, проходят и без состава. */
+async function canReadChat(clubId, user) {
+  if (canManage(user)) return true;
+
+  const { rows } = await query(
+    `select 1 from club_members
+      where club_id = $1 and user_id = $2 and status = 'active'`,
+    [clubId, user.id],
+  );
+  return Boolean(rows[0]);
+}
+
+const publicMessage = (row) => ({
+  id: row.id,
+  text: row.body,
+  authorId: row.author_id,
+  // Автора могли удалить: переписка остаётся, имя заменяется
+  author: row.full_name ?? 'Удалённый участник',
+  createdAt: row.created_at,
+});
+
+/**
+ * Лента чата: последние сообщения, в порядке чтения — сверху старые.
+ * Клиент опрашивает этот адрес; отдельного «только новое» нет, потому что
+ * страница всё равно показывает хвост и сравнивать ей не с чем.
+ */
+router.get('/:id/messages', requireAuth, async (req, res) => {
+  if (!(await findClub(req.params.id))) {
+    return res.status(404).json({ error: 'Клуб не найден' });
+  }
+  if (!(await canReadChat(req.params.id, req.user))) {
+    return res.status(403).json({ error: 'Чат доступен только участникам клуба' });
+  }
+
+  const limit = Math.min(Number(req.query.limit) || MESSAGE_PAGE, MESSAGE_PAGE);
+
+  const { rows } = await query(
+    `select m.id, m.body, m.author_id, m.created_at, u.full_name
+       from club_messages m
+       left join users u on u.id = m.author_id
+      where m.club_id = $1
+      order by m.created_at desc
+      limit $2`,
+    [req.params.id, limit],
+  );
+
+  res.json({ messages: rows.reverse().map(publicMessage) });
+});
+
+router.post('/:id/messages', requireAuth, async (req, res) => {
+  if (!(await findClub(req.params.id))) {
+    return res.status(404).json({ error: 'Клуб не найден' });
+  }
+  if (!(await canReadChat(req.params.id, req.user))) {
+    return res.status(403).json({ error: 'Писать в чат могут только участники клуба' });
+  }
+
+  const text = String(req.body?.text ?? '').trim();
+  if (!text) return res.status(400).json({ error: 'Сообщение пустое' });
+  if (text.length > MESSAGE_LIMIT) {
+    return res.status(400).json({ error: 'Сообщение слишком длинное' });
+  }
+
+  const { rows } = await query(
+    `insert into club_messages (club_id, author_id, body)
+     values ($1, $2, $3)
+     returning id, body, author_id, created_at`,
+    [req.params.id, req.user.id, text],
+  );
+
+  res.status(201).json({
+    message: publicMessage({ ...rows[0], full_name: req.user.full_name }),
+  });
+});
 
 export default router;

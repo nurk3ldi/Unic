@@ -1,0 +1,42 @@
+/* Лента прижата к низу: свежее — ближе к глазу, как в самом чате */
+.chat-preview {
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  gap: var(--space-3);
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+  padding: var(--space-4);
+}
+
+/* Строка не переносится: в квадрате важнее, сколько реплик видно, чем одна целиком */
+.chat-preview__row {
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-size: 0.875rem;
+  line-height: 1.4;
+}
+
+.chat-preview__author {
+  font-weight: 600;
+  color: var(--text);
+}
+
+.chat-preview__author::after {
+  content: ' ';
+}
+
+.chat-preview__text {
+  color: var(--text-secondary);
+}
+
+.chat-preview__empty {
+  margin: auto;
+  padding: var(--space-4);
+  font-size: 0.875rem;
+  text-align: center;
+  color: var(--text-tertiary);
+}

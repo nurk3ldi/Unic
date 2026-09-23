@@ -10,15 +10,8 @@ import {
   IoSwapHorizontalOutline,
 } from 'react-icons/io5';
 import { api } from '../api.js';
+import { initial, shortName } from '../people.js';
 import './MembersPanel.css';
-
-/** «Нурланова Айгерим Ержанқызы» → «Айгерим Н.» */
-function shortName(fullName) {
-  const [last, first] = fullName.trim().split(/\s+/);
-  return first ? `${first} ${last[0]}.` : last;
-}
-
-const initial = (fullName) => fullName.trim()[0].toUpperCase();
 
 /**
  * Управление участниками клуба. Панель сама ходит в API: состав — её предмет,

@@ -58,6 +58,28 @@
   margin-top: 0;
 }
 
+/* Карточка-ссылка: увеличение на наведении — то же, что у карточек в списке */
+.club-card--tap {
+  color: var(--text);
+  transition: transform var(--duration-fast) var(--ease-out);
+}
+
+.club-card--tap:hover {
+  transform: scale(1.02);
+  text-decoration: none;
+}
+
+.club-card--tap:active {
+  transform: scale(0.99);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .club-card--tap:hover,
+  .club-card--tap:active {
+    transform: none;
+  }
+}
+
 /* Своя шапка карточки — как у боковой панели */
 .card-header {
   display: flex;

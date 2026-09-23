@@ -1,6 +1,7 @@
 import { Navigate, Route, Routes } from 'react-router-dom';
 import { useAuth } from './AuthContext.jsx';
 import AppLayout from './components/AppLayout.jsx';
+import ClubChat from './pages/ClubChat.jsx';
 import ClubPage from './pages/ClubPage.jsx';
 import Clubs from './pages/Clubs.jsx';
 import Home from './pages/Home.jsx';
@@ -23,6 +24,7 @@ export default function App() {
         <Route path="/" element={<Home />} />
         <Route path="/clubs" element={<Clubs />} />
         <Route path="/clubs/:id" element={<ClubPage />} />
+        <Route path="/clubs/:id/chat" element={<ClubChat />} />
       </Route>
       <Route path="/login" element={guestOnly(<Login />)} />
       <Route path="/register" element={guestOnly(<Register />)} />

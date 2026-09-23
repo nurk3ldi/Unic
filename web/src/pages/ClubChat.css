@@ -1,0 +1,170 @@
+/* Карточка чата занимает экран целиком — так же, как боковая панель клуба:
+   отступ сверху отбивается от шапки, нижний отступ страницы вычитается */
+.chat {
+  display: flex;
+  flex-direction: column;
+  margin-top: calc(var(--space-4) - var(--space-8));
+  height: calc(100dvh - var(--header-height) - var(--space-4) - var(--space-8));
+  overflow: hidden; /* скругление режет собственную шапку */
+  background: var(--surface);
+  border: 1px solid var(--separator);
+  border-radius: var(--radius-widget);
+}
+
+/* Читают её с конца, поэтому прокручивается только лента */
+.chat__list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: var(--space-5) var(--space-5) var(--space-4);
+}
+
+.chat__empty {
+  margin: auto;
+  font-size: 0.9375rem;
+  color: var(--text-tertiary);
+}
+
+/* ── Сообщение ──────────────────────────────────────────── */
+.msg {
+  display: flex;
+  align-items: flex-end;
+  gap: var(--space-2);
+  max-width: min(32rem, 78%);
+}
+
+/* Своё уходит к правому краю — сторона говорит, кто написал, раньше подписи */
+.msg--own {
+  align-self: flex-end;
+  flex-direction: row-reverse;
+}
+
+.msg__avatar {
+  display: grid;
+  place-items: center;
+  width: 1.75rem;
+  height: 1.75rem;
+  flex: none;
+  border-radius: 50%;
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-size: 0.8125rem;
+  font-weight: 600;
+}
+
+.msg__bubble {
+  min-width: 0;
+  padding: var(--space-2) var(--space-3);
+  border-radius: 18px;
+  background: var(--fill);
+}
+
+.msg--own .msg__bubble {
+  background: var(--accent);
+  color: var(--text-on-accent);
+}
+
+.msg__author {
+  display: block;
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: var(--tracking-caption);
+  color: var(--text-secondary);
+}
+
+.msg__text {
+  font-size: 0.9375rem;
+  line-height: 1.4;
+  /* Переносы автора сохраняем, длинное слово не рвёт пузырь */
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.msg__time {
+  display: block;
+  margin-top: 0.125rem;
+  font-size: 0.6875rem;
+  text-align: right;
+  color: var(--text-tertiary);
+}
+
+.msg--own .msg__time {
+  color: rgba(255, 255, 255, 0.72);
+}
+
+.chat__error {
+  padding: 0 var(--space-5) var(--space-2);
+  font-size: 0.8125rem;
+  letter-spacing: var(--tracking-caption);
+  color: var(--red);
+}
+
+/* ── Поле ввода ─────────────────────────────────────────── */
+/* Закреплено внизу: лента прокручивается под ним, оно не уезжает */
+.chat__composer {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  flex: none;
+  padding: var(--space-3) var(--space-4);
+  border-top: 1px solid var(--separator);
+}
+
+.chat__input {
+  flex: 1;
+  min-width: 0;
+  min-height: 3rem;
+  padding: 0 var(--space-4);
+  border: 1px solid var(--separator-strong);
+  border-radius: var(--radius-pill);
+  background: var(--surface);
+  font-size: 1rem;
+  color: var(--text);
+  /* Фокус показывает только граница — без кольца-тени (§4.5) */
+  transition: border-color 250ms var(--ease-out);
+}
+
+.chat__input::placeholder {
+  color: var(--text-tertiary);
+}
+
+.chat__input:focus,
+.chat__input:focus-visible {
+  outline: none;
+  box-shadow: none;
+  border-color: var(--accent);
+}
+
+.chat__send {
+  display: grid;
+  place-items: center;
+  width: 3rem;
+  height: 3rem;
+  flex: none;
+  border-radius: 50%;
+  background: var(--accent);
+  color: var(--text-on-accent);
+  transition:
+    opacity var(--duration-fast) var(--ease-out),
+    transform var(--duration-press) var(--ease-out);
+}
+
+.chat__send svg {
+  width: 1.25rem;
+  height: 1.25rem;
+}
+
+/* Отклик наступает на нажатии, а не на отпускании */
+.chat__send:active {
+  transform: scale(0.94);
+}
+
+/* Пустому полю отправлять нечего — кнопка это показывает, а не прячется */
+.chat__send:disabled {
+  background: var(--fill);
+  color: var(--text-tertiary);
+  cursor: default;
+}
