@@ -24,6 +24,7 @@ export default function Chats() {
   const { id } = useParams();
 
   const [chats, setChats] = useState([]);
+  const [members, setMembers] = useState([]);
   const [search, setSearch] = useState('');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -53,6 +54,22 @@ export default function Chats() {
       clearInterval(timer);
     };
   }, []);
+
+  // Состав читаем отдельно: список чатов знает о клубе только название и снимок
+  useEffect(() => {
+    if (!id) return undefined;
+
+    let alive = true;
+    setMembers([]);
+    api
+      .clubMembers(id)
+      .then(({ members }) => alive && setMembers(members))
+      .catch(() => alive && setMembers([]));
+
+    return () => {
+      alive = false;
+    };
+  }, [id]);
 
   const open = chats.find((chat) => chat.id === id) ?? null;
 
@@ -149,9 +166,26 @@ export default function Chats() {
                   Чаты
                 </Link>
 
-                {/* Название ведёт в клуб: разговор — это часть клуба, а не остров */}
-                <Link className="card-header__action" to={`/clubs/${id}`} viewTransition>
-                  {open?.name ?? 'Клуб'}
+                {/* Шапка ведёт в клуб: разговор — это часть клуба, а не остров.
+                    Вторая строка — кто здесь, как в групповом чате */}
+                <Link className="chat-head" to={`/clubs/${id}`} viewTransition>
+                  <span className="chat-head__photo">
+                    {open?.photo ? (
+                      <img className="chat-head__image" src={open.photo} alt="" />
+                    ) : (
+                      <span aria-hidden="true">{initial(open?.name ?? 'К')}</span>
+                    )}
+                  </span>
+
+                  <span className="chat-head__body">
+                    <span className="chat-head__name">{open?.name ?? 'Клуб'}</span>
+                    <span className="chat-head__members">
+                      {members.length > 0
+                        ? members.map((member) => shortName(member.name)).join(', ')
+                        : 'Участников пока нет'}
+                    </span>
+                  </span>
+
                   <IoChevronForward aria-hidden="true" />
                 </Link>
               </div>
