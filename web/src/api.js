@@ -26,6 +26,8 @@ export const api = {
   createClub: (payload) => request('/clubs', { method: 'POST', body: payload }),
   updateClub: (id, payload) => request(`/clubs/${id}`, { method: 'PATCH', body: payload }),
 
+  deleteClub: (id) => request(`/clubs/${id}`, { method: 'DELETE' }),
+
   clubMembers: (id) => request(`/clubs/${id}/members`),
   addClubMember: (id, payload) => request(`/clubs/${id}/members`, { method: 'POST', body: payload }),
   updateClubMember: (id, userId, payload) =>

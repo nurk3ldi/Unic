@@ -21,6 +21,7 @@ const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/
 // Фото приходит строкой data URL: клиент уже ужал его до квадрата 400×400
 const PHOTO_LIMIT = 700_000;
 const ABOUT_LIMIT = 2000;
+const STATUSES = ['active', 'pending', 'suspended'];
 
 // Участниками распоряжаются те же роли, что правят сам клуб
 const MANAGE_ROLES = ['university', 'admin'];
@@ -54,6 +55,12 @@ function readClubFields(body) {
       return { error: 'Изображение слишком большое' };
     }
     fields.photo_url = photo;
+  }
+
+  if (body?.status !== undefined) {
+    const status = String(body.status);
+    if (!STATUSES.includes(status)) return { error: 'Неизвестное состояние клуба' };
+    fields.status = status;
   }
 
   if (body?.description !== undefined) {
@@ -134,6 +141,18 @@ router.patch('/:id', requireAuth, requireRole(...MANAGE_ROLES), async (req, res)
   if (!rows[0]) return res.status(404).json({ error: 'Клуб не найден' });
 
   res.json({ club: publicClub(rows[0]) });
+});
+
+/** Удаление клуба. Строки состава уходят каскадом — это правило базы. */
+router.delete('/:id', requireAuth, requireRole(...MANAGE_ROLES), async (req, res) => {
+  if (!UUID_RE.test(req.params.id)) {
+    return res.status(404).json({ error: 'Клуб не найден' });
+  }
+
+  const { rows } = await query('delete from clubs where id = $1 returning id', [req.params.id]);
+  if (!rows[0]) return res.status(404).json({ error: 'Клуб не найден' });
+
+  res.json({ ok: true });
 });
 
 /**

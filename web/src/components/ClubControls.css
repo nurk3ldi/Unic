@@ -1,0 +1,227 @@
+/* Занимает тело карточки: список короткий, но карточка фиксирована по высоте */
+.controls {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: var(--space-4);
+}
+
+/* ── Группа строк ───────────────────────────────────────── */
+/* Вставная группа, как в «Настройках»: одна поверхность, делённая волосками */
+.group {
+  overflow: hidden;
+  border-radius: var(--radius-control);
+  background: var(--bg-secondary);
+}
+
+/* Необратимое отделено воздухом, а не только цветом */
+.group--apart {
+  margin-top: var(--space-5);
+}
+
+.group__row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  width: 100%;
+  min-height: 2.75rem;
+  padding: var(--space-2) var(--space-4);
+  font-size: 0.9375rem;
+  text-align: left;
+  transition: background-color var(--duration-press) var(--ease-out);
+}
+
+/* Волосок начинается после отступа строки — линия делит содержимое, а не карточку */
+.group__row + .group__row {
+  position: relative;
+}
+
+.group__row + .group__row::before {
+  content: '';
+  position: absolute;
+  inset: 0 0 auto var(--space-4);
+  height: 1px;
+  background: var(--separator);
+}
+
+.group__label {
+  color: var(--text);
+}
+
+/* Цвет несёт точка, текст остаётся читаемым */
+.group__value {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  color: var(--text-secondary);
+}
+
+.group__dot {
+  width: 0.5rem;
+  height: 0.5rem;
+  flex: none;
+  border-radius: 50%;
+}
+
+.group__value--active .group__dot {
+  background: var(--green);
+}
+
+.group__value--pending .group__dot {
+  background: var(--orange);
+}
+
+.group__value--suspended .group__dot {
+  background: var(--text-tertiary);
+}
+
+/* Строка-действие называет то, что произойдёт, а не текущее состояние */
+.group__row--action {
+  color: var(--accent);
+  font-weight: 500;
+}
+
+.group__row--danger {
+  justify-content: center;
+  color: var(--red);
+  font-weight: 500;
+}
+
+/* Отклик наступает на нажатии: подсвечивается сама строка, как в списках iOS */
+.group__row--action:active,
+.group__row--danger:active {
+  background: var(--fill-hover);
+}
+
+.group__row:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.controls__error {
+  padding: var(--space-3) var(--space-4) 0;
+  font-size: 0.8125rem;
+  letter-spacing: var(--tracking-caption);
+  color: var(--red);
+}
+
+/* ── Подтверждение ──────────────────────────────────────── */
+/* Единственный alert в проекте: удаление нечем отменить */
+.alert {
+  width: min(17rem, calc(100vw - 2rem));
+  margin: auto; /* без этого окно прилипает к левому верхнему углу */
+  padding: 0;
+  border: none;
+  border-radius: 14px;
+  background: var(--surface);
+  color: var(--text);
+  box-shadow: var(--shadow-raised);
+  /* Приходит и уходит одним путём: масштаб + растворение */
+  opacity: 0;
+  transform: scale(0.96);
+  transition:
+    opacity var(--duration-fast) var(--ease-out),
+    transform var(--duration-fast) var(--ease-out),
+    overlay var(--duration-fast) allow-discrete,
+    display var(--duration-fast) allow-discrete;
+}
+
+.alert[open] {
+  opacity: 1;
+  transform: scale(1);
+}
+
+@starting-style {
+  .alert[open] {
+    opacity: 0;
+    transform: scale(0.96);
+  }
+}
+
+.alert::backdrop {
+  background: var(--scrim);
+  opacity: 0;
+  transition:
+    opacity var(--duration-fast) var(--ease-out),
+    overlay var(--duration-fast) allow-discrete,
+    display var(--duration-fast) allow-discrete;
+}
+
+.alert[open]::backdrop {
+  opacity: 1;
+}
+
+@starting-style {
+  .alert[open]::backdrop {
+    opacity: 0;
+  }
+}
+
+.alert__body {
+  padding: var(--space-5) var(--space-4);
+  text-align: center;
+}
+
+.alert__title {
+  font-size: 1.0625rem;
+  font-weight: 600;
+  line-height: 1.3;
+  letter-spacing: var(--tracking-title);
+}
+
+.alert__text {
+  margin-top: var(--space-2);
+  font-size: 0.8125rem;
+  line-height: 1.4;
+  color: var(--text-secondary);
+}
+
+/* Две кнопки в ряд, разделённые волоском — раскладка системного оповещения */
+.alert__actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  border-top: 1px solid var(--separator);
+}
+
+.alert__button {
+  min-height: 2.75rem;
+  padding: 0 var(--space-3);
+  font-size: 1.0625rem;
+  color: var(--accent);
+  transition: background-color var(--duration-press) var(--ease-out);
+}
+
+.alert__button + .alert__button {
+  border-left: 1px solid var(--separator);
+}
+
+/* Отказ выделен начертанием: промах не должен стоить клуба */
+.alert__button--cancel {
+  font-weight: 600;
+}
+
+.alert__button--danger {
+  color: var(--red);
+}
+
+.alert__button:active {
+  background: var(--fill);
+}
+
+.alert__button:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .alert {
+    transform: none;
+  }
+
+  .alert[open] {
+    transform: none;
+  }
+}

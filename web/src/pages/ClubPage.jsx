@@ -5,6 +5,7 @@ import { api } from '../api.js';
 import { useAuth } from '../AuthContext.jsx';
 import { squareDataUrl } from '../photo.js';
 import { STATUS_LABELS, membersLabel } from '../club.js';
+import ClubControls from '../components/ClubControls.jsx';
 import MembersPanel from '../components/MembersPanel.jsx';
 import './Page.css';
 import './ClubPage.css';
@@ -259,6 +260,10 @@ export default function ClubPage() {
               <div className="card-header">
                 <h2 className="card-header__title">Управление клубом</h2>
               </div>
+
+              {club && (
+                <ClubControls club={club} canManage={Boolean(mayEdit)} onUpdated={setClub} />
+              )}
             </div>
           </div>
 

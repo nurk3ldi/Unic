@@ -29,8 +29,8 @@ console.log('Схема применена');
 const demo = [
   ['admin@unic.kz', 'admin', '+77010000001', 'Админ Системы', 'admin'],
   ['university@unic.kz', 'kbtu', '+77010000002', 'Университет KBTU', 'university'],
-  ['lead@unic.kz', 'aigerim', '+77010000003', 'Нурланова Айгерим Ержанқызы', 'club_lead'],
-  ['student@unic.kz', 'nurkeldi', '+77010000004', 'Студент Нуркелди Ерланұлы', 'student'],
+  ['nurk3ldi@icloud.com', 'nurkeldi', '+77010000003', 'Ақжігіт Нұркелді Мұхаметжанұлы', 'club_lead'],
+  ['ftnurkeldi@gmail.com', 'aruzhan', '+77010000004', 'Тұрғанова Аружан Асқарқызы', 'student'],
 ];
 
 for (const [email, username, phone, fullName, role] of demo) {
