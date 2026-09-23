@@ -43,3 +43,46 @@
 .search__input::placeholder {
   color: var(--text-tertiary);
 }
+
+/* Браузерный крестик убран — вместо него свой, ниже */
+.search__input::-webkit-search-cancel-button {
+  display: none;
+}
+
+/* Тонкий и тихий: стереть набранное — не то действие, ради которого
+   в поле должен появляться второй акцент */
+.search__clear {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 1.125rem;
+  height: 1.125rem;
+  flex: none;
+  color: var(--text-tertiary);
+  transition:
+    color var(--duration-fast) var(--ease-out),
+    transform var(--duration-press) var(--ease-out);
+}
+
+/* Зона нажатия больше самого знака — сам он остаётся мелким */
+.search__clear::before {
+  content: '';
+  position: absolute;
+  inset: -0.6875rem;
+}
+
+.search__clear:hover {
+  color: var(--text-secondary);
+}
+
+/* Отклик наступает на нажатии, а не на отпускании */
+.search__clear:active {
+  transform: scale(0.9);
+}
+
+.search__clear svg {
+  width: 100%;
+  height: 100%;
+  /* Ionicons рисует крестик штрихом — делаем его тоньше системного */
+  stroke-width: 24;
+}

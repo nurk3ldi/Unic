@@ -138,6 +138,7 @@ export default function MembersPanel({ clubId, onCountChange }) {
         label="Поиск участников"
         value={search}
         onChange={(event) => setSearch(event.target.value)}
+        onClear={() => setSearch('')}
       />
 
       {lead && (

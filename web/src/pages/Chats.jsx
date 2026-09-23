@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link, NavLink, useParams } from 'react-router-dom';
-import { IoChevronBack, IoChevronForward } from 'react-icons/io5';
+import { IoChatbubblesOutline, IoChevronBack, IoChevronForward } from 'react-icons/io5';
 import { api } from '../api.js';
 import { POLL_MS, chatStamp } from '../chat.js';
 import { initial, shortName } from '../people.js';
@@ -13,8 +13,12 @@ import './Chats.css';
  * Чаты: слева список, справа открытый разговор — две панели в одной карточке,
  * разделённые волоском. Так видно, где ещё говорят, не выходя из переписки.
  *
- * Список отвечает на вопрос «где я переписываюсь», поэтому в нём только клубы,
- * где человек состоит. Управляющие роли открывают чужой чат со страницы клуба.
+ * Первым в списке — общий чат университета: он есть у всех и потому не зависит
+ * от состава клубов. Он же открыт по умолчанию, на пустой адрес `/chats`:
+ * пустая правая панель ничего не говорила бы о том, что здесь делают.
+ *
+ * Дальше — клубы, где человек состоит: список отвечает на вопрос «где я
+ * переписываюсь». Управляющие роли открывают чужой чат со страницы клуба.
  *
  * Разговор живёт в адресе (`/chats/:id`): ссылку можно переслать, а «назад»
  * возвращает к списку, а не к предыдущему клубу.
@@ -23,6 +27,7 @@ export default function Chats() {
   const { id } = useParams();
 
   const [chats, setChats] = useState([]);
+  const [general, setGeneral] = useState(null);
   const [search, setSearch] = useState('');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -33,9 +38,10 @@ export default function Chats() {
     async function load() {
       if (document.hidden) return;
       try {
-        const { chats } = await api.chats();
+        const { chats, general } = await api.chats();
         if (alive) {
           setChats(chats);
+          setGeneral(general);
           setError('');
         }
       } catch (failure) {
@@ -80,6 +86,7 @@ export default function Chats() {
             label="Поиск чата"
             value={search}
             onChange={(event) => setSearch(event.target.value)}
+            onClear={() => setSearch('')}
           />
 
           {loading ? (
@@ -88,14 +95,39 @@ export default function Chats() {
             <p className="chats__empty" role="alert">
               {error}
             </p>
-          ) : visible.length === 0 ? (
-            <p className="chats__empty">
-              {search
-                ? 'Ничего не нашли'
-                : 'Вы пока не состоите в клубах — чату неоткуда взяться.'}
-            </p>
           ) : (
             <ul className="chats__list">
+              {/* Общий чат не фильтруется поиском: он один и всегда на месте */}
+              <li>
+                <NavLink className="chat-row" to="/chats" end viewTransition>
+                  <span className="chat-row__photo chat-row__photo--general">
+                    <IoChatbubblesOutline aria-hidden="true" />
+                  </span>
+
+                  <span className="chat-row__body">
+                    <span className="chat-row__name">Общий чат</span>
+                    <span className="chat-row__last">
+                      {general?.last ? (
+                        <>
+                          <span className="chat-row__author">
+                            {shortName(general.last.author)}:
+                          </span>{' '}
+                          {general.last.text}
+                        </>
+                      ) : (
+                        'Весь университет'
+                      )}
+                    </span>
+                  </span>
+
+                  {general?.last && (
+                    <time className="chat-row__time" dateTime={general.last.createdAt}>
+                      {chatStamp(general.last.createdAt)}
+                    </time>
+                  )}
+                </NavLink>
+              </li>
+
               {visible.map((chat) => (
                 <li key={chat.id}>
                   <NavLink className="chat-row" to={`/chats/${chat.id}`} viewTransition>
@@ -131,32 +163,39 @@ export default function Chats() {
                   </NavLink>
                 </li>
               ))}
+
+              {visible.length === 0 && (
+                <li>
+                  <p className="chats__empty">
+                    {search ? 'Ничего не нашли' : 'Клубных чатов пока нет'}
+                  </p>
+                </li>
+              )}
             </ul>
           )}
         </div>
 
         <div className="chats__room">
-          {id ? (
-            <>
-              <div className="card-header">
-                {/* На узком экране шапка разговора — единственный путь назад */}
-                <Link className="card-header__back chats__back" to="/chats" viewTransition>
-                  <IoChevronBack aria-hidden="true" />
-                  Чаты
-                </Link>
+          <div className="card-header">
+            {/* На узком экране шапка разговора — единственный путь назад */}
+            <Link className="card-header__back chats__back" to="/chats" viewTransition>
+              <IoChevronBack aria-hidden="true" />
+              Чаты
+            </Link>
 
-                {/* Название ведёт в клуб: разговор — это часть клуба, а не остров */}
-                <Link className="card-header__action" to={`/clubs/${id}`} viewTransition>
-                  {open?.name ?? 'Клуб'}
-                  <IoChevronForward aria-hidden="true" />
-                </Link>
-              </div>
+            {id ? (
+              /* Название ведёт в клуб: разговор — это часть клуба, а не остров */
+              <Link className="card-header__action" to={`/clubs/${id}`} viewTransition>
+                {open?.name ?? 'Клуб'}
+                <IoChevronForward aria-hidden="true" />
+              </Link>
+            ) : (
+              <h2 className="card-header__title">Общий чат</h2>
+            )}
+          </div>
 
-              <ChatRoom clubId={id} />
-            </>
-          ) : (
-            <p className="chats__hint">Выберите чат слева</p>
-          )}
+          {/* key: смена разговора начинает ленту заново, а не дописывает чужую */}
+          <ChatRoom key={id ?? 'general'} clubId={id ?? null} />
         </div>
       </div>
     </main>
