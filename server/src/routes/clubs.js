@@ -343,6 +343,8 @@ const publicMessage = (row) => ({
   authorId: row.author_id,
   // Автора могли удалить: переписка остаётся, имя заменяется
   author: row.full_name ?? 'Удалённый участник',
+  username: row.username ?? null,
+  phone: row.phone ?? null,
   createdAt: row.created_at,
 });
 
@@ -362,7 +364,7 @@ router.get('/:id/messages', requireAuth, async (req, res) => {
   const limit = Math.min(Number(req.query.limit) || MESSAGE_PAGE, MESSAGE_PAGE);
 
   const { rows } = await query(
-    `select m.id, m.body, m.author_id, m.created_at, u.full_name
+    `select m.id, m.body, m.author_id, m.created_at, u.full_name, u.username, u.phone
        from club_messages m
        left join users u on u.id = m.author_id
       where m.club_id = $1
@@ -396,7 +398,12 @@ router.post('/:id/messages', requireAuth, async (req, res) => {
   );
 
   res.status(201).json({
-    message: publicMessage({ ...rows[0], full_name: req.user.full_name }),
+    message: publicMessage({
+      ...rows[0],
+      full_name: req.user.full_name,
+      username: req.user.username,
+      phone: req.user.phone,
+    }),
   });
 });
 

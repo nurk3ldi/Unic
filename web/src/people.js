@@ -23,3 +23,12 @@ export function authorColor(id = '') {
   for (const char of id) hash = (Math.imul(hash, 16777619) ^ char.charCodeAt(0)) >>> 0;
   return `var(--author-${(hash % 6) + 1})`;
 }
+
+/** «+77010000003» → «+7 701 000 00 03»: читать группами легче, чем сплошняком. */
+export function formatPhone(phone = '') {
+  const digits = phone.replace(/\D/g, '');
+  if (digits.length !== 11) return phone;
+
+  const [, a, b, c, d] = digits.match(/^(\d)(\d{3})(\d{3})(\d{4})$/) ?? [];
+  return a ? `+${a} ${b} ${c} ${d.slice(0, 2)} ${d.slice(2)}` : phone;
+}

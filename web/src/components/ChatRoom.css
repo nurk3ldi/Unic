@@ -55,12 +55,25 @@
   color: var(--text-on-accent);
 }
 
-.msg__author {
-  display: block;
+/* Ник слева, номер справа — строка шапки задаёт пузырю минимальную ширину */
+.msg__head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-4);
   margin-bottom: 0.125rem;
+}
+
+.msg__author {
   font-size: 0.8125rem;
   font-weight: 600;
   letter-spacing: var(--tracking-caption);
+}
+
+.msg__phone {
+  flex: none;
+  font-size: 0.75rem;
+  color: var(--text-tertiary);
 }
 
 .msg__text {

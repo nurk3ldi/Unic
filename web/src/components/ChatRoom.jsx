@@ -3,7 +3,7 @@ import { IoAdd, IoArrowUp } from 'react-icons/io5';
 import { api } from '../api.js';
 import { useAuth } from '../AuthContext.jsx';
 import { POLL_MS, messageTime } from '../chat.js';
-import { authorColor, initial, shortName } from '../people.js';
+import { authorColor, formatPhone, initial, shortName } from '../people.js';
 import './ChatRoom.css';
 
 /**
@@ -103,8 +103,18 @@ export default function ChatRoom({ clubId }) {
 
                 <div className="msg__bubble">
                   {!own && (
-                    <span className="msg__author" style={{ color: authorColor(message.authorId) }}>
-                      {shortName(message.author)}
+                    /* Ник называет человека, номер рядом — по нему его находят */
+                    <span className="msg__head">
+                      <span
+                        className="msg__author"
+                        style={{ color: authorColor(message.authorId) }}
+                      >
+                        {message.username ? `@${message.username}` : shortName(message.author)}
+                      </span>
+
+                      {message.phone && (
+                        <span className="msg__phone">{formatPhone(message.phone)}</span>
+                      )}
                     </span>
                   )}
 
