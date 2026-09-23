@@ -315,46 +315,6 @@
   font-weight: 600;
 }
 
-/* Полоса, которую ряд раскрывает по ширине: «Отмена» приезжает из ряда,
-   а не возникает на месте. Элемент остаётся в разметке — иначе закрытие
-   нечему проигрывать. Единственное исключение из «только transform и opacity»:
-   до содержимого можно доехать только треком грида. */
-.reveal-x,
-.reveal-y {
-  display: grid;
-  opacity: 0;
-  transition:
-    grid-template-columns var(--duration-fast) var(--ease-out),
-    grid-template-rows var(--duration-fast) var(--ease-out),
-    opacity var(--duration-fast) var(--ease-out);
-}
-
-.reveal-x {
-  grid-template-columns: 0fr;
-}
-
-.reveal-x--open {
-  grid-template-columns: 1fr;
-  opacity: 1;
-}
-
-.reveal-y {
-  grid-template-rows: 0fr;
-}
-
-.reveal-y--open {
-  grid-template-rows: 1fr;
-  opacity: 1;
-}
-
-/* То, обо что зажимается свёрнутый трек */
-.reveal-x__clip,
-.reveal-y__clip {
-  min-width: 0;
-  min-height: 0;
-  overflow: hidden;
-}
-
 /* Фото: кнопка всегда, но нажимается только в правке */
 .club-hero__photo {
   position: relative;

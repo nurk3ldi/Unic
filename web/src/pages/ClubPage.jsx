@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { IoChevronBack, IoCameraOutline } from 'react-icons/io5';
 import { api } from '../api.js';
@@ -8,19 +8,6 @@ import { STATUS_LABELS, membersLabel } from '../club.js';
 import MembersPanel from '../components/MembersPanel.jsx';
 import './Page.css';
 import './ClubPage.css';
-
-// Временные данные: заменим на API, когда появится таблица club_members
-const DEMO_MEMBERS = [
-  { id: 1, name: 'Ким Тимур Андреевич', role: 'member' },
-  { id: 2, name: 'Досжанов Алихан Ержанұлы', role: 'lead' },
-  { id: 3, name: 'Бекова Марат Сериковна', role: 'member' },
-  { id: 4, name: 'Жумабаева Асель Бекқызы', role: 'member' },
-];
-
-const DEMO_REQUESTS = [
-  { id: 11, name: 'Сапаров Ерлан Маратович' },
-  { id: 12, name: 'Абенова Дана Сериковна' },
-];
 
 // Правят клуб те же роли, что и создают его
 const CAN_EDIT = ['university', 'admin'];
@@ -111,6 +98,12 @@ export default function ClubPage() {
       setSaving(false);
     }
   }
+
+  // Панель сама знает состав; страница держит только число рядом с названием
+  const syncMembers = useCallback(
+    (count) => setClub((current) => (current ? { ...current, members: count } : current)),
+    [],
+  );
 
   async function done() {
     if (await commit()) setEditing(false);
@@ -291,7 +284,7 @@ export default function ClubPage() {
             <h2 className="side-header__title">Управление участниками</h2>
           </div>
 
-          <MembersPanel members={DEMO_MEMBERS} requests={DEMO_REQUESTS} />
+          <MembersPanel clubId={id} onCountChange={syncMembers} />
         </aside>
       </div>
     </main>

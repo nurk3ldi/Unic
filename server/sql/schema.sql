@@ -31,7 +31,6 @@ create table if not exists clubs (
   description text,
   status      text not null default 'active'
               check (status in ('active', 'pending', 'suspended')),
-  lead_id     uuid references users (id) on delete set null,
   created_by  uuid references users (id) on delete set null,
   created_at  timestamptz not null default now()
 );
@@ -40,4 +39,26 @@ create table if not exists clubs (
 -- поэтому новые столбцы добавляются отдельно
 alter table clubs add column if not exists description text;
 
+-- Руководитель хранится в club_members.role. Два места для одного факта
+-- рано или поздно расходятся, поэтому старый столбец убираем
+alter table clubs drop column if exists lead_id;
+
 create index if not exists clubs_status_idx on clubs (status);
+
+-- Участники клуба. Заявка — та же строка со status = 'pending':
+-- отдельная таблица заявок хранила бы ровно те же поля и те же связи
+create table if not exists club_members (
+  club_id    uuid not null references clubs (id) on delete cascade,
+  user_id    uuid not null references users (id) on delete cascade,
+  role       text not null default 'member' check (role in ('lead', 'member')),
+  status     text not null default 'active' check (status in ('active', 'pending')),
+  created_at timestamptz not null default now(),
+  primary key (club_id, user_id)
+);
+
+-- Руководитель в клубе один. Это правило базы, а не порядок вызовов в коде
+create unique index if not exists club_members_lead_idx
+  on club_members (club_id)
+  where role = 'lead';
+
+create index if not exists club_members_user_idx on club_members (user_id);

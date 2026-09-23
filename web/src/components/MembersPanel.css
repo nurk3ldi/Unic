@@ -333,3 +333,61 @@
     animation: none;
   }
 }
+
+/* ── Ошибка действия ────────────────────────────────────── */
+/* Стоит там же, где действие: смотреть наверх карточки не нужно */
+.side-error {
+  padding: var(--space-2) var(--space-4);
+  font-size: 0.8125rem;
+  letter-spacing: var(--tracking-caption);
+  color: var(--red);
+}
+
+/* ── Добавление участника ───────────────────────────────── */
+/* Поле приезжает из кнопки и живёт прямо над ней */
+.side-add-form {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-3);
+  border-top: 1px solid var(--separator);
+}
+
+.side-add-form .side-search__field {
+  flex: 1;
+  min-width: 0;
+}
+
+.side-add-form__submit {
+  flex: none;
+  min-height: 2.25rem;
+  padding: 0 var(--space-4);
+  border-radius: var(--radius-pill);
+  background: var(--accent);
+  color: var(--text-on-accent);
+  font-size: 0.875rem;
+  font-weight: 500;
+  transition:
+    opacity var(--duration-fast) var(--ease-out),
+    transform var(--duration-press) var(--ease-out);
+}
+
+.side-add-form__submit:hover {
+  opacity: 0.9;
+}
+
+.side-add-form__submit:active {
+  transform: scale(0.97);
+}
+
+.side-add-form__submit:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+/* Ошибка занимает свою строку под полем */
+.side-add-form .side-error {
+  flex-basis: 100%;
+  padding: 0 var(--space-2);
+}
