@@ -91,28 +91,34 @@
 }
 
 /* ── Поле ввода ─────────────────────────────────────────── */
-/* Закреплено внизу: лента прокручивается под ним, оно не уезжает */
+/* Одна карточка на всё: поле и отправка живут внутри неё, а не рядом друг
+   с другом — так у нижней полосы одна граница, а не три */
 .chat__composer {
   display: flex;
   align-items: center;
   gap: var(--space-2);
   flex: none;
-  padding: var(--space-3) var(--space-4);
-  border-top: 1px solid var(--separator);
+  margin: var(--space-3) var(--space-4) var(--space-4);
+  padding: var(--space-1);
+  padding-left: var(--space-4);
+  border-radius: var(--radius-pill);
+  background: var(--fill);
+  transition: background-color var(--duration-fast) var(--ease-out);
+}
+
+/* Фокус показывает сама карточка — рамка и кольцо не нужны (§4.5) */
+.chat__composer:focus-within {
+  background: var(--fill-hover);
 }
 
 .chat__input {
   flex: 1;
   min-width: 0;
-  min-height: 3rem;
-  padding: 0 var(--space-4);
-  border: 1px solid var(--separator-strong);
-  border-radius: var(--radius-pill);
-  background: var(--surface);
+  min-height: 2.5rem;
+  border: none;
+  background: none;
   font-size: 1rem;
   color: var(--text);
-  /* Фокус показывает только граница — без кольца-тени (§4.5) */
-  transition: border-color 250ms var(--ease-out);
 }
 
 .chat__input::placeholder {
@@ -123,20 +129,20 @@
 .chat__input:focus-visible {
   outline: none;
   box-shadow: none;
-  border-color: var(--accent);
 }
 
 .chat__send {
   display: grid;
   place-items: center;
-  width: 3rem;
-  height: 3rem;
+  width: 2.5rem;
+  height: 2.5rem;
   flex: none;
   border-radius: 50%;
   background: var(--accent);
   color: var(--text-on-accent);
   transition:
-    opacity var(--duration-fast) var(--ease-out),
+    background-color var(--duration-fast) var(--ease-out),
+    color var(--duration-fast) var(--ease-out),
     transform var(--duration-press) var(--ease-out);
 }
 
@@ -150,9 +156,9 @@
   transform: scale(0.94);
 }
 
-/* Пустому полю отправлять нечего — кнопка это показывает, а не прячется */
+/* Пустому полю отправлять нечего — кнопка гаснет внутри той же карточки */
 .chat__send:disabled {
-  background: var(--fill);
+  background: none;
   color: var(--text-tertiary);
   cursor: default;
 }
