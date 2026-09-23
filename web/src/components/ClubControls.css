@@ -112,7 +112,7 @@
 /* ── Подтверждение ──────────────────────────────────────── */
 /* Единственный alert в проекте: удаление нечем отменить */
 .alert {
-  width: min(17rem, calc(100vw - 2rem));
+  width: min(21rem, calc(100vw - 2rem));
   margin: auto; /* без этого окно прилипает к левому верхнему углу */
   padding: 0;
   border: none;
@@ -183,7 +183,9 @@
 /* Две кнопки в ряд, разделённые волоском — раскладка системного оповещения */
 .alert__actions {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  /* minmax(0, 1fr), а не 1fr: иначе длинное слово распирает свою половину
+     и кнопки перестают быть равными */
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   border-top: 1px solid var(--separator);
 }
 
