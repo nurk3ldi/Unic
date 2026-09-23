@@ -1,13 +1,26 @@
-/* Карточка на весь экран — как чат и боковая панель клуба */
+/* Карточка на весь экран, внутри — две панели, разделённые волоском */
 .chats {
-  display: flex;
-  flex-direction: column;
+  display: grid;
+  grid-template-columns: minmax(16rem, 22rem) 1fr;
   margin-top: calc(var(--space-4) - var(--space-8));
   height: calc(100dvh - var(--header-height) - var(--space-4) - var(--space-8));
-  overflow: hidden; /* скругление режет собственную шапку */
+  overflow: hidden; /* скругление режет шапки обеих панелей */
   background: var(--surface);
   border: 1px solid var(--separator);
   border-radius: var(--radius-widget);
+}
+
+.chats__side,
+.chats__room {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+}
+
+/* Граница идёт от шапки до низа — панели отделены целиком */
+.chats__room {
+  border-left: 1px solid var(--separator);
 }
 
 .chats__list {
@@ -17,7 +30,8 @@
   padding: var(--space-2) 0;
 }
 
-.chats__empty {
+.chats__empty,
+.chats__hint {
   margin: auto;
   padding: var(--space-6);
   font-size: 0.9375rem;
@@ -25,12 +39,18 @@
   color: var(--text-tertiary);
 }
 
+/* Назад к списку нужен только там, где список спрятан.
+   Селектор составной: у .card-header__back такой же вес, и он идёт позже */
+.chats .chats__back {
+  display: none;
+}
+
 /* ── Строка разговора ───────────────────────────────────── */
 .chat-row {
   display: flex;
   align-items: center;
   gap: var(--space-3);
-  padding: var(--space-3) var(--space-5);
+  padding: var(--space-3) var(--space-4);
   color: var(--text);
   transition: background-color var(--duration-press) var(--ease-out);
 }
@@ -43,6 +63,12 @@
 /* Отклик наступает на нажатии, а не на отпускании */
 .chat-row:active {
   background: var(--fill-hover);
+}
+
+/* Открытый разговор подсвечен: список показывает, где ты сейчас.
+   NavLink сам ставит aria-current — отдельный класс не нужен */
+.chat-row[aria-current='page'] {
+  background: var(--accent-soft);
 }
 
 .chat-row__photo {
@@ -97,4 +123,28 @@
   align-self: flex-start;
   font-size: 0.75rem;
   color: var(--text-tertiary);
+}
+
+/* На узком экране панели не помещаются рядом: видно что-то одно */
+@media (max-width: 60rem) {
+  .chats {
+    grid-template-columns: 1fr;
+  }
+
+  .chats__room {
+    display: none;
+    border-left: none;
+  }
+
+  .chats--open .chats__side {
+    display: none;
+  }
+
+  .chats--open .chats__room {
+    display: flex;
+  }
+
+  .chats .chats__back {
+    display: inline-flex;
+  }
 }

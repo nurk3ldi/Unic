@@ -270,7 +270,7 @@ export default function ClubPage() {
 
           <div className="club-bottom">
             {/* Карточка целиком ведёт в чат: свёрнутый вид только читают */}
-            <Link className="club-card club-card--tap" to={`/clubs/${id}/chat`} viewTransition>
+            <Link className="club-card club-card--tap" to={`/chats/${id}`} viewTransition>
               <div className="card-header">
                 <h2 className="card-header__title">Чат</h2>
               </div>

@@ -1,16 +1,3 @@
-/* Карточка чата занимает экран целиком — так же, как боковая панель клуба:
-   отступ сверху отбивается от шапки, нижний отступ страницы вычитается */
-.chat {
-  display: flex;
-  flex-direction: column;
-  margin-top: calc(var(--space-4) - var(--space-8));
-  height: calc(100dvh - var(--header-height) - var(--space-4) - var(--space-8));
-  overflow: hidden; /* скругление режет собственную шапку */
-  background: var(--surface);
-  border: 1px solid var(--separator);
-  border-radius: var(--radius-widget);
-}
-
 /* Читают её с конца, поэтому прокручивается только лента */
 .chat__list {
   display: flex;
