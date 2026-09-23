@@ -16,8 +16,9 @@ import './ClubControls.css';
  * клуб приостанавливают, приостановленный возвращают. Что происходит сейчас,
  * видно строкой выше, поэтому кнопка называет действие, а не состояние.
  *
- * Удаление спрашивает подтверждение в нативном alert — это единственный случай
- * в проекте, где оно оправдано: действие необратимо и отменить его нечем.
+ * Оба действия, которые что-то отнимают — остановка и удаление — спрашивают
+ * подтверждение в нативном alert. Возобновление не спрашивает: оно ничего
+ * не теряет, а вопрос без повода учит жать «да» не читая.
  */
 export default function ClubControls({ club, canManage, onUpdated }) {
   const navigate = useNavigate();
@@ -25,7 +26,7 @@ export default function ClubControls({ club, canManage, onUpdated }) {
 
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
-  const [asking, setAsking] = useState(false);
+  const [asking, setAsking] = useState(null); // null | 'pause' | 'delete'
 
   const paused = club.status !== 'active';
 
@@ -42,17 +43,16 @@ export default function ClubControls({ club, canManage, onUpdated }) {
     if (!asking && dialog.open) dialog.close();
   }, [asking]);
 
-  async function toggleStatus() {
+  async function setStatus(next) {
     setBusy(true);
     setError('');
     try {
-      const { club: saved } = await api.updateClub(club.id, {
-        status: paused ? 'active' : 'suspended',
-      });
+      const { club: saved } = await api.updateClub(club.id, { status: next });
       onUpdated(saved);
     } catch (failure) {
       setError(failure.message);
     } finally {
+      setAsking(null);
       setBusy(false);
     }
   }
@@ -64,11 +64,30 @@ export default function ClubControls({ club, canManage, onUpdated }) {
       await api.deleteClub(club.id);
       navigate('/clubs', { viewTransition: true });
     } catch (failure) {
-      setAsking(false);
+      setAsking(null);
       setError(failure.message);
       setBusy(false);
     }
   }
+
+  // Останавливать спрашиваем, возобновлять — нет: вопрос уместен там,
+  // где действие что-то отнимает
+  const ask =
+    asking === 'delete'
+      ? {
+          title: 'Удалить клуб?',
+          text: `«${club.name}», его состав и заявки будут удалены безвозвратно.`,
+          confirm: busy ? 'Удаляем…' : 'Удалить',
+          danger: true,
+          run: remove,
+        }
+      : {
+          title: 'Приостановить клуб?',
+          text: 'Клуб перестанет быть активным. Вернуть его в работу можно в любой момент.',
+          confirm: busy ? 'Останавливаем…' : 'Приостановить',
+          danger: false,
+          run: () => setStatus('suspended'),
+        };
 
   return (
     <div className="controls">
@@ -86,7 +105,7 @@ export default function ClubControls({ club, canManage, onUpdated }) {
             className="group__row group__row--action"
             type="button"
             disabled={busy}
-            onClick={toggleStatus}
+            onClick={() => (paused ? setStatus('active') : setAsking('pause'))}
           >
             {paused ? 'Возобновить работу' : 'Приостановить клуб'}
           </button>
@@ -99,7 +118,7 @@ export default function ClubControls({ club, canManage, onUpdated }) {
             className="group__row group__row--danger"
             type="button"
             disabled={busy}
-            onClick={() => setAsking(true)}
+            onClick={() => setAsking('delete')}
           >
             Удалить клуб
           </button>
@@ -112,12 +131,10 @@ export default function ClubControls({ club, canManage, onUpdated }) {
         </p>
       )}
 
-      <dialog className="alert" ref={dialogRef} onClose={() => setAsking(false)}>
+      <dialog className="alert" ref={dialogRef} onClose={() => setAsking(null)}>
         <div className="alert__body">
-          <h2 className="alert__title">Удалить клуб?</h2>
-          <p className="alert__text">
-            «{club.name}», его состав и заявки будут удалены безвозвратно.
-          </p>
+          <h2 className="alert__title">{ask.title}</h2>
+          <p className="alert__text">{ask.text}</p>
         </div>
 
         <div className="alert__actions">
@@ -125,17 +142,17 @@ export default function ClubControls({ club, canManage, onUpdated }) {
             className="alert__button alert__button--cancel"
             type="button"
             disabled={busy}
-            onClick={() => setAsking(false)}
+            onClick={() => setAsking(null)}
           >
             Отмена
           </button>
           <button
-            className="alert__button alert__button--danger"
+            className={`alert__button${ask.danger ? ' alert__button--danger' : ''}`}
             type="button"
             disabled={busy}
-            onClick={remove}
+            onClick={ask.run}
           >
-            {busy ? 'Удаляем…' : 'Удалить'}
+            {ask.confirm}
           </button>
         </div>
       </dialog>
