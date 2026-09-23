@@ -100,7 +100,6 @@
   flex: none;
   margin: var(--space-3) var(--space-4) var(--space-4);
   padding: var(--space-1);
-  padding-left: var(--space-4);
   border-radius: var(--radius-pill);
   background: var(--fill);
   transition: background-color var(--duration-fast) var(--ease-out);
@@ -109,6 +108,36 @@
 /* Фокус показывает сама карточка — рамка и кольцо не нужны (§4.5) */
 .chat__composer:focus-within {
   background: var(--fill-hover);
+}
+
+/* Вложения слева, отправка справа — поле между ними */
+.chat__attach {
+  display: grid;
+  place-items: center;
+  width: 2.5rem;
+  height: 2.5rem;
+  flex: none;
+  border-radius: 50%;
+  color: var(--text-secondary);
+  transition:
+    background-color var(--duration-fast) var(--ease-out),
+    color var(--duration-fast) var(--ease-out),
+    transform var(--duration-press) var(--ease-out);
+}
+
+.chat__attach svg {
+  width: 1.375rem;
+  height: 1.375rem;
+}
+
+.chat__attach:hover {
+  background: var(--fill-hover);
+  color: var(--text);
+}
+
+/* Отклик наступает на нажатии, а не на отпускании */
+.chat__attach:active {
+  transform: scale(0.94);
 }
 
 .chat__input {

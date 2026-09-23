@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { IoArrowUp } from 'react-icons/io5';
+import { IoAdd, IoArrowUp } from 'react-icons/io5';
 import { api } from '../api.js';
 import { useAuth } from '../AuthContext.jsx';
 import { POLL_MS, messageTime } from '../chat.js';
@@ -130,6 +130,11 @@ export default function ChatRoom({ clubId }) {
       )}
 
       <form className="chat__composer" onSubmit={send}>
+        {/* Вложения появятся здесь: кнопка стоит на своём месте, но пока молчит */}
+        <button className="chat__attach" type="button" aria-label="Добавить вложение">
+          <IoAdd aria-hidden="true" />
+        </button>
+
         <label className="visually-hidden" htmlFor="chat-input">
           Сообщение
         </label>
