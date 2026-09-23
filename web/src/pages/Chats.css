@@ -1,0 +1,100 @@
+/* Карточка на весь экран — как чат и боковая панель клуба */
+.chats {
+  display: flex;
+  flex-direction: column;
+  margin-top: calc(var(--space-4) - var(--space-8));
+  height: calc(100dvh - var(--header-height) - var(--space-4) - var(--space-8));
+  overflow: hidden; /* скругление режет собственную шапку */
+  background: var(--surface);
+  border: 1px solid var(--separator);
+  border-radius: var(--radius-widget);
+}
+
+.chats__list {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: var(--space-2) 0;
+}
+
+.chats__empty {
+  margin: auto;
+  padding: var(--space-6);
+  font-size: 0.9375rem;
+  text-align: center;
+  color: var(--text-tertiary);
+}
+
+/* ── Строка разговора ───────────────────────────────────── */
+.chat-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-5);
+  color: var(--text);
+  transition: background-color var(--duration-press) var(--ease-out);
+}
+
+.chat-row:hover {
+  background: var(--fill);
+  text-decoration: none;
+}
+
+/* Отклик наступает на нажатии, а не на отпускании */
+.chat-row:active {
+  background: var(--fill-hover);
+}
+
+.chat-row__photo {
+  display: grid;
+  place-items: center;
+  width: 2.75rem;
+  height: 2.75rem;
+  flex: none;
+  overflow: hidden;
+  border-radius: var(--radius-control);
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-size: 1.125rem;
+  font-weight: 600;
+}
+
+.chat-row__image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.chat-row__body {
+  display: flex;
+  flex-direction: column;
+  gap: 0.125rem;
+  min-width: 0;
+  flex: 1;
+}
+
+.chat-row__name {
+  font-size: 0.9375rem;
+  font-weight: 600;
+  letter-spacing: var(--tracking-caption);
+}
+
+/* Одна строка: в списке важнее, сколько разговоров видно, чем одна реплика целиком */
+.chat-row__last {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-size: 0.875rem;
+  color: var(--text-secondary);
+}
+
+.chat-row__author {
+  color: var(--text);
+}
+
+.chat-row__time {
+  flex: none;
+  align-self: flex-start;
+  font-size: 0.75rem;
+  color: var(--text-tertiary);
+}
