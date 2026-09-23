@@ -1,10 +1,11 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Link, NavLink, useParams } from 'react-router-dom';
 import { IoChevronBack, IoChevronForward } from 'react-icons/io5';
 import { api } from '../api.js';
 import { POLL_MS, chatStamp } from '../chat.js';
 import { initial, shortName } from '../people.js';
 import ChatRoom from '../components/ChatRoom.jsx';
+import SearchField from '../components/SearchField.jsx';
 import './Page.css';
 import './Chats.css';
 
@@ -22,6 +23,7 @@ export default function Chats() {
   const { id } = useParams();
 
   const [chats, setChats] = useState([]);
+  const [search, setSearch] = useState('');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
@@ -53,6 +55,18 @@ export default function Chats() {
 
   const open = chats.find((chat) => chat.id === id) ?? null;
 
+  // Ищем и по названию клуба, и по последней реплике: в списке видно и то, и другое
+  const visible = useMemo(() => {
+    const query = search.trim().toLowerCase();
+    if (!query) return chats;
+
+    return chats.filter(
+      (chat) =>
+        chat.name.toLowerCase().includes(query) ||
+        chat.last?.text.toLowerCase().includes(query),
+    );
+  }, [chats, search]);
+
   return (
     <main className="page">
       {/* На узком экране видно что-то одно: список либо разговор */}
@@ -62,17 +76,27 @@ export default function Chats() {
             <h1 className="card-header__title">Чаты</h1>
           </div>
 
+          <SearchField
+            label="Поиск чата"
+            value={search}
+            onChange={(event) => setSearch(event.target.value)}
+          />
+
           {loading ? (
             <p className="chats__empty">Загружаем…</p>
           ) : error ? (
             <p className="chats__empty" role="alert">
               {error}
             </p>
-          ) : chats.length === 0 ? (
-            <p className="chats__empty">Вы пока не состоите в клубах — чату неоткуда взяться.</p>
+          ) : visible.length === 0 ? (
+            <p className="chats__empty">
+              {search
+                ? 'Ничего не нашли'
+                : 'Вы пока не состоите в клубах — чату неоткуда взяться.'}
+            </p>
           ) : (
             <ul className="chats__list">
-              {chats.map((chat) => (
+              {visible.map((chat) => (
                 <li key={chat.id}>
                   <NavLink className="chat-row" to={`/chats/${chat.id}`} viewTransition>
                     <span className="chat-row__photo">

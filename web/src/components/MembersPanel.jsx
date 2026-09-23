@@ -6,11 +6,11 @@ import {
   IoEllipsisHorizontal,
   IoPersonRemoveOutline,
   IoRemoveCircleOutline,
-  IoSearchOutline,
   IoSwapHorizontalOutline,
 } from 'react-icons/io5';
 import { api } from '../api.js';
 import { initial, shortName } from '../people.js';
+import SearchField from './SearchField.jsx';
 import './MembersPanel.css';
 
 /**
@@ -134,19 +134,11 @@ export default function MembersPanel({ clubId, onCountChange }) {
 
   return (
     <>
-      <div className="side-search">
-        <span className="side-search__field">
-          <IoSearchOutline aria-hidden="true" />
-          <input
-            className="side-search__input"
-            type="search"
-            placeholder="Поиск"
-            aria-label="Поиск участников"
-            value={search}
-            onChange={(event) => setSearch(event.target.value)}
-          />
-        </span>
-      </div>
+      <SearchField
+        label="Поиск участников"
+        value={search}
+        onChange={(event) => setSearch(event.target.value)}
+      />
 
       {lead && (
         <div className="lead-block">
@@ -314,11 +306,11 @@ export default function MembersPanel({ clubId, onCountChange }) {
                 <label className="visually-hidden" htmlFor="member-login">
                   Никнейм или почта
                 </label>
-                <span className="side-search__field">
+                <span className="search__field">
                   <input
                     id="member-login"
                     ref={addRef}
-                    className="side-search__input"
+                    className="search__input"
                     placeholder="Никнейм или почта"
                     value={login}
                     tabIndex={adding ? undefined : -1}
