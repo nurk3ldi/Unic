@@ -4,31 +4,23 @@ import { requireAuth } from '../middleware/auth.js';
 
 const router = Router();
 
-// Те же пределы, что и в клубном чате: правило одно на переписку
-const MESSAGE_LIMIT = 2000;
-const MESSAGE_PAGE = 50;
-
-const publicMessage = (row) => ({
-  id: row.id,
-  text: row.body,
-  authorId: row.author_id,
-  // Автора могли удалить: переписка остаётся, имя заменяется
-  author: row.full_name ?? 'Удалённый участник',
-  createdAt: row.created_at,
-});
+// Те же роли, что управляют клубами, читают и их чаты
+const MANAGE_ROLES = ['university', 'admin'];
 
 /**
- * Чаты, которые у человека есть: общий и по одному на клуб, где он состоит.
+ * Чаты, которые у человека есть: по одному на клуб — чат заводится вместе
+ * с клубом и отдельного создания не требует.
  *
- * Управляющие роли могут открыть чат любого клуба со страницы клуба, но в этот
- * список он не попадает: список отвечает на вопрос «где я переписываюсь»,
- * а не «куда я имею доступ».
+ * Кому какие: участнику — его клубы, университету и админу — все. Список
+ * повторяет право читать чат, а не состав: иначе созданный только что клуб
+ * не показался бы тому, кто его создал.
  */
 router.get('/', requireAuth, async (req, res) => {
+  const all = MANAGE_ROLES.includes(req.user.role);
+
   const { rows } = await query(
     `select c.id, c.name, c.photo_url, m.body, m.created_at, u.full_name
-       from club_members cm
-       join clubs c on c.id = cm.club_id
+       from clubs c
        -- lateral: последнее сообщение каждого клуба одним проходом
        left join lateral (
          select body, created_at, author_id
@@ -38,77 +30,28 @@ router.get('/', requireAuth, async (req, res) => {
           limit 1
        ) m on true
        left join users u on u.id = m.author_id
-      where cm.user_id = $1 and cm.status = 'active'
+      where $2 or exists (
+        select 1 from club_members cm
+         where cm.club_id = c.id and cm.user_id = $1 and cm.status = 'active'
+      )
       -- сверху то, где говорили последним; в пустых чатах — по дате клуба
       order by coalesce(m.created_at, c.created_at) desc`,
-    [req.user.id],
+    [req.user.id, all],
   );
-
-  const general = await query(
-    `select m.body, m.created_at, u.full_name
-       from club_messages m
-       left join users u on u.id = m.author_id
-      where m.club_id is null
-      order by m.created_at desc
-      limit 1`,
-  );
-
-  const last = (row) =>
-    row
-      ? {
-          text: row.body,
-          author: row.full_name ?? 'Удалённый участник',
-          createdAt: row.created_at,
-        }
-      : null;
 
   res.json({
-    general: { last: last(general.rows[0]) },
     chats: rows.map((row) => ({
       id: row.id,
       name: row.name,
       photo: row.photo_url,
-      last: last(row.body ? row : null),
+      last: row.body
+        ? {
+            text: row.body,
+            author: row.full_name ?? 'Удалённый участник',
+            createdAt: row.created_at,
+          }
+        : null,
     })),
-  });
-});
-
-/**
- * Общий чат университета — сообщения без клуба.
- * Читать и писать может любой вошедший: он затем и общий.
- */
-router.get('/general/messages', requireAuth, async (req, res) => {
-  const limit = Math.min(Number(req.query.limit) || MESSAGE_PAGE, MESSAGE_PAGE);
-
-  const { rows } = await query(
-    `select m.id, m.body, m.author_id, m.created_at, u.full_name
-       from club_messages m
-       left join users u on u.id = m.author_id
-      where m.club_id is null
-      order by m.created_at desc
-      limit $1`,
-    [limit],
-  );
-
-  res.json({ messages: rows.reverse().map(publicMessage) });
-});
-
-router.post('/general/messages', requireAuth, async (req, res) => {
-  const text = String(req.body?.text ?? '').trim();
-  if (!text) return res.status(400).json({ error: 'Сообщение пустое' });
-  if (text.length > MESSAGE_LIMIT) {
-    return res.status(400).json({ error: 'Сообщение слишком длинное' });
-  }
-
-  const { rows } = await query(
-    `insert into club_messages (club_id, author_id, body)
-     values (null, $1, $2)
-     returning id, body, author_id, created_at`,
-    [req.user.id, text],
-  );
-
-  res.status(201).json({
-    message: publicMessage({ ...rows[0], full_name: req.user.full_name }),
   });
 });
 

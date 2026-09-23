@@ -36,9 +36,6 @@ export const api = {
     request(`/clubs/${id}/members/${userId}`, { method: 'DELETE' }),
 
   chats: () => request('/chats'),
-  generalMessages: () => request('/chats/general/messages'),
-  sendGeneralMessage: (payload) =>
-    request('/chats/general/messages', { method: 'POST', body: payload }),
   clubMessages: (id) => request(`/clubs/${id}/messages`),
   sendClubMessage: (id, payload) =>
     request(`/clubs/${id}/messages`, { method: 'POST', body: payload }),

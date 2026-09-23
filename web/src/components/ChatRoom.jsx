@@ -7,8 +7,7 @@ import { initial, shortName } from '../people.js';
 import './ChatRoom.css';
 
 /**
- * Разговор: лента и поле ввода. Без `clubId` это общий чат
- * университета — разница только в адресе, всё остальное совпадает.
+ * Разговор одного клуба: лента и поле ввода.
  *
  * **Новое приходит опросом, а не сокетом.** Пять секунд для клубной переписки
  * незаметны, а WebSocket — это новая зависимость и своё состояние соединения;
@@ -17,7 +16,7 @@ import './ChatRoom.css';
  *
  * Лента всегда прокручена к последнему сообщению — читают её с конца.
  */
-export default function ChatRoom({ clubId = null }) {
+export default function ChatRoom({ clubId }) {
   const { user } = useAuth();
 
   const listRef = useRef(null);
@@ -36,7 +35,7 @@ export default function ChatRoom({ clubId = null }) {
     async function load() {
       if (document.hidden) return;
       try {
-        const { messages } = clubId ? await api.clubMessages(clubId) : await api.generalMessages();
+        const { messages } = await api.clubMessages(clubId);
         if (alive) {
           setMessages(messages);
           setError('');
@@ -70,9 +69,7 @@ export default function ChatRoom({ clubId = null }) {
 
     setSending(true);
     try {
-      const { message } = clubId
-        ? await api.sendClubMessage(clubId, { text: body })
-        : await api.sendGeneralMessage({ text: body });
+      const { message } = await api.sendClubMessage(clubId, { text: body });
       // Своё сообщение показываем сразу, не дожидаясь следующего опроса
       setMessages((was) => [...was, message]);
       setText('');

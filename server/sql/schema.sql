@@ -75,7 +75,3 @@ create table if not exists club_messages (
 
 -- Чат всегда читают одним клубом и по времени
 create index if not exists club_messages_club_idx on club_messages (club_id, created_at);
-
--- Сообщение без клуба — общий чат университета. Отдельная таблица повторила бы
--- те же поля ради одного признака, поэтому признак и есть отсутствие клуба
-alter table club_messages alter column club_id drop not null;
