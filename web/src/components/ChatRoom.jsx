@@ -162,6 +162,23 @@ export default function ChatRoom({ clubId }) {
           messages.map((message) => {
             const own = message.authorId === user?.id;
 
+            // У чужой реплики есть шапка — кнопка встаёт в её конец, как в мессенджерах.
+            // У своей шапки нет, и кнопка висит в углу пузыря
+            const more = (
+              <button
+                className="msg__more"
+                type="button"
+                aria-label="Действия с сообщением"
+                aria-expanded={openMenu === message.id}
+                onClick={(event) => {
+                  event.stopPropagation(); // иначе тот же клик сразу закроет меню
+                  setOpenMenu((current) => (current === message.id ? null : message.id));
+                }}
+              >
+                <IoChevronDown aria-hidden="true" />
+              </button>
+            );
+
             return (
               <div className={`msg${own ? ' msg--own' : ''}`} key={message.id}>
                 {!own && (
@@ -171,20 +188,6 @@ export default function ChatRoom({ clubId }) {
                 )}
 
                 <div className="msg__bubble">
-                  {/* Появляется по наведению: в спокойном состоянии лента чистая */}
-                  <button
-                    className="msg__more"
-                    type="button"
-                    aria-label="Действия с сообщением"
-                    aria-expanded={openMenu === message.id}
-                    onClick={(event) => {
-                      event.stopPropagation(); // иначе тот же клик сразу закроет меню
-                      setOpenMenu((current) => (current === message.id ? null : message.id));
-                    }}
-                  >
-                    <IoChevronDown aria-hidden="true" />
-                  </button>
-
                   {openMenu === message.id && (
                     <div className="row-menu row-menu--msg" role="menu">
                       <button
@@ -227,6 +230,8 @@ export default function ChatRoom({ clubId }) {
                       {message.phone && (
                         <span className="msg__phone">{formatPhone(message.phone)}</span>
                       )}
+
+                      {more}
                     </span>
                   )}
 
@@ -239,6 +244,10 @@ export default function ChatRoom({ clubId }) {
                     </time>
                   </p>
                 </div>
+
+                {/* У своей реплики шапки нет, а внутри пузыря кнопке мешает время —
+                    поэтому она встаёт рядом, со свободной стороны */}
+                {own && more}
               </div>
             );
           })
