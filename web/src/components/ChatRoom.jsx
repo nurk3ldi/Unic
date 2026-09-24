@@ -2,7 +2,9 @@ import { useEffect, useRef, useState } from 'react';
 import {
   IoAdd,
   IoArrowUp,
+  IoArrowUndoOutline,
   IoChevronDown,
+  IoClose,
   IoCopyOutline,
   IoDocumentTextOutline,
   IoImagesOutline,
@@ -37,6 +39,7 @@ export default function ChatRoom({ clubId }) {
   const [messages, setMessages] = useState([]);
   const [attaching, setAttaching] = useState(false);
   const [openMenu, setOpenMenu] = useState(null); // id сообщения
+  const [replying, setReplying] = useState(null); // сообщение, на которое отвечаем
   const [copied, setCopied] = useState(false);
   const [text, setText] = useState('');
   const [error, setError] = useState('');
@@ -138,10 +141,14 @@ export default function ChatRoom({ clubId }) {
 
     setSending(true);
     try {
-      const { message } = await api.sendClubMessage(clubId, { text: body });
+      const { message } = await api.sendClubMessage(clubId, {
+        text: body,
+        replyTo: replying?.id ?? null,
+      });
       // Своё сообщение показываем сразу, не дожидаясь следующего опроса
       setMessages((was) => [...was, message]);
       setText('');
+      setReplying(null);
       setError('');
     } catch (failure) {
       setError(failure.message);
@@ -186,7 +193,11 @@ export default function ChatRoom({ clubId }) {
             );
 
             return (
-              <div className={`msg${own ? ' msg--own' : ''}`} key={message.id}>
+              <div
+                className={`msg${own ? ' msg--own' : ''}`}
+                id={`msg-${message.id}`}
+                key={message.id}
+              >
                 {!own && (
                   <span className="msg__avatar" aria-hidden="true">
                     {initial(message.author)}
@@ -209,6 +220,20 @@ export default function ChatRoom({ clubId }) {
                         {copied ? 'Скопировано' : 'Копировать'}
                       </button>
 
+                      <button
+                        className="row-menu__item"
+                        type="button"
+                        role="menuitem"
+                        onClick={() => {
+                          setReplying(message);
+                          setOpenMenu(null);
+                          inputRef.current?.focus();
+                        }}
+                      >
+                        <IoArrowUndoOutline aria-hidden="true" />
+                        Ответить
+                      </button>
+
                       {(own || MANAGE_ROLES.includes(user?.role)) && (
                         <button
                           className="row-menu__item row-menu__item--danger"
@@ -221,6 +246,28 @@ export default function ChatRoom({ clubId }) {
                         </button>
                       )}
                     </div>
+                  )}
+
+                  {message.replyTo && (
+                    /* Цитата ведёт к оригиналу: разговор не теряет нить */
+                    <button
+                      className="msg__quote"
+                      type="button"
+                      /* Цвет ставится на всю цитату: полоса слева берёт его из currentColor */
+                      style={{ color: own ? undefined : authorColor(message.replyTo.authorId) }}
+                      onClick={() =>
+                        document
+                          .getElementById(`msg-${message.replyTo.id}`)
+                          ?.scrollIntoView({ block: 'center', behavior: 'smooth' })
+                      }
+                    >
+                      <span className="msg__quote-author">
+                        {message.replyTo.username
+                          ? `@${message.replyTo.username}`
+                          : shortName(message.replyTo.author)}
+                      </span>
+                      <span className="msg__quote-text">{message.replyTo.text}</span>
+                    </button>
                   )}
 
                   {!own && (
@@ -265,6 +312,30 @@ export default function ChatRoom({ clubId }) {
           {error}
         </p>
       )}
+
+      {/* Ответ приезжает из поля ввода и так же уезжает */}
+      <div className={`reveal-y${replying ? ' reveal-y--open' : ''}`}>
+        <div className="reveal-y__clip">
+          <div className="chat__reply">
+            <span className="chat__reply-body">
+              <span className="chat__reply-author">
+                {replying?.username ? `@${replying.username}` : shortName(replying?.author ?? '')}
+              </span>
+              <span className="chat__reply-text">{replying?.text}</span>
+            </span>
+
+            <button
+              className="chat__reply-close"
+              type="button"
+              aria-label="Отменить ответ"
+              tabIndex={replying ? undefined : -1}
+              onClick={() => setReplying(null)}
+            >
+              <IoClose aria-hidden="true" />
+            </button>
+          </div>
+        </div>
+      </div>
 
       <form className="chat__composer" onSubmit={send}>
         {/* Меню вложений: пока только вид — сами вложения появятся позже */}

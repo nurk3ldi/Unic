@@ -346,7 +346,26 @@ const publicMessage = (row) => ({
   username: row.username ?? null,
   phone: row.phone ?? null,
   createdAt: row.created_at,
+  // Процитированное могли удалить — тогда ссылка есть, а показывать нечего
+  replyTo: row.reply_id
+    ? {
+        id: row.reply_id,
+        text: row.reply_body,
+        authorId: row.reply_author_id,
+        author: row.reply_full_name ?? 'Удалённый участник',
+        username: row.reply_username ?? null,
+      }
+    : null,
 });
+
+// Цитата берётся тем же запросом: лента и так читается целиком
+const MESSAGE_FIELDS = `m.id, m.body, m.author_id, m.created_at, u.full_name, u.username, u.phone,
+          r.id as reply_id, r.body as reply_body, r.author_id as reply_author_id,
+          ru.full_name as reply_full_name, ru.username as reply_username`;
+
+const MESSAGE_JOINS = `left join users u on u.id = m.author_id
+       left join club_messages r on r.id = m.reply_to
+       left join users ru on ru.id = r.author_id`;
 
 /**
  * Лента чата: последние сообщения, в порядке чтения — сверху старые.
@@ -364,9 +383,9 @@ router.get('/:id/messages', requireAuth, async (req, res) => {
   const limit = Math.min(Number(req.query.limit) || MESSAGE_PAGE, MESSAGE_PAGE);
 
   const { rows } = await query(
-    `select m.id, m.body, m.author_id, m.created_at, u.full_name, u.username, u.phone
+    `select ${MESSAGE_FIELDS}
        from club_messages m
-       left join users u on u.id = m.author_id
+       ${MESSAGE_JOINS}
       where m.club_id = $1
       order by m.created_at desc
       limit $2`,
@@ -390,21 +409,28 @@ router.post('/:id/messages', requireAuth, async (req, res) => {
     return res.status(400).json({ error: 'Сообщение слишком длинное' });
   }
 
-  const { rows } = await query(
-    `insert into club_messages (club_id, author_id, body)
-     values ($1, $2, $3)
-     returning id, body, author_id, created_at`,
-    [req.params.id, req.user.id, text],
+  const replyTo = req.body?.replyTo ? String(req.body.replyTo) : null;
+  if (replyTo && !UUID_RE.test(replyTo)) {
+    return res.status(400).json({ error: 'Некорректная ссылка на сообщение' });
+  }
+
+  const { rows: created } = await query(
+    `insert into club_messages (club_id, author_id, body, reply_to)
+     -- отвечать можно только на сообщение этого же клуба
+     select $1, $2, $3, r.id
+       from (select null::uuid as id) empty
+       left join club_messages r on r.id = $4 and r.club_id = $1
+     returning id`,
+    [req.params.id, req.user.id, text, replyTo],
   );
 
-  res.status(201).json({
-    message: publicMessage({
-      ...rows[0],
-      full_name: req.user.full_name,
-      username: req.user.username,
-      phone: req.user.phone,
-    }),
-  });
+  // Читаем обратно вместе с цитатой — тем же запросом, что и ленту
+  const { rows } = await query(
+    `select ${MESSAGE_FIELDS} from club_messages m ${MESSAGE_JOINS} where m.id = $1`,
+    [created[0].id],
+  );
+
+  res.status(201).json({ message: publicMessage(rows[0]) });
 });
 
 /**

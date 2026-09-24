@@ -109,6 +109,56 @@
   max-width: none;
 }
 
+/* Цитата: полоса слева отделяет чужую речь от своей, как в мессенджерах */
+.msg__quote {
+  display: block;
+  width: 100%;
+  margin-bottom: var(--space-2);
+  padding: var(--space-2) var(--space-3);
+  border-left: 3px solid currentColor;
+  border-radius: var(--radius-control);
+  background: var(--fill);
+  text-align: left;
+  transition: background-color var(--duration-fast) var(--ease-out);
+}
+
+.msg__quote:hover {
+  background: var(--fill-hover);
+}
+
+.msg--own .msg__quote {
+  background: rgba(255, 255, 255, 0.18);
+}
+
+.msg--own .msg__quote:hover {
+  background: rgba(255, 255, 255, 0.26);
+}
+
+.msg__quote-author {
+  display: block;
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: var(--tracking-caption);
+}
+
+.msg--own .msg__quote-author {
+  color: var(--text-on-accent);
+}
+
+/* Цитата — напоминание, а не текст: одна строка и многоточие */
+.msg__quote-text {
+  display: block;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-size: 0.8125rem;
+  color: var(--text-secondary);
+}
+
+.msg--own .msg__quote-text {
+  color: rgba(255, 255, 255, 0.78);
+}
+
 /* Ник слева, номер и кнопка справа — строка шапки задаёт пузырю минимальную
    ширину. Ник отжимает остальных краем, поэтому номер и кнопка держатся вместе.
    Зазор задан отступами, а не gap: свёрнутая полоса кнопки не должна оставлять
@@ -158,6 +208,68 @@
   font-size: 0.8125rem;
   letter-spacing: var(--tracking-caption);
   color: var(--red);
+}
+
+/* ── Ответ ──────────────────────────────────────────────── */
+/* Стоит над полем ввода: видно, кому отвечаешь, пока набираешь */
+.chat__reply {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin: var(--space-3) var(--space-4) 0;
+  padding: var(--space-2) var(--space-3);
+  border-left: 3px solid var(--accent);
+  border-radius: var(--radius-control);
+  background: var(--fill);
+}
+
+.chat__reply-body {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  flex: 1;
+}
+
+.chat__reply-author {
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: var(--tracking-caption);
+  color: var(--accent);
+}
+
+.chat__reply-text {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-size: 0.8125rem;
+  color: var(--text-secondary);
+}
+
+.chat__reply-close {
+  display: grid;
+  place-items: center;
+  width: 1.5rem;
+  height: 1.5rem;
+  flex: none;
+  color: var(--text-tertiary);
+  transition:
+    color var(--duration-fast) var(--ease-out),
+    transform var(--duration-press) var(--ease-out);
+}
+
+.chat__reply-close:hover {
+  color: var(--text-secondary);
+}
+
+/* Отклик наступает на нажатии, а не на отпускании */
+.chat__reply-close:active {
+  transform: scale(0.9);
+}
+
+.chat__reply-close svg {
+  width: 1rem;
+  height: 1rem;
+  stroke-width: 44;
 }
 
 /* ── Поле ввода ─────────────────────────────────────────── */

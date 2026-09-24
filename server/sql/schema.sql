@@ -75,3 +75,8 @@ create table if not exists club_messages (
 
 -- Чат всегда читают одним клубом и по времени
 create index if not exists club_messages_club_idx on club_messages (club_id, created_at);
+
+-- Ответ — ссылка на другое сообщение того же клуба. on delete set null:
+-- процитированное могли удалить, но сам ответ от этого не пропадает
+alter table club_messages
+  add column if not exists reply_to uuid references club_messages (id) on delete set null;
