@@ -221,7 +221,16 @@ export default function Chats() {
             <h2 className="card-header__title">Данные клуба</h2>
           </div>
 
-          <div className="chats__info-body" />
+          <div className="chats__info-body">
+            {/* Снимок клуба крупно: панель начинается с того, о ком она */}
+            <div className="chats__avatar">
+              {open?.photo ? (
+                <img className="chats__avatar-image" src={open.photo} alt="" />
+              ) : (
+                <span aria-hidden="true">{initial(open?.name ?? 'К')}</span>
+              )}
+            </div>
+          </div>
         </aside>
       </div>
     </main>
