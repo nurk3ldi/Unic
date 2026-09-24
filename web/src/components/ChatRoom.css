@@ -218,6 +218,9 @@
   align-items: center;
   gap: var(--space-2);
   padding: var(--space-2) var(--space-4);
+  /* Свой радиус вместо overflow у карточки: обрезка прятала бы меню вложений,
+     которое раскрывается вверх */
+  border-radius: var(--radius-card) var(--radius-card) 0 0;
   border-left: 3px solid var(--accent);
   border-bottom: 1px solid var(--separator);
 }
@@ -277,7 +280,6 @@
 .chat__box {
   flex: none;
   margin: var(--space-3) var(--space-4) var(--space-4);
-  overflow: hidden; /* скругление режет полосу ответа */
   border-radius: var(--radius-pill);
   background: var(--fill);
   transition:
