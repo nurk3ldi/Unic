@@ -248,6 +248,26 @@ export default function ChatRoom({ clubId }) {
                     </div>
                   )}
 
+                  {!own && (
+                    /* Ник называет человека, номер рядом — по нему его находят */
+                    <span className="msg__head">
+                      <span
+                        className="msg__author"
+                        style={{ color: authorColor(message.authorId) }}
+                      >
+                        {message.username ? `@${message.username}` : shortName(message.author)}
+                      </span>
+
+                      {message.phone && (
+                        <span className="msg__phone">{formatPhone(message.phone)}</span>
+                      )}
+
+                      {more}
+                    </span>
+                  )}
+
+                  {/* Время плывёт вправо и садится в конец последней строки —
+                      короткая реплика не занимает из-за него вторую */}
                   {message.replyTo && (
                     /* Цитата ведёт к оригиналу: разговор не теряет нить */
                     <button
@@ -270,26 +290,6 @@ export default function ChatRoom({ clubId }) {
                     </button>
                   )}
 
-                  {!own && (
-                    /* Ник называет человека, номер рядом — по нему его находят */
-                    <span className="msg__head">
-                      <span
-                        className="msg__author"
-                        style={{ color: authorColor(message.authorId) }}
-                      >
-                        {message.username ? `@${message.username}` : shortName(message.author)}
-                      </span>
-
-                      {message.phone && (
-                        <span className="msg__phone">{formatPhone(message.phone)}</span>
-                      )}
-
-                      {more}
-                    </span>
-                  )}
-
-                  {/* Время плывёт вправо и садится в конец последней строки —
-                      короткая реплика не занимает из-за него вторую */}
                   <p className="msg__text">
                     {message.text}
                     <time className="msg__time" dateTime={message.createdAt}>
@@ -313,85 +313,87 @@ export default function ChatRoom({ clubId }) {
         </p>
       )}
 
-      {/* Ответ приезжает из поля ввода и так же уезжает */}
-      <div className={`reveal-y${replying ? ' reveal-y--open' : ''}`}>
+      {/* Ответ и поле ввода — одна карточка: отвечают тут же, где набирают */}
+      <div className="chat__box">
+        <div className={`reveal-y${replying ? ' reveal-y--open' : ''}`}>
         <div className="reveal-y__clip">
-          <div className="chat__reply">
-            <span className="chat__reply-body">
-              <span className="chat__reply-author">
-                {replying?.username ? `@${replying.username}` : shortName(replying?.author ?? '')}
+            <div className="chat__reply">
+              <span className="chat__reply-body">
+                <span className="chat__reply-author">
+                  {replying?.username ? `@${replying.username}` : shortName(replying?.author ?? '')}
+                </span>
+                <span className="chat__reply-text">{replying?.text}</span>
               </span>
-              <span className="chat__reply-text">{replying?.text}</span>
-            </span>
 
-            <button
-              className="chat__reply-close"
-              type="button"
-              aria-label="Отменить ответ"
-              tabIndex={replying ? undefined : -1}
-              onClick={() => setReplying(null)}
-            >
-              <IoClose aria-hidden="true" />
-            </button>
-          </div>
-        </div>
-      </div>
-
-      <form className="chat__composer" onSubmit={send}>
-        {/* Меню вложений: пока только вид — сами вложения появятся позже */}
-        <div className="chat__attach-box">
-          <button
-            className="chat__attach"
-            type="button"
-            aria-label="Добавить вложение"
-            aria-expanded={attaching}
-            onClick={(event) => {
-              event.stopPropagation(); // иначе тот же клик сразу закроет меню
-              setAttaching((was) => !was);
-            }}
-          >
-            <IoAdd aria-hidden="true" />
-          </button>
-
-          {attaching && (
-            <div className="row-menu row-menu--up" role="menu">
-              <button className="row-menu__item" type="button" role="menuitem">
-                <IoDocumentTextOutline aria-hidden="true" />
-                Документ
-              </button>
-              <button className="row-menu__item" type="button" role="menuitem">
-                <IoImagesOutline aria-hidden="true" />
-                Фото и видео
-              </button>
-              <button className="row-menu__item" type="button" role="menuitem">
-                <IoMusicalNotesOutline aria-hidden="true" />
-                Аудио
+              <button
+                className="chat__reply-close"
+                type="button"
+                aria-label="Отменить ответ"
+                tabIndex={replying ? undefined : -1}
+                onClick={() => setReplying(null)}
+              >
+                <IoClose aria-hidden="true" />
               </button>
             </div>
-          )}
+          </div>
         </div>
 
-        <label className="visually-hidden" htmlFor="chat-input">
-          Сообщение
-        </label>
-        <input
-          id="chat-input"
-          ref={inputRef}
-          className="chat__input"
-          placeholder="Сообщение"
-          value={text}
-          onChange={(event) => setText(event.target.value)}
-        />
+        <form className="chat__composer" onSubmit={send}>
+          {/* Меню вложений: пока только вид — сами вложения появятся позже */}
+          <div className="chat__attach-box">
+            <button
+              className="chat__attach"
+              type="button"
+              aria-label="Добавить вложение"
+              aria-expanded={attaching}
+              onClick={(event) => {
+                event.stopPropagation(); // иначе тот же клик сразу закроет меню
+                setAttaching((was) => !was);
+              }}
+            >
+              <IoAdd aria-hidden="true" />
+            </button>
 
-        <button
-          className="chat__send"
-          type="submit"
-          disabled={!text.trim() || sending}
-          aria-label="Отправить"
-        >
-          <IoArrowUp aria-hidden="true" />
-        </button>
-      </form>
+            {attaching && (
+              <div className="row-menu row-menu--up" role="menu">
+                <button className="row-menu__item" type="button" role="menuitem">
+                  <IoDocumentTextOutline aria-hidden="true" />
+                  Документ
+                </button>
+                <button className="row-menu__item" type="button" role="menuitem">
+                  <IoImagesOutline aria-hidden="true" />
+                  Фото и видео
+                </button>
+                <button className="row-menu__item" type="button" role="menuitem">
+                  <IoMusicalNotesOutline aria-hidden="true" />
+                  Аудио
+                </button>
+              </div>
+            )}
+          </div>
+
+          <label className="visually-hidden" htmlFor="chat-input">
+            Сообщение
+          </label>
+          <input
+            id="chat-input"
+            ref={inputRef}
+            className="chat__input"
+            placeholder="Сообщение"
+            value={text}
+            onChange={(event) => setText(event.target.value)}
+          />
+
+          <button
+            className="chat__send"
+            type="submit"
+            disabled={!text.trim() || sending}
+            aria-label="Отправить"
+          >
+            <IoArrowUp aria-hidden="true" />
+          </button>
+        </form>
+      </div>
     </>
   );
 }
