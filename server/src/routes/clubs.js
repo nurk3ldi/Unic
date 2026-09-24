@@ -407,4 +407,29 @@ router.post('/:id/messages', requireAuth, async (req, res) => {
   });
 });
 
+/**
+ * Удаление сообщения: своё — автору, любое — тому, кто управляет клубом.
+ * Правка не предусмотрена: исправленная реплика в чужой памяти уже прочитана,
+ * а след «изменено» — отдельная история, которой пока нет.
+ */
+router.delete('/:id/messages/:messageId', requireAuth, async (req, res) => {
+  const { id, messageId } = req.params;
+  if (!UUID_RE.test(messageId) || !(await findClub(id))) {
+    return res.status(404).json({ error: 'Сообщение не найдено' });
+  }
+  if (!(await canReadChat(id, req.user))) {
+    return res.status(403).json({ error: 'Чат доступен только участникам клуба' });
+  }
+
+  const { rows } = await query(
+    `delete from club_messages
+      where id = $1 and club_id = $2 and ($3 or author_id = $4)
+      returning id`,
+    [messageId, id, canManage(req.user), req.user.id],
+  );
+  if (!rows[0]) return res.status(404).json({ error: 'Сообщение не найдено' });
+
+  res.json({ ok: true });
+});
+
 export default router;

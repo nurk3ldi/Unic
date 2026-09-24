@@ -39,4 +39,6 @@ export const api = {
   clubMessages: (id) => request(`/clubs/${id}/messages`),
   sendClubMessage: (id, payload) =>
     request(`/clubs/${id}/messages`, { method: 'POST', body: payload }),
+  deleteClubMessage: (id, messageId) =>
+    request(`/clubs/${id}/messages/${messageId}`, { method: 'DELETE' }),
 };

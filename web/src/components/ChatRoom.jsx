@@ -2,15 +2,21 @@ import { useEffect, useRef, useState } from 'react';
 import {
   IoAdd,
   IoArrowUp,
+  IoChevronDown,
+  IoCopyOutline,
   IoDocumentTextOutline,
   IoImagesOutline,
   IoMusicalNotesOutline,
+  IoTrashOutline,
 } from 'react-icons/io5';
 import { api } from '../api.js';
 import { useAuth } from '../AuthContext.jsx';
 import { POLL_MS, messageTime } from '../chat.js';
 import { authorColor, formatPhone, initial, shortName } from '../people.js';
 import './ChatRoom.css';
+
+// Чужое сообщение убирают те же роли, что управляют клубом
+const MANAGE_ROLES = ['university', 'admin'];
 
 /**
  * Разговор одного клуба: лента и поле ввода.
@@ -30,6 +36,8 @@ export default function ChatRoom({ clubId }) {
 
   const [messages, setMessages] = useState([]);
   const [attaching, setAttaching] = useState(false);
+  const [openMenu, setOpenMenu] = useState(null); // id сообщения
+  const [copied, setCopied] = useState(false);
   const [text, setText] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(true);
@@ -76,6 +84,45 @@ export default function ChatRoom({ clubId }) {
       document.removeEventListener('keydown', onKey);
     };
   }, [attaching]);
+
+  useEffect(() => {
+    if (openMenu === null) return undefined;
+
+    const close = () => setOpenMenu(null);
+    const onKey = (event) => event.key === 'Escape' && close();
+
+    document.addEventListener('click', close);
+    document.addEventListener('keydown', onKey);
+    return () => {
+      document.removeEventListener('click', close);
+      document.removeEventListener('keydown', onKey);
+    };
+  }, [openMenu]);
+
+  /** Копирование подтверждает себя в самом меню: тостов в проекте нет. */
+  async function copy(message) {
+    try {
+      await navigator.clipboard.writeText(message.text);
+      setCopied(true);
+      setTimeout(() => {
+        setCopied(false);
+        setOpenMenu(null);
+      }, 900);
+    } catch {
+      setError('Не удалось скопировать');
+      setOpenMenu(null);
+    }
+  }
+
+  async function removeMessage(message) {
+    setOpenMenu(null);
+    try {
+      await api.deleteClubMessage(clubId, message.id);
+      setMessages((was) => was.filter((item) => item.id !== message.id));
+    } catch (failure) {
+      setError(failure.message);
+    }
+  }
 
   // Лента живёт концом: новое сообщение подводит её к себе
   useEffect(() => {
@@ -124,6 +171,49 @@ export default function ChatRoom({ clubId }) {
                 )}
 
                 <div className="msg__bubble">
+                  {/* Появляется по наведению: в спокойном состоянии лента чистая */}
+                  <button
+                    className="msg__more"
+                    type="button"
+                    aria-label="Действия с сообщением"
+                    aria-expanded={openMenu === message.id}
+                    onClick={(event) => {
+                      event.stopPropagation(); // иначе тот же клик сразу закроет меню
+                      setOpenMenu((current) => (current === message.id ? null : message.id));
+                    }}
+                  >
+                    <IoChevronDown aria-hidden="true" />
+                  </button>
+
+                  {openMenu === message.id && (
+                    <div className="row-menu row-menu--msg" role="menu">
+                      <button
+                        className="row-menu__item"
+                        type="button"
+                        role="menuitem"
+                        onClick={(event) => {
+                          event.stopPropagation();
+                          copy(message);
+                        }}
+                      >
+                        <IoCopyOutline aria-hidden="true" />
+                        {copied ? 'Скопировано' : 'Копировать'}
+                      </button>
+
+                      {(own || MANAGE_ROLES.includes(user?.role)) && (
+                        <button
+                          className="row-menu__item row-menu__item--danger"
+                          type="button"
+                          role="menuitem"
+                          onClick={() => removeMessage(message)}
+                        >
+                          <IoTrashOutline aria-hidden="true" />
+                          Удалить
+                        </button>
+                      )}
+                    </div>
+                  )}
+
                   {!own && (
                     /* Ник называет человека, номер рядом — по нему его находят */
                     <span className="msg__head">

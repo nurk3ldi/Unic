@@ -44,6 +44,7 @@
 }
 
 .msg__bubble {
+  position: relative;
   min-width: 0;
   padding: var(--space-2) var(--space-3);
   border-radius: 18px;
@@ -56,6 +57,58 @@
 }
 
 /* Ник слева, номер справа — строка шапки задаёт пузырю минимальную ширину */
+/* Кнопка меню сидит в углу пузыря и не занимает места в раскладке:
+   лента в покое остаётся чистой, действия приходят под курсор */
+.msg__more {
+  position: absolute;
+  top: -0.375rem;
+  right: -0.375rem;
+  z-index: 1;
+  display: grid;
+  place-items: center;
+  width: 1.5rem;
+  height: 1.5rem;
+  border-radius: 50%;
+  background: var(--surface);
+  color: var(--text-secondary);
+  box-shadow: var(--shadow-card);
+  opacity: 0;
+  transition:
+    opacity var(--duration-fast) var(--ease-out),
+    transform var(--duration-press) var(--ease-out);
+}
+
+.msg__more svg {
+  width: 0.875rem;
+  height: 0.875rem;
+}
+
+.msg:hover .msg__more,
+.msg__more:focus-visible,
+.msg__more[aria-expanded='true'] {
+  opacity: 1;
+}
+
+/* Отклик наступает на нажатии, а не на отпускании */
+.msg__more:active {
+  transform: scale(0.92);
+}
+
+/* Там, где наведения нет, кнопка видна всегда — иначе до неё не добраться */
+@media (hover: none) {
+  .msg__more {
+    opacity: 1;
+  }
+}
+
+/* Меню падает прямо из-под кнопки (§4.3 — привязка к триггеру).
+   Селектор составной: у базового .row-menu такой же вес */
+.msg__bubble .row-menu--msg {
+  top: 1.25rem;
+  right: 0;
+  max-width: none;
+}
+
 .msg__head {
   display: flex;
   align-items: baseline;
