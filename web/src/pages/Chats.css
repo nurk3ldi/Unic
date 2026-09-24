@@ -1,7 +1,10 @@
 /* Карточка на весь экран, внутри — две панели, разделённые волоском */
 .chats {
   display: grid;
-  grid-template-columns: minmax(16rem, 22rem) 1fr;
+  /* Третья колонка закрыта нулевой шириной, а не убрана: так ширины
+     интерполируются и панель выезжает, а не появляется рывком */
+  grid-template-columns: minmax(16rem, 22rem) 1fr 0;
+  transition: grid-template-columns var(--duration-base) var(--ease-out);
   margin-top: calc(var(--space-4) - var(--space-8));
   height: calc(100dvh - var(--header-height) - var(--space-4) - var(--space-8));
   overflow: hidden; /* скругление режет шапки обеих панелей */
@@ -10,8 +13,17 @@
   border-radius: var(--radius-widget);
 }
 
+.chats--info {
+  grid-template-columns: minmax(16rem, 22rem) 1fr 22rem;
+}
+
+.chats--info .chats__info {
+  display: flex;
+}
+
 .chats__side,
-.chats__room {
+.chats__room,
+.chats__info {
   display: flex;
   flex-direction: column;
   min-width: 0;
@@ -21,6 +33,46 @@
 /* Граница идёт от шапки до низа — панели отделены целиком */
 .chats__room {
   border-left: 1px solid var(--separator);
+}
+
+/* Панель сведений. Граница слева — такая же, как у разговора */
+.chats__info {
+  display: none;
+  overflow: hidden;
+  border-left: 1px solid var(--separator);
+}
+
+/* Крестик и заголовок стоят рядом, а не по краям */
+.chats__info .card-header {
+  justify-content: flex-start;
+  gap: var(--space-3);
+}
+
+.chats__info .card-header__action {
+  padding: 0 var(--space-2);
+}
+
+.chats__info .card-header__action svg {
+  width: 1.375rem;
+  height: 1.375rem;
+  stroke-width: 44;
+}
+
+.chats__info-body {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+}
+
+/* Шапка разговора — кнопка: отклик на нажатии, как у остальных */
+.chat-head {
+  text-align: left;
+  cursor: pointer;
+  transition: opacity var(--duration-fast) var(--ease-out);
+}
+
+.chat-head:hover {
+  opacity: 0.85;
 }
 
 .chats__list {
@@ -185,8 +237,18 @@
 
 /* На узком экране панели не помещаются рядом: видно что-то одно */
 @media (max-width: 60rem) {
-  .chats {
+  .chats,
+  .chats--info {
     grid-template-columns: 1fr;
+  }
+
+  /* Рядом панели не помещаются: сведения занимают весь экран */
+  .chats--info .chats__room {
+    display: none;
+  }
+
+  .chats__info {
+    border-left: none;
   }
 
   .chats__room {
@@ -199,6 +261,10 @@
   }
 
   .chats--open .chats__room {
+    display: flex;
+  }
+
+  .chats--info .chats__info {
     display: flex;
   }
 

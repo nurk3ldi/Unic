@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link, NavLink, useParams } from 'react-router-dom';
-import { IoChevronBack } from 'react-icons/io5';
+import { IoChevronBack, IoClose } from 'react-icons/io5';
 import { api } from '../api.js';
 import { POLL_MS, chatStamp } from '../chat.js';
 import { initial, shortName } from '../people.js';
@@ -19,12 +19,16 @@ import './Chats.css';
  *
  * Разговор живёт в адресе (`/chats/:id`): ссылку можно переслать, а «назад»
  * возвращает к списку, а не к предыдущему клубу.
+ *
+ * Шапка разговора открывает третью колонку — сведения о клубе. Она в адрес не
+ * попадает: это взгляд сбоку, а не место, куда переходят.
  */
 export default function Chats() {
   const { id } = useParams();
 
   const [chats, setChats] = useState([]);
   const [members, setMembers] = useState([]);
+  const [info, setInfo] = useState(false);
   const [search, setSearch] = useState('');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -88,7 +92,7 @@ export default function Chats() {
   return (
     <main className="page">
       {/* На узком экране видно что-то одно: список либо разговор */}
-      <div className={`chats${id ? ' chats--open' : ''}`}>
+      <div className={`chats${id ? ' chats--open' : ''}${info ? ' chats--info' : ''}`}>
         <div className="chats__side">
           <div className="card-header">
             <h1 className="card-header__title">Чаты</h1>
@@ -168,7 +172,12 @@ export default function Chats() {
 
                 {/* Шапка только говорит, где ты и кто здесь — никуда не ведёт:
                     в клуб ходят через раздел «Клубы» */}
-                <div className="chat-head">
+                <button
+                  className="chat-head"
+                  type="button"
+                  aria-expanded={info}
+                  onClick={() => setInfo((was) => !was)}
+                >
                   <span className="chat-head__photo">
                     {open?.photo ? (
                       <img className="chat-head__image" src={open.photo} alt="" />
@@ -186,7 +195,7 @@ export default function Chats() {
                     </span>
                   </span>
 
-                </div>
+                </button>
               </div>
 
               {/* key: смена разговора начинает ленту заново, а не дописывает чужую */}
@@ -196,6 +205,24 @@ export default function Chats() {
             <p className="chats__hint">Выберите чат слева</p>
           )}
         </div>
+
+        {/* Сведения о клубе: пока пустая — наполним следующим шагом */}
+        <aside className="chats__info">
+          <div className="card-header">
+            <button
+              className="card-header__action"
+              type="button"
+              aria-label="Закрыть сведения"
+              onClick={() => setInfo(false)}
+            >
+              <IoClose aria-hidden="true" />
+            </button>
+
+            <h2 className="card-header__title">Данные клуба</h2>
+          </div>
+
+          <div className="chats__info-body" />
+        </aside>
       </div>
     </main>
   );
