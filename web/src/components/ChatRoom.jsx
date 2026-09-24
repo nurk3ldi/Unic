@@ -1,5 +1,11 @@
 import { useEffect, useRef, useState } from 'react';
-import { IoAdd, IoArrowUp } from 'react-icons/io5';
+import {
+  IoAdd,
+  IoArrowUp,
+  IoDocumentTextOutline,
+  IoImagesOutline,
+  IoMusicalNotesOutline,
+} from 'react-icons/io5';
 import { api } from '../api.js';
 import { useAuth } from '../AuthContext.jsx';
 import { POLL_MS, messageTime } from '../chat.js';
@@ -23,6 +29,7 @@ export default function ChatRoom({ clubId }) {
   const inputRef = useRef(null);
 
   const [messages, setMessages] = useState([]);
+  const [attaching, setAttaching] = useState(false);
   const [text, setText] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(true);
@@ -54,6 +61,21 @@ export default function ChatRoom({ clubId }) {
       clearInterval(timer);
     };
   }, [clubId]);
+
+  // Меню закрывается кликом вне и клавишей Esc — как и остальные в проекте
+  useEffect(() => {
+    if (!attaching) return undefined;
+
+    const close = () => setAttaching(false);
+    const onKey = (event) => event.key === 'Escape' && close();
+
+    document.addEventListener('click', close);
+    document.addEventListener('keydown', onKey);
+    return () => {
+      document.removeEventListener('click', close);
+      document.removeEventListener('keydown', onKey);
+    };
+  }, [attaching]);
 
   // Лента живёт концом: новое сообщение подводит её к себе
   useEffect(() => {
@@ -140,10 +162,38 @@ export default function ChatRoom({ clubId }) {
       )}
 
       <form className="chat__composer" onSubmit={send}>
-        {/* Вложения появятся здесь: кнопка стоит на своём месте, но пока молчит */}
-        <button className="chat__attach" type="button" aria-label="Добавить вложение">
-          <IoAdd aria-hidden="true" />
-        </button>
+        {/* Меню вложений: пока только вид — сами вложения появятся позже */}
+        <div className="chat__attach-box">
+          <button
+            className="chat__attach"
+            type="button"
+            aria-label="Добавить вложение"
+            aria-expanded={attaching}
+            onClick={(event) => {
+              event.stopPropagation(); // иначе тот же клик сразу закроет меню
+              setAttaching((was) => !was);
+            }}
+          >
+            <IoAdd aria-hidden="true" />
+          </button>
+
+          {attaching && (
+            <div className="row-menu row-menu--up" role="menu">
+              <button className="row-menu__item" type="button" role="menuitem">
+                <IoDocumentTextOutline aria-hidden="true" />
+                Документ
+              </button>
+              <button className="row-menu__item" type="button" role="menuitem">
+                <IoImagesOutline aria-hidden="true" />
+                Фото и видео
+              </button>
+              <button className="row-menu__item" type="button" role="menuitem">
+                <IoMusicalNotesOutline aria-hidden="true" />
+                Аудио
+              </button>
+            </div>
+          )}
+        </div>
 
         <label className="visually-hidden" htmlFor="chat-input">
           Сообщение

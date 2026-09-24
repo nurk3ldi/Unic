@@ -177,24 +177,7 @@
 }
 
 /* ── Меню строки ────────────────────────────────────────── */
-.row-menu {
-  position: absolute;
-  top: calc(100% - var(--space-2));
-  right: var(--space-3);
-  z-index: 2;
-  width: max-content;
-  max-width: calc(100% - var(--space-6));
-  padding: var(--space-2);
-  background: var(--surface);
-  border: 1px solid var(--separator);
-  border-radius: var(--radius-card);
-  box-shadow: var(--shadow-card);
-  transform-origin: top right;
-  animation: row-menu-in var(--duration-fast) var(--ease-out) both;
-}
-
-/* Внутри прокручиваемого списка выпадающее меню обрезалось бы —
-   поэтому там оно раскрывается прямо в строке */
+/* Раскрывается прямо в строке: панель прокручивается, выпадающее обрезалось бы */
 .row-menu--inline {
   position: static;
   width: 100%;
@@ -202,53 +185,6 @@
   margin-top: var(--space-2);
   box-shadow: none;
   transform-origin: top center;
-}
-
-.row-menu__item {
-  display: flex;
-  align-items: center;
-  gap: var(--space-2);
-  width: 100%;
-  min-height: 2.5rem;
-  padding: var(--space-2) var(--space-3);
-  border-radius: var(--radius-control);
-  font-size: 0.9375rem;
-  color: var(--text);
-  text-align: left;
-  white-space: nowrap;
-  transition: background-color var(--duration-fast) var(--ease-out);
-}
-
-.row-menu__item:hover {
-  background: var(--fill);
-}
-
-/* Необратимое действие отделено цветом — его нельзя нажать «по инерции» */
-.row-menu__item--danger {
-  color: var(--red);
-}
-
-.row-menu__item--danger:hover {
-  background: var(--red-soft);
-}
-
-.row-menu__item svg {
-  width: 1.125rem;
-  height: 1.125rem;
-  flex: none;
-  color: currentColor;
-  opacity: 0.7;
-}
-
-@keyframes row-menu-in {
-  from {
-    opacity: 0;
-    transform: scale(0.96);
-  }
-  to {
-    opacity: 1;
-    transform: none;
-  }
 }
 
 /* ── Главное действие ───────────────────────────────────── */
@@ -280,12 +216,6 @@
 .side-add svg {
   width: 1.125rem;
   height: 1.125rem;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .row-menu {
-    animation: none;
-  }
 }
 
 /* ── Ошибка действия ────────────────────────────────────── */

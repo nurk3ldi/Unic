@@ -124,6 +124,23 @@
 }
 
 /* Вложения слева, отправка справа — поле между ними */
+.chat__attach-box {
+  position: relative;
+  flex: none;
+}
+
+/* Меню растёт из самой кнопки вверх: §4.3 — привязка к триггеру.
+   Вид общий (.row-menu), здесь только место и направление.
+   Селектор составной: у базового такой же вес, а порядок файлов в сборке не наше дело */
+.chat__attach-box .row-menu--up {
+  top: auto;
+  right: auto;
+  bottom: calc(100% + var(--space-2));
+  left: 0;
+  max-width: none;
+  transform-origin: bottom left;
+}
+
 .chat__attach {
   display: grid;
   place-items: center;
@@ -141,6 +158,11 @@
 .chat__attach svg {
   width: 1.375rem;
   height: 1.375rem;
+}
+
+.chat__attach[aria-expanded='true'] {
+  background: var(--fill-hover);
+  color: var(--text);
 }
 
 .chat__attach:hover {
