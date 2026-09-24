@@ -56,9 +56,25 @@
   color: var(--text-on-accent);
 }
 
-/* Кнопка стоит в конце шапки. Место под неё занято всегда, поэтому появление
-   ничего не двигает — меняется только прозрачность */
+/* Полоса с кнопкой раскрывается по наведению: номер уезжает влево, а кнопка
+   приезжает из ширины. В покое её нет совсем — ни пикселя пустоты */
+.msg:hover .msg__more-slot,
+.msg__more-slot:focus-within,
+.msg__more-slot:has([aria-expanded='true']) {
+  grid-template-columns: 1fr;
+  opacity: 1;
+}
+
+/* Там, где наведения нет, кнопка видна всегда — иначе до неё не добраться */
+@media (hover: none) {
+  .msg__more-slot {
+    grid-template-columns: 1fr;
+    opacity: 1;
+  }
+}
+
 .msg__more {
+  margin-left: var(--space-2);
   display: grid;
   place-items: center;
   width: 1.25rem;
@@ -66,10 +82,7 @@
   flex: none;
   border-radius: 50%;
   color: var(--text-secondary);
-  opacity: 0;
-  transition:
-    opacity var(--duration-fast) var(--ease-out),
-    transform var(--duration-press) var(--ease-out);
+  transition: transform var(--duration-press) var(--ease-out);
 }
 
 .msg__more svg {
@@ -83,22 +96,9 @@
   align-self: center;
 }
 
-.msg:hover .msg__more,
-.msg__more:focus-visible,
-.msg__more[aria-expanded='true'] {
-  opacity: 1;
-}
-
 /* Отклик наступает на нажатии, а не на отпускании */
 .msg__more:active {
   transform: scale(0.92);
-}
-
-/* Там, где наведения нет, кнопка видна всегда — иначе до неё не добраться */
-@media (hover: none) {
-  .msg__more {
-    opacity: 1;
-  }
 }
 
 /* Меню падает прямо из-под кнопки (§4.3 — привязка к триггеру).
@@ -110,16 +110,18 @@
 }
 
 /* Ник слева, номер и кнопка справа — строка шапки задаёт пузырю минимальную
-   ширину. Ник отжимает остальных краем, поэтому номер и кнопка держатся вместе */
+   ширину. Ник отжимает остальных краем, поэтому номер и кнопка держатся вместе.
+   Зазор задан отступами, а не gap: свёрнутая полоса кнопки не должна оставлять
+   после номера пустое место */
 .msg__head {
   display: flex;
   align-items: center;
-  gap: var(--space-2);
   margin-bottom: 0.125rem;
 }
 
 .msg__author {
   margin-right: auto;
+  padding-right: var(--space-4);
   font-size: 0.8125rem;
   font-weight: 600;
   letter-spacing: var(--tracking-caption);

@@ -165,18 +165,24 @@ export default function ChatRoom({ clubId }) {
             // У чужой реплики есть шапка — кнопка встаёт в её конец, как в мессенджерах.
             // У своей шапки нет, и кнопка висит в углу пузыря
             const more = (
-              <button
-                className="msg__more"
-                type="button"
-                aria-label="Действия с сообщением"
-                aria-expanded={openMenu === message.id}
-                onClick={(event) => {
-                  event.stopPropagation(); // иначе тот же клик сразу закроет меню
-                  setOpenMenu((current) => (current === message.id ? null : message.id));
-                }}
-              >
-                <IoChevronDown aria-hidden="true" />
-              </button>
+              /* Полоса раскрывается по ширине и отодвигает соседа —
+                 в покое кнопка не занимает места (тот же приём, что у «Отмены») */
+              <span className="reveal-x msg__more-slot">
+                <span className="reveal-x__clip">
+                  <button
+                    className="msg__more"
+                    type="button"
+                    aria-label="Действия с сообщением"
+                    aria-expanded={openMenu === message.id}
+                    onClick={(event) => {
+                      event.stopPropagation(); // иначе тот же клик сразу закроет меню
+                      setOpenMenu((current) => (current === message.id ? null : message.id));
+                    }}
+                  >
+                    <IoChevronDown aria-hidden="true" />
+                  </button>
+                </span>
+              </span>
             );
 
             return (
