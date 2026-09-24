@@ -298,7 +298,14 @@ a:hover {
   height: 1.125rem;
   flex: none;
   color: currentColor;
-  opacity: 0.7;
+  opacity: 0.85;
+}
+
+/* Ionicons-outline рисуется штрихом, и толщина записана атрибутом на самой
+   фигуре — правило на <svg> до неё не доходит. 32 на 18px смотрится хилым
+   рядом с полужирным текстом */
+.row-menu__item svg * {
+  stroke-width: 44;
 }
 
 @keyframes row-menu-in {
