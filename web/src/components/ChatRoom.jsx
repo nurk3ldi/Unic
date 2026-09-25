@@ -46,6 +46,11 @@ export default function ChatRoom({ clubId }) {
   const [openMenu, setOpenMenu] = useState(null); // id сообщения
   const [replying, setReplying] = useState(null); // сообщение, на которое отвечаем
   const [photo, setPhoto] = useState(null); // { dataUrl, width, height } — снимок к отправке
+  const [viewing, setViewing] = useState(null); // снимок, открытый на весь экран
+  const viewerRef = useRef(null);
+  // Окно держит последний снимок, пока растворяется, — иначе он пропал бы раньше окна
+  const shownView = useRef(null);
+  if (viewing) shownView.current = viewing;
   const [copied, setCopied] = useState(false);
   const [text, setText] = useState('');
   const [error, setError] = useState('');
@@ -132,6 +137,15 @@ export default function ChatRoom({ clubId }) {
       setError(failure.message);
     }
   }
+
+  // Окно просмотра — нативный <dialog>: Esc, фокус и верхний слой даёт платформа
+  useEffect(() => {
+    const dialog = viewerRef.current;
+    if (!dialog) return;
+
+    if (viewing && !dialog.open) dialog.showModal();
+    if (!viewing && dialog.open) dialog.close();
+  }, [viewing]);
 
   // Лента живёт концом: новое сообщение подводит её к себе
   useEffect(() => {
@@ -231,7 +245,7 @@ export default function ChatRoom({ clubId }) {
                   </span>
                 )}
 
-                <div className="msg__bubble">
+                <div className={`msg__bubble${message.photo ? ' msg__bubble--photo' : ''}`}>
                   {openMenu === message.id && (
                     <div className="row-menu row-menu--msg" role="menu">
                       {message.text && (
@@ -323,14 +337,13 @@ export default function ChatRoom({ clubId }) {
 
                   {message.photo && (
                     /* Место под снимок известно заранее — лента не прыгает, пока он грузится.
-                       Полный размер открывается во вкладке: браузер сам умеет его показать */
-                    <a
+                       Целиком он открывается тут же, в окне поверх страницы */
+                    <button
                       className="msg__photo"
-                      href={message.photo.url}
-                      target="_blank"
-                      rel="noreferrer"
+                      type="button"
                       aria-label="Открыть фото"
                       style={{ aspectRatio: `${message.photo.width} / ${message.photo.height}` }}
+                      onClick={() => setViewing(message.photo)}
                     >
                       <img src={message.photo.url} alt="" loading="lazy" />
 
@@ -340,7 +353,7 @@ export default function ChatRoom({ clubId }) {
                           {messageTime.format(new Date(message.createdAt))}
                         </time>
                       )}
-                    </a>
+                    </button>
                   )}
 
                   {message.text && (
@@ -367,6 +380,28 @@ export default function ChatRoom({ clubId }) {
           {error}
         </p>
       )}
+
+      {/* Просмотр снимка. Клик мимо фото — тоже выход: так закрывают любое окно */}
+      <dialog
+        className="photo-viewer"
+        ref={viewerRef}
+        aria-label="Просмотр фото"
+        onClose={() => setViewing(null)}
+        onClick={(event) => event.target === event.currentTarget && setViewing(null)}
+      >
+        {shownView.current && (
+          <img className="photo-viewer__image" src={shownView.current.url} alt="" />
+        )}
+
+        <button
+          className="photo-viewer__close"
+          type="button"
+          aria-label="Закрыть"
+          onClick={() => setViewing(null)}
+        >
+          <IoClose aria-hidden="true" />
+        </button>
+      </dialog>
 
       {/* Ответ и поле ввода — одна карточка: отвечают тут же, где набирают */}
       <div className="chat__box">

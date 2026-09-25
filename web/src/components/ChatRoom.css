@@ -217,17 +217,41 @@
 }
 
 /* ── Фото в пузыре ──────────────────────────────────────── */
-/* Ширина постоянная, высота — из пропорций снимка (aspect-ratio ставится
-   в разметке). Очень высокий снимок упирается в max-height и обрезается
-   по центру; целиком он открывается по нажатию */
+/* Снимок обрамляет тонкая кайма пузыря, а не его обычные поля: иначе вокруг
+   фото стоит толстая цветная рамка. Ширина пузыря — ширина снимка плюс кайма,
+   поэтому подпись переносится по фото, а не растягивает пузырь вбок */
+.msg__bubble--photo {
+  --inset: 3px;
+  width: calc(16rem + 2 * var(--inset));
+  max-width: 100%;
+  padding: var(--inset);
+}
+
+/* Остальное содержимое возвращает себе обычные поля за вычетом каймы */
+.msg__bubble--photo .msg__head {
+  padding: calc(var(--space-2) - var(--inset)) calc(var(--space-3) - var(--inset)) var(--space-1);
+}
+
+.msg__bubble--photo .msg__quote {
+  margin-bottom: var(--inset);
+}
+
+.msg__bubble--photo .msg__text {
+  padding: var(--space-1) calc(var(--space-3) - var(--inset)) calc(var(--space-2) - var(--inset));
+}
+
+/* Высота — из пропорций снимка (aspect-ratio ставится в разметке). Очень высокий
+   снимок упирается в max-height и обрезается по центру; целиком — по нажатию */
 .msg__photo {
   position: relative;
   display: block;
-  width: 16rem;
-  max-width: 100%;
+  width: 100%;
   max-height: 20rem;
-  border-radius: var(--radius-control);
+  padding: 0;
+  /* Радиус пузыря (18px) минус кайма — углы идут параллельно */
+  border-radius: calc(18px - var(--inset));
   overflow: hidden;
+  cursor: zoom-in;
   /* Пока снимок грузится, на его месте спокойная подложка, а не дыра */
   background: var(--fill);
 }
@@ -243,12 +267,11 @@
   object-fit: cover;
 }
 
-.msg__photo + .msg__text {
-  margin-top: var(--space-1);
-}
-
-/* Время поверх снимка — на тёмной плашке, чтобы читалось на любом кадре */
+/* Время поверх снимка — на тёмной плашке, чтобы читалось на любом кадре.
+   В покое его нет: кадр не перекрыт; появляется, когда на сообщение наводят */
 .msg__photo-time {
+  opacity: 0;
+  transition: opacity var(--duration-fast) var(--ease-out);
   position: absolute;
   right: var(--space-2);
   bottom: var(--space-2);
@@ -257,6 +280,98 @@
   background: var(--scrim);
   color: var(--text-on-accent);
   font-size: 0.6875rem;
+}
+
+.msg:hover .msg__photo-time,
+.msg__photo:focus-visible .msg__photo-time {
+  opacity: 1;
+}
+
+/* Где наведения нет, время видно всегда — иначе его не узнать */
+@media (hover: none) {
+  .msg__photo-time {
+    opacity: 1;
+  }
+}
+
+/* ── Просмотр фото ──────────────────────────────────────── */
+/* Окно на весь экран с глухим фоном: за снимком ничего не видно.
+   Приходит и уходит одним путём — фон растворяется, снимок чуть вырастает */
+.photo-viewer {
+  width: 100vw;
+  height: 100dvh;
+  max-width: none;
+  max-height: none;
+  margin: 0;
+  padding: 0;
+  border: none;
+  background: var(--viewer-bg);
+  opacity: 0;
+  transition:
+    opacity var(--duration-fast) var(--ease-out),
+    overlay var(--duration-fast) allow-discrete,
+    display var(--duration-fast) allow-discrete;
+}
+
+/* display только у открытого: закрытому его прячет сам браузер */
+.photo-viewer[open] {
+  display: grid;
+  place-items: center;
+  opacity: 1;
+}
+
+@starting-style {
+  .photo-viewer[open] {
+    opacity: 0;
+  }
+}
+
+.photo-viewer__image {
+  max-width: calc(100vw - 2 * var(--space-8));
+  max-height: calc(100dvh - 2 * var(--space-8));
+  object-fit: contain;
+  transform: scale(0.96);
+  transition: transform var(--duration-fast) var(--ease-out);
+}
+
+.photo-viewer[open] .photo-viewer__image {
+  transform: scale(1);
+}
+
+@starting-style {
+  .photo-viewer[open] .photo-viewer__image {
+    transform: scale(0.96);
+  }
+}
+
+/* Просто знак ✕ без подложки: на чёрном фоне ему не нужна плашка.
+   Сам знак крупный, а зона нажатия — 44px, как у всех кнопок */
+.photo-viewer__close {
+  position: absolute;
+  top: var(--space-3);
+  right: var(--space-3);
+  display: grid;
+  place-items: center;
+  width: 2.75rem;
+  height: 2.75rem;
+  color: var(--viewer-fg);
+  transition:
+    opacity var(--duration-fast) var(--ease-out),
+    transform var(--duration-press) var(--ease-out);
+}
+
+.photo-viewer__close:hover {
+  opacity: 0.7;
+}
+
+/* Отклик наступает на нажатии, а не на отпускании */
+.photo-viewer__close:active {
+  transform: scale(0.92);
+}
+
+.photo-viewer__close svg {
+  width: 1.75rem;
+  height: 1.75rem;
 }
 
 .chat__error {
