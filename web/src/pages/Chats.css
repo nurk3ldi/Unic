@@ -7,6 +7,9 @@
   grid-template-columns: minmax(16rem, 22rem) 1fr 0;
   transition: grid-template-columns var(--duration-base) var(--ease-out);
   height: calc(100dvh - var(--header-height));
+  /* Панель сведений выезжает из-за правого края: пока колонка узкая, её рамка
+     торчит наружу и дала бы странице полосы прокрутки */
+  overflow: hidden;
   background: var(--surface);
 }
 
@@ -117,13 +120,38 @@
   display: none;
 }
 
-/* ── Шапка разговора ────────────────────────────────────── */
-/* Выше обычной: в ней снимок клуба, название и кто здесь.
-   Высота задана обеим панелям: синий верх — одна полоса, а не две ступеньки */
+/* ── Шапки панелей ──────────────────────────────────────── */
+/* Светлые, как тулбар в Messages: на весь экран синяя плита спорила
+   с сообщениями за внимание. Синий остаётся там, где он что-то значит, —
+   своё сообщение, открытый чат, отправка. Высота общая у всех панелей:
+   волосок под шапками идёт одной линией. Селекторы составные — у базовых
+   .card-header* такой же вес, и они живут в другом файле */
 .chats .card-header {
+  justify-content: flex-start;
   height: auto;
-  min-height: 4.5rem;
-  padding: var(--space-3) var(--space-4);
+  min-height: 4rem;
+  padding: var(--space-2) var(--space-4);
+  background: var(--surface);
+  color: var(--text);
+  border-bottom: 1px solid var(--separator);
+}
+
+/* Поиск встаёт в шапку сам и занимает её целиком */
+.chats .card-header .search {
+  flex: 1;
+  padding: 0;
+}
+
+.chats .card-header__back {
+  color: var(--accent);
+}
+
+.chats .card-header__back:hover {
+  background: var(--fill);
+}
+
+.chats .card-header__action {
+  color: var(--text-secondary);
 }
 
 .chat-head {
@@ -131,7 +159,7 @@
   align-items: center;
   gap: var(--space-3);
   min-width: 0;
-  color: var(--text-on-accent);
+  color: var(--text);
 }
 
 .chat-head__photo {
@@ -142,8 +170,9 @@
   flex: none;
   overflow: hidden;
   border-radius: var(--radius-control);
-  /* Светлая подложка на синем: снимок клуба тут не обязателен */
-  background: rgba(255, 255, 255, 0.2);
+  /* Та же подложка, что у строки списка: снимок клуба тут не обязателен */
+  background: var(--accent-soft);
+  color: var(--accent);
   font-size: 1.125rem;
   font-weight: 600;
 }
@@ -172,7 +201,7 @@
   overflow: hidden;
   text-overflow: ellipsis;
   font-size: 0.8125rem;
-  color: rgba(255, 255, 255, 0.78);
+  color: var(--text-secondary);
 }
 
 /* ── Строка разговора ───────────────────────────────────── */

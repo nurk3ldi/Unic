@@ -147,11 +147,23 @@ export default function ChatRoom({ clubId }) {
     if (!viewing && dialog.open) dialog.close();
   }, [viewing]);
 
-  // Лента живёт концом: новое сообщение подводит её к себе
+  // Лента живёт концом, но только пока человек сам у конца. Опрос каждые 5 секунд
+  // отдаёт новый массив — если прокручивать на каждый, читающего историю
+  // выдёргивало бы вниз. Поэтому движемся, только когда пришло новое последнее
+  // сообщение, и только если человек не ушёл читать выше
+  const atBottom = useRef(true);
+  const lastId = messages.at(-1)?.id;
+
   useEffect(() => {
     const list = listRef.current;
-    if (list) list.scrollTop = list.scrollHeight;
-  }, [messages]);
+    if (list && atBottom.current) list.scrollTop = list.scrollHeight;
+  }, [lastId]);
+
+  function trackBottom(event) {
+    const list = event.currentTarget;
+    // Запас в полстроки: «почти у конца» — тоже у конца
+    atBottom.current = list.scrollHeight - list.scrollTop - list.clientHeight < 48;
+  }
 
   if (photo) shownPhoto.current = photo;
 
@@ -185,7 +197,9 @@ export default function ChatRoom({ clubId }) {
         photoWidth: photo?.width ?? null,
         photoHeight: photo?.height ?? null,
       });
-      // Своё сообщение показываем сразу, не дожидаясь следующего опроса
+      // Своё сообщение показываем сразу, не дожидаясь следующего опроса,
+      // и к нему ведём всегда — даже если перед этим читали историю
+      atBottom.current = true;
       setMessages((was) => [...was, message]);
       setText('');
       setReplying(null);
@@ -201,7 +215,7 @@ export default function ChatRoom({ clubId }) {
 
   return (
     <>
-      <div className="chat__list" ref={listRef}>
+      <div className="chat__list" ref={listRef} onScroll={trackBottom}>
         {loading ? (
           <p className="chat__empty">Загружаем…</p>
         ) : messages.length === 0 ? (

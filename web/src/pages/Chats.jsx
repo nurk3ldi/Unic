@@ -96,16 +96,17 @@ export default function Chats() {
       {/* На узком экране видно что-то одно: список либо разговор */}
       <div className={`chats${id ? ' chats--open' : ''}${info ? ' chats--info' : ''}`}>
         <div className="chats__side">
+          {/* Название раздела уже горит в навигации — здесь оно только для
+              скринридера, а место в шапке отдано поиску */}
           <div className="card-header">
-            <h1 className="card-header__title">Чаты</h1>
+            <h1 className="visually-hidden">Чаты</h1>
+            <SearchField
+              label="Поиск чата"
+              value={search}
+              onChange={(event) => setSearch(event.target.value)}
+              onClear={() => setSearch('')}
+            />
           </div>
-
-          <SearchField
-            label="Поиск чата"
-            value={search}
-            onChange={(event) => setSearch(event.target.value)}
-            onClear={() => setSearch('')}
-          />
 
           {loading ? (
             <p className="chats__empty">Загружаем…</p>
