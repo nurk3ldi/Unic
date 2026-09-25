@@ -19,11 +19,11 @@ router.get('/', requireAuth, async (req, res) => {
   const all = MANAGE_ROLES.includes(req.user.role);
 
   const { rows } = await query(
-    `select c.id, c.name, c.photo_url, m.body, m.created_at, u.full_name
+    `select c.id, c.name, c.photo_url, m.body, m.has_photo, m.created_at, u.full_name
        from clubs c
        -- lateral: последнее сообщение каждого клуба одним проходом
        left join lateral (
-         select body, created_at, author_id
+         select body, photo is not null as has_photo, created_at, author_id
            from club_messages
           where club_id = c.id
           order by created_at desc
@@ -44,9 +44,11 @@ router.get('/', requireAuth, async (req, res) => {
       id: row.id,
       name: row.name,
       photo: row.photo_url,
-      last: row.body
+      // Фото без подписи — тоже сообщение: проверяем время, а не текст
+      last: row.created_at
         ? {
             text: row.body,
+            photo: row.has_photo,
             author: row.full_name ?? 'Удалённый участник',
             createdAt: row.created_at,
           }

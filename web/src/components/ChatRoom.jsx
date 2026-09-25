@@ -15,6 +15,7 @@ import { api } from '../api.js';
 import { useAuth } from '../AuthContext.jsx';
 import { POLL_MS, messageTime } from '../chat.js';
 import { authorColor, formatPhone, initial, shortName } from '../people.js';
+import { chatPhoto } from '../photo.js';
 import './ChatRoom.css';
 
 // Чужое сообщение убирают те же роли, что управляют клубом
@@ -35,11 +36,16 @@ export default function ChatRoom({ clubId }) {
 
   const listRef = useRef(null);
   const inputRef = useRef(null);
+  const fileRef = useRef(null);
+  // Превью держит последний снимок, пока полоса сворачивается, — иначе
+  // картинка исчезла бы раньше, чем закрылось место под неё
+  const shownPhoto = useRef(null);
 
   const [messages, setMessages] = useState([]);
   const [attaching, setAttaching] = useState(false);
   const [openMenu, setOpenMenu] = useState(null); // id сообщения
   const [replying, setReplying] = useState(null); // сообщение, на которое отвечаем
+  const [photo, setPhoto] = useState(null); // { dataUrl, width, height } — снимок к отправке
   const [copied, setCopied] = useState(false);
   const [text, setText] = useState('');
   const [error, setError] = useState('');
@@ -133,22 +139,43 @@ export default function ChatRoom({ clubId }) {
     if (list) list.scrollTop = list.scrollHeight;
   }, [messages]);
 
+  if (photo) shownPhoto.current = photo;
+
+  /** Снимок сжимается в браузере и ждёт в поле ввода: к нему можно дописать подпись. */
+  async function pickPhoto(event) {
+    const file = event.target.files?.[0];
+    event.target.value = ''; // тот же файл можно выбрать снова
+    if (!file) return;
+
+    try {
+      setPhoto(await chatPhoto(file));
+      setError('');
+      inputRef.current?.focus();
+    } catch {
+      setError('Не удалось прочитать фото. Выберите JPEG или PNG.');
+    }
+  }
+
   async function send(event) {
     event.preventDefault();
 
     const body = text.trim();
-    if (!body || sending) return;
+    if ((!body && !photo) || sending) return;
 
     setSending(true);
     try {
       const { message } = await api.sendClubMessage(clubId, {
         text: body,
         replyTo: replying?.id ?? null,
+        photo: photo?.dataUrl ?? null,
+        photoWidth: photo?.width ?? null,
+        photoHeight: photo?.height ?? null,
       });
       // Своё сообщение показываем сразу, не дожидаясь следующего опроса
       setMessages((was) => [...was, message]);
       setText('');
       setReplying(null);
+      setPhoto(null);
       setError('');
     } catch (failure) {
       setError(failure.message);
@@ -207,18 +234,20 @@ export default function ChatRoom({ clubId }) {
                 <div className="msg__bubble">
                   {openMenu === message.id && (
                     <div className="row-menu row-menu--msg" role="menu">
-                      <button
-                        className="row-menu__item"
-                        type="button"
-                        role="menuitem"
-                        onClick={(event) => {
-                          event.stopPropagation();
-                          copy(message);
-                        }}
-                      >
-                        <IoCopyOutline aria-hidden="true" />
-                        {copied ? 'Скопировано' : 'Копировать'}
-                      </button>
+                      {message.text && (
+                        <button
+                          className="row-menu__item"
+                          type="button"
+                          role="menuitem"
+                          onClick={(event) => {
+                            event.stopPropagation();
+                            copy(message);
+                          }}
+                        >
+                          <IoCopyOutline aria-hidden="true" />
+                          {copied ? 'Скопировано' : 'Копировать'}
+                        </button>
+                      )}
 
                       <button
                         className="row-menu__item"
@@ -286,16 +315,42 @@ export default function ChatRoom({ clubId }) {
                           ? `@${message.replyTo.username}`
                           : shortName(message.replyTo.author)}
                       </span>
-                      <span className="msg__quote-text">{message.replyTo.text}</span>
+                      <span className="msg__quote-text">
+                        {message.replyTo.text || 'Фото'}
+                      </span>
                     </button>
                   )}
 
-                  <p className="msg__text">
-                    {message.text}
-                    <time className="msg__time" dateTime={message.createdAt}>
-                      {messageTime.format(new Date(message.createdAt))}
-                    </time>
-                  </p>
+                  {message.photo && (
+                    /* Место под снимок известно заранее — лента не прыгает, пока он грузится.
+                       Полный размер открывается во вкладке: браузер сам умеет его показать */
+                    <a
+                      className="msg__photo"
+                      href={message.photo.url}
+                      target="_blank"
+                      rel="noreferrer"
+                      aria-label="Открыть фото"
+                      style={{ aspectRatio: `${message.photo.width} / ${message.photo.height}` }}
+                    >
+                      <img src={message.photo.url} alt="" loading="lazy" />
+
+                      {/* Без подписи времени негде сесть — оно ложится на сам снимок */}
+                      {!message.text && (
+                        <time className="msg__photo-time" dateTime={message.createdAt}>
+                          {messageTime.format(new Date(message.createdAt))}
+                        </time>
+                      )}
+                    </a>
+                  )}
+
+                  {message.text && (
+                    <p className="msg__text">
+                      {message.text}
+                      <time className="msg__time" dateTime={message.createdAt}>
+                        {messageTime.format(new Date(message.createdAt))}
+                      </time>
+                    </p>
+                  )}
                 </div>
 
                 {/* У своей реплики шапки нет, а внутри пузыря кнопке мешает время —
@@ -322,7 +377,9 @@ export default function ChatRoom({ clubId }) {
                 <span className="chat__reply-author">
                   {replying?.username ? `@${replying.username}` : shortName(replying?.author ?? '')}
                 </span>
-                <span className="chat__reply-text">{replying?.text}</span>
+                <span className="chat__reply-text">
+                  {replying && (replying.text || 'Фото')}
+                </span>
               </span>
 
               <button
@@ -338,8 +395,39 @@ export default function ChatRoom({ clubId }) {
           </div>
         </div>
 
+        {/* Снимок ждёт отправки там же, где пишут подпись к нему */}
+        <div className={`reveal-y${photo ? ' reveal-y--open' : ''}`}>
+          <div className="reveal-y__clip">
+            <div className="chat__photo">
+              {shownPhoto.current && (
+                <img className="chat__photo-preview" src={shownPhoto.current.dataUrl} alt="" />
+              )}
+              <span className="chat__photo-label">Фото</span>
+
+              <button
+                className="chat__reply-close"
+                type="button"
+                aria-label="Убрать фото"
+                tabIndex={photo ? undefined : -1}
+                onClick={() => setPhoto(null)}
+              >
+                <IoClose aria-hidden="true" />
+              </button>
+            </div>
+          </div>
+        </div>
+
         <form className="chat__composer" onSubmit={send}>
-          {/* Меню вложений: пока только вид — сами вложения появятся позже */}
+          {/* Системный выбор файла: своё окно выбора платформа уже умеет */}
+          <input
+            ref={fileRef}
+            type="file"
+            accept="image/*"
+            hidden
+            onChange={pickPhoto}
+          />
+
+          {/* Меню вложений: пока работает «Фото», документы и аудио — позже */}
           <div className="chat__attach-box">
             <button
               className="chat__attach"
@@ -360,7 +448,12 @@ export default function ChatRoom({ clubId }) {
                   <IoDocumentTextOutline aria-hidden="true" />
                   Документ
                 </button>
-                <button className="row-menu__item" type="button" role="menuitem">
+                <button
+                  className="row-menu__item"
+                  type="button"
+                  role="menuitem"
+                  onClick={() => fileRef.current?.click()}
+                >
                   <IoImagesOutline aria-hidden="true" />
                   Фото и видео
                 </button>
@@ -379,7 +472,7 @@ export default function ChatRoom({ clubId }) {
             id="chat-input"
             ref={inputRef}
             className="chat__input"
-            placeholder="Сообщение"
+            placeholder={photo ? 'Подпись' : 'Сообщение'}
             value={text}
             onChange={(event) => setText(event.target.value)}
           />
@@ -387,7 +480,7 @@ export default function ChatRoom({ clubId }) {
           <button
             className="chat__send"
             type="submit"
-            disabled={!text.trim() || sending}
+            disabled={(!text.trim() && !photo) || sending}
             aria-label="Отправить"
           >
             <IoArrowUp aria-hidden="true" />

@@ -61,7 +61,7 @@ export default function ClubChatCard({ clubId }) {
         </span>
       </div>
 
-      <p className="chat-card__text">{last.text}</p>
+      <p className="chat-card__text">{last.text || 'Фото'}</p>
 
       <time className="chat-card__time" dateTime={last.createdAt}>
         {messageTime.format(new Date(last.createdAt))}

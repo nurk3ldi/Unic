@@ -132,7 +132,7 @@ export default function Chats() {
                             <span className="chat-row__author">
                               {shortName(chat.last.author)}:
                             </span>{' '}
-                            {chat.last.text}
+                            {chat.last.text || 'Фото'}
                           </>
                         ) : (
                           'Сообщений пока нет'

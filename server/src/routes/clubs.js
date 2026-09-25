@@ -25,6 +25,11 @@ const STATUSES = ['active', 'pending', 'suspended'];
 
 // Длина сообщения: столько же, сколько у описания клуба — предел один на проект
 const MESSAGE_LIMIT = 2000;
+// Снимок сжимает браузер (длинная сторона ≤ 1280px), здесь — только проверка.
+// Предел ниже 1 MB у express.json: рядом в теле ещё подпись
+const CHAT_PHOTO_LIMIT = 900_000;
+const PHOTO_SIDE_LIMIT = 4096;
+const CHAT_PHOTO_RE = /^data:image\/(jpeg|png|webp);base64,[A-Za-z0-9+/]+=*$/;
 // Сколько сообщений отдаём за раз: чат клуба читают с конца
 const MESSAGE_PAGE = 50;
 
@@ -346,11 +351,20 @@ const publicMessage = (row) => ({
   username: row.username ?? null,
   phone: row.phone ?? null,
   createdAt: row.created_at,
+  // В ленте только адрес снимка: сами байты шли бы в каждом опросе заново
+  photo: row.has_photo
+    ? {
+        url: `/api/clubs/${row.club_id}/messages/${row.id}/photo`,
+        width: row.photo_width,
+        height: row.photo_height,
+      }
+    : null,
   // Процитированное могли удалить — тогда ссылка есть, а показывать нечего
   replyTo: row.reply_id
     ? {
         id: row.reply_id,
         text: row.reply_body,
+        photo: row.reply_has_photo,
         authorId: row.reply_author_id,
         author: row.reply_full_name ?? 'Удалённый участник',
         username: row.reply_username ?? null,
@@ -359,8 +373,11 @@ const publicMessage = (row) => ({
 });
 
 // Цитата берётся тем же запросом: лента и так читается целиком
-const MESSAGE_FIELDS = `m.id, m.body, m.author_id, m.created_at, u.full_name, u.username, u.phone,
+const MESSAGE_FIELDS = `m.id, m.club_id, m.body, m.author_id, m.created_at,
+          m.photo is not null as has_photo, m.photo_width, m.photo_height,
+          u.full_name, u.username, u.phone,
           r.id as reply_id, r.body as reply_body, r.author_id as reply_author_id,
+          r.photo is not null as reply_has_photo,
           ru.full_name as reply_full_name, ru.username as reply_username`;
 
 const MESSAGE_JOINS = `left join users u on u.id = m.author_id
@@ -404,9 +421,26 @@ router.post('/:id/messages', requireAuth, async (req, res) => {
   }
 
   const text = String(req.body?.text ?? '').trim();
-  if (!text) return res.status(400).json({ error: 'Сообщение пустое' });
+  const photo = req.body?.photo ? String(req.body.photo) : null;
+  // Фото может уйти без подписи, но пустым сообщение быть не может
+  if (!text && !photo) return res.status(400).json({ error: 'Сообщение пустое' });
   if (text.length > MESSAGE_LIMIT) {
     return res.status(400).json({ error: 'Сообщение слишком длинное' });
+  }
+
+  const photoWidth = photo ? Number(req.body.photoWidth) : null;
+  const photoHeight = photo ? Number(req.body.photoHeight) : null;
+  if (photo) {
+    if (!CHAT_PHOTO_RE.test(photo)) {
+      return res.status(400).json({ error: 'Можно отправить только изображение' });
+    }
+    if (photo.length > CHAT_PHOTO_LIMIT) {
+      return res.status(400).json({ error: 'Фото слишком большое' });
+    }
+    const valid = (side) => Number.isInteger(side) && side > 0 && side <= PHOTO_SIDE_LIMIT;
+    if (!valid(photoWidth) || !valid(photoHeight)) {
+      return res.status(400).json({ error: 'Некорректный размер фото' });
+    }
   }
 
   const replyTo = req.body?.replyTo ? String(req.body.replyTo) : null;
@@ -415,13 +449,13 @@ router.post('/:id/messages', requireAuth, async (req, res) => {
   }
 
   const { rows: created } = await query(
-    `insert into club_messages (club_id, author_id, body, reply_to)
+    `insert into club_messages (club_id, author_id, body, reply_to, photo, photo_width, photo_height)
      -- отвечать можно только на сообщение этого же клуба
-     select $1, $2, $3, r.id
+     select $1, $2, $3, r.id, $5, $6, $7
        from (select null::uuid as id) empty
        left join club_messages r on r.id = $4 and r.club_id = $1
      returning id`,
-    [req.params.id, req.user.id, text, replyTo],
+    [req.params.id, req.user.id, text, replyTo, photo, photoWidth, photoHeight],
   );
 
   // Читаем обратно вместе с цитатой — тем же запросом, что и ленту
@@ -431,6 +465,34 @@ router.post('/:id/messages', requireAuth, async (req, res) => {
   );
 
   res.status(201).json({ message: publicMessage(rows[0]) });
+});
+
+/**
+ * Снимок сообщения — отдельным адресом, с теми же правами, что и лента.
+ * Сообщение не редактируется, значит и снимок по этому адресу не меняется никогда:
+ * браузер кэширует его насовсем, и опрос ленты не тянет картинки повторно.
+ */
+router.get('/:id/messages/:messageId/photo', requireAuth, async (req, res) => {
+  const { id, messageId } = req.params;
+  if (!UUID_RE.test(messageId) || !(await findClub(id))) {
+    return res.status(404).json({ error: 'Фото не найдено' });
+  }
+  if (!(await canReadChat(id, req.user))) {
+    return res.status(403).json({ error: 'Чат доступен только участникам клуба' });
+  }
+
+  const { rows } = await query(
+    'select photo from club_messages where id = $1 and club_id = $2 and photo is not null',
+    [messageId, id],
+  );
+  if (!rows[0]) return res.status(404).json({ error: 'Фото не найдено' });
+
+  // data:image/jpeg;base64,<данные> — тип до «;», данные после «,»
+  const { photo } = rows[0];
+  res
+    .set('Cache-Control', 'private, max-age=31536000, immutable')
+    .type(photo.slice('data:'.length, photo.indexOf(';')))
+    .send(Buffer.from(photo.slice(photo.indexOf(',') + 1), 'base64'));
 });
 
 /**

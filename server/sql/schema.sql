@@ -94,3 +94,10 @@ create index if not exists club_events_time_idx on club_events (starts_at);
 -- процитированное могли удалить, но сам ответ от этого не пропадает
 alter table club_messages
   add column if not exists reply_to uuid references club_messages (id) on delete set null;
+
+-- Фото в сообщении: data URL, как у фото клуба. Размеры хранятся рядом, чтобы
+-- лента держала место под снимок до его загрузки и не прыгала.
+-- Подпись необязательна: у сообщения-фото body — пустая строка
+alter table club_messages add column if not exists photo text;
+alter table club_messages add column if not exists photo_width int;
+alter table club_messages add column if not exists photo_height int;

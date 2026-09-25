@@ -213,6 +213,49 @@
   color: rgba(255, 255, 255, 0.72);
 }
 
+/* ── Фото в пузыре ──────────────────────────────────────── */
+/* Ширина постоянная, высота — из пропорций снимка (aspect-ratio ставится
+   в разметке). Очень высокий снимок упирается в max-height и обрезается
+   по центру; целиком он открывается по нажатию */
+.msg__photo {
+  position: relative;
+  display: block;
+  width: 16rem;
+  max-width: 100%;
+  max-height: 20rem;
+  border-radius: var(--radius-control);
+  overflow: hidden;
+  /* Пока снимок грузится, на его месте спокойная подложка, а не дыра */
+  background: var(--fill);
+}
+
+.msg--own .msg__photo {
+  background: rgba(255, 255, 255, 0.18);
+}
+
+.msg__photo img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.msg__photo + .msg__text {
+  margin-top: var(--space-1);
+}
+
+/* Время поверх снимка — на тёмной плашке, чтобы читалось на любом кадре */
+.msg__photo-time {
+  position: absolute;
+  right: var(--space-2);
+  bottom: var(--space-2);
+  padding: 0.0625rem 0.375rem;
+  border-radius: var(--radius-pill);
+  background: var(--scrim);
+  color: var(--text-on-accent);
+  font-size: 0.6875rem;
+}
+
 .chat__error {
   padding: 0 var(--space-5) var(--space-2);
   font-size: 0.8125rem;
@@ -282,6 +325,29 @@
   width: 1rem;
   height: 1rem;
   stroke-width: 44;
+}
+
+/* ── Снимок к отправке ──────────────────────────────────── */
+.chat__photo {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-2) var(--space-4) var(--space-2) var(--space-2);
+  border-bottom: 1px solid var(--separator);
+}
+
+.chat__photo-preview {
+  width: 3.5rem;
+  height: 3.5rem;
+  flex: none;
+  border-radius: var(--radius-control);
+  object-fit: cover;
+}
+
+.chat__photo-label {
+  flex: 1;
+  font-size: 0.8125rem;
+  color: var(--text-secondary);
 }
 
 /* ── Поле ввода ─────────────────────────────────────────── */
