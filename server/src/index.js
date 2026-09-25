@@ -3,6 +3,7 @@ import cookieParser from 'cookie-parser';
 import authRoutes from './routes/auth.js';
 import chatRoutes from './routes/chats.js';
 import clubRoutes from './routes/clubs.js';
+import eventRoutes from './routes/events.js';
 
 const app = express();
 
@@ -13,6 +14,7 @@ app.get('/api/health', (_req, res) => res.json({ ok: true }));
 app.use('/api/auth', authRoutes);
 app.use('/api/clubs', clubRoutes);
 app.use('/api/chats', chatRoutes);
+app.use('/api/events', eventRoutes);
 
 app.use('/api', (_req, res) => res.status(404).json({ error: 'Ресурс не найден' }));
 

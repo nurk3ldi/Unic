@@ -36,6 +36,13 @@ export const api = {
     request(`/clubs/${id}/members/${userId}`, { method: 'DELETE' }),
 
   chats: () => request('/chats'),
+
+  events: () => request('/events'),
+  clubEvents: (id) => request(`/clubs/${id}/events`),
+  createClubEvent: (id, payload) =>
+    request(`/clubs/${id}/events`, { method: 'POST', body: payload }),
+  deleteClubEvent: (id, eventId) =>
+    request(`/clubs/${id}/events/${eventId}`, { method: 'DELETE' }),
   clubMessages: (id) => request(`/clubs/${id}/messages`),
   sendClubMessage: (id, payload) =>
     request(`/clubs/${id}/messages`, { method: 'POST', body: payload }),

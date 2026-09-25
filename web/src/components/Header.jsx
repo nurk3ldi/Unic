@@ -33,6 +33,10 @@ export default function Header() {
             <NavLink className="header__link" to="/chats" viewTransition>
               Чаты
             </NavLink>
+
+            <NavLink className="header__link" to="/events" viewTransition>
+              События
+            </NavLink>
           </nav>
         </div>
 

@@ -458,4 +458,80 @@ router.delete('/:id/messages/:messageId', requireAuth, async (req, res) => {
   res.json({ ok: true });
 });
 
+const TITLE_LIMIT = 120;
+const PLACE_LIMIT = 200;
+
+const publicEvent = (row) => ({
+  id: row.id,
+  title: row.title,
+  place: row.place,
+  startsAt: row.starts_at,
+});
+
+/** Мероприятия клуба. Видны всем вошедшим — страница клуба тоже открыта. */
+router.get('/:id/events', requireAuth, async (req, res) => {
+  if (!(await findClub(req.params.id))) {
+    return res.status(404).json({ error: 'Клуб не найден' });
+  }
+
+  const { rows } = await query(
+    `select id, title, place, starts_at
+       from club_events
+      where club_id = $1
+      order by starts_at`,
+    [req.params.id],
+  );
+
+  res.json({ events: rows.map(publicEvent) });
+});
+
+router.post('/:id/events', requireAuth, requireRole(...MANAGE_ROLES), async (req, res) => {
+  if (!(await findClub(req.params.id))) {
+    return res.status(404).json({ error: 'Клуб не найден' });
+  }
+
+  const title = String(req.body?.title ?? '').trim().replace(/\s+/g, ' ');
+  const place = req.body?.place ? String(req.body.place).trim() : null;
+  const startsAt = new Date(req.body?.startsAt ?? '');
+
+  if (title.length < 2) return res.status(400).json({ error: 'Укажите название события' });
+  if (title.length > TITLE_LIMIT) return res.status(400).json({ error: 'Название слишком длинное' });
+  if (place && place.length > PLACE_LIMIT) {
+    return res.status(400).json({ error: 'Место слишком длинное' });
+  }
+  // Number.isNaN у невалидной даты — единственный способ её поймать
+  if (Number.isNaN(startsAt.getTime())) {
+    return res.status(400).json({ error: 'Укажите дату и время' });
+  }
+
+  const { rows } = await query(
+    `insert into club_events (club_id, title, place, starts_at, created_by)
+     values ($1, $2, $3, $4, $5)
+     returning id, title, place, starts_at`,
+    [req.params.id, title, place, startsAt.toISOString(), req.user.id],
+  );
+
+  res.status(201).json({ event: publicEvent(rows[0]) });
+});
+
+router.delete(
+  '/:id/events/:eventId',
+  requireAuth,
+  requireRole(...MANAGE_ROLES),
+  async (req, res) => {
+    const { id, eventId } = req.params;
+    if (!UUID_RE.test(eventId) || !(await findClub(id))) {
+      return res.status(404).json({ error: 'Событие не найдено' });
+    }
+
+    const { rows } = await query(
+      'delete from club_events where id = $1 and club_id = $2 returning id',
+      [eventId, id],
+    );
+    if (!rows[0]) return res.status(404).json({ error: 'Событие не найдено' });
+
+    res.json({ ok: true });
+  },
+);
+
 export default router;

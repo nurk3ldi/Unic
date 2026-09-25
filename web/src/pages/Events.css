@@ -1,0 +1,125 @@
+/* Карточка на весь экран — как у чатов */
+.events {
+  display: flex;
+  flex-direction: column;
+  margin-top: calc(var(--space-4) - var(--space-8));
+  height: calc(100dvh - var(--header-height) - var(--space-4) - var(--space-8));
+  overflow: hidden; /* скругление режет собственную шапку */
+  background: var(--surface);
+  border: 1px solid var(--separator);
+  border-radius: var(--radius-widget);
+}
+
+.events__list {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: var(--space-2) 0;
+}
+
+.events__empty {
+  margin: auto;
+  padding: var(--space-6);
+  font-size: 0.9375rem;
+  text-align: center;
+  color: var(--text-tertiary);
+}
+
+/* ── Строка события ─────────────────────────────────────── */
+.event {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  padding: var(--space-3) var(--space-5);
+  color: var(--text);
+  transition: background-color var(--duration-press) var(--ease-out);
+}
+
+.event:hover {
+  background: var(--fill);
+  text-decoration: none;
+}
+
+/* Отклик наступает на нажатии, а не на отпускании */
+.event:active {
+  background: var(--fill-hover);
+}
+
+/* Дата — плашка, а не строка текста: по ней ведут взглядом вниз */
+.event__date {
+  display: grid;
+  place-items: center;
+  width: 3.25rem;
+  height: 3.25rem;
+  flex: none;
+  border-radius: var(--radius-control);
+  background: var(--accent-soft);
+  color: var(--accent);
+  line-height: 1.1;
+}
+
+.event__day {
+  font-size: 1.25rem;
+  font-weight: 600;
+  letter-spacing: var(--tracking-title);
+}
+
+.event__month {
+  font-size: 0.6875rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.event__body {
+  display: flex;
+  flex-direction: column;
+  gap: 0.125rem;
+  min-width: 0;
+  flex: 1;
+}
+
+.event__title {
+  font-size: 0.9375rem;
+  font-weight: 600;
+  letter-spacing: var(--tracking-caption);
+}
+
+/* Время и место — в одну строку: подробности идут за названием */
+.event__meta {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-size: 0.875rem;
+  color: var(--text-secondary);
+}
+
+.event__meta svg {
+  width: 0.9375rem;
+  height: 0.9375rem;
+  flex: none;
+  opacity: 0.75;
+}
+
+.event__meta svg + svg {
+  margin-left: var(--space-3);
+}
+
+.event__club {
+  flex: none;
+  max-width: 10rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-size: 0.8125rem;
+  color: var(--text-tertiary);
+}
+
+@media (max-width: 45rem) {
+  .event__club {
+    display: none;
+  }
+}

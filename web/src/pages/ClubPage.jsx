@@ -7,6 +7,7 @@ import { squareDataUrl } from '../photo.js';
 import { STATUS_LABELS, membersLabel } from '../club.js';
 import ClubChatCard from '../components/ClubChatCard.jsx';
 import ClubControls from '../components/ClubControls.jsx';
+import ClubEvents from '../components/ClubEvents.jsx';
 import MembersPanel from '../components/MembersPanel.jsx';
 import './Page.css';
 import './ClubPage.css';
@@ -278,11 +279,12 @@ export default function ClubPage() {
               <ClubChatCard clubId={id} />
             </Link>
 
-            {/* События клуба — наполним, когда появится таблица */}
             <div className="club-card">
               <div className="card-header">
                 <h2 className="card-header__title">События</h2>
               </div>
+
+              <ClubEvents clubId={id} canManage={Boolean(mayEdit)} />
             </div>
           </div>
         </div>

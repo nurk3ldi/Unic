@@ -76,6 +76,20 @@ create table if not exists club_messages (
 -- Чат всегда читают одним клубом и по времени
 create index if not exists club_messages_club_idx on club_messages (club_id, created_at);
 
+-- Мероприятия клуба
+create table if not exists club_events (
+  id          uuid primary key default gen_random_uuid(),
+  club_id     uuid not null references clubs (id) on delete cascade,
+  title       text not null,
+  place       text,
+  starts_at   timestamptz not null,
+  created_by  uuid references users (id) on delete set null,
+  created_at  timestamptz not null default now()
+);
+
+-- Читают их по времени: сначала ближайшие
+create index if not exists club_events_time_idx on club_events (starts_at);
+
 -- Ответ — ссылка на другое сообщение того же клуба. on delete set null:
 -- процитированное могли удалить, но сам ответ от этого не пропадает
 alter table club_messages
