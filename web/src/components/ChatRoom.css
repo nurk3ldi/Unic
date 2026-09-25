@@ -122,6 +122,19 @@
   max-width: none;
 }
 
+/* У своей реплики меню живёт снаружи пузыря, у кнопки: падает из-под неё
+   и раскрывается влево, в свободное поле ленты, не закрывая сам пузырь */
+.msg__more-box {
+  position: relative;
+  flex: none;
+}
+
+.msg__more-box .row-menu--msg {
+  top: calc(100% + var(--space-1));
+  right: 0;
+  max-width: none;
+}
+
 /* Цитата: полоса слева отделяет чужую речь от своей, как в мессенджерах */
 .msg__quote {
   display: block;
@@ -369,9 +382,10 @@
   transform: scale(0.92);
 }
 
+/* Штрих у IoClose занимает меньше половины своего поля — поэтому поле крупнее */
 .photo-viewer__close svg {
-  width: 1.75rem;
-  height: 1.75rem;
+  width: 2.25rem;
+  height: 2.25rem;
 }
 
 .chat__error {

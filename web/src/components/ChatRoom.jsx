@@ -233,6 +233,53 @@ export default function ChatRoom({ clubId }) {
               </span>
             );
 
+            // Меню растёт из своей кнопки (§4.3): у чужой реплики кнопка в шапке пузыря,
+            // у своей — снаружи, слева от него; меню встаёт туда же, где кнопка
+            const menu = openMenu === message.id && (
+              <div className="row-menu row-menu--msg" role="menu">
+                {message.text && (
+                  <button
+                    className="row-menu__item"
+                    type="button"
+                    role="menuitem"
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      copy(message);
+                    }}
+                  >
+                    <IoCopyOutline aria-hidden="true" />
+                    {copied ? 'Скопировано' : 'Копировать'}
+                  </button>
+                )}
+
+                <button
+                  className="row-menu__item"
+                  type="button"
+                  role="menuitem"
+                  onClick={() => {
+                    setReplying(message);
+                    setOpenMenu(null);
+                    inputRef.current?.focus();
+                  }}
+                >
+                  <IoArrowUndoOutline aria-hidden="true" />
+                  Ответить
+                </button>
+
+                {(own || MANAGE_ROLES.includes(user?.role)) && (
+                  <button
+                    className="row-menu__item row-menu__item--danger"
+                    type="button"
+                    role="menuitem"
+                    onClick={() => removeMessage(message)}
+                  >
+                    <IoTrashOutline aria-hidden="true" />
+                    Удалить
+                  </button>
+                )}
+              </div>
+            );
+
             return (
               <div
                 className={`msg${own ? ' msg--own' : ''}`}
@@ -246,50 +293,7 @@ export default function ChatRoom({ clubId }) {
                 )}
 
                 <div className={`msg__bubble${message.photo ? ' msg__bubble--photo' : ''}`}>
-                  {openMenu === message.id && (
-                    <div className="row-menu row-menu--msg" role="menu">
-                      {message.text && (
-                        <button
-                          className="row-menu__item"
-                          type="button"
-                          role="menuitem"
-                          onClick={(event) => {
-                            event.stopPropagation();
-                            copy(message);
-                          }}
-                        >
-                          <IoCopyOutline aria-hidden="true" />
-                          {copied ? 'Скопировано' : 'Копировать'}
-                        </button>
-                      )}
-
-                      <button
-                        className="row-menu__item"
-                        type="button"
-                        role="menuitem"
-                        onClick={() => {
-                          setReplying(message);
-                          setOpenMenu(null);
-                          inputRef.current?.focus();
-                        }}
-                      >
-                        <IoArrowUndoOutline aria-hidden="true" />
-                        Ответить
-                      </button>
-
-                      {(own || MANAGE_ROLES.includes(user?.role)) && (
-                        <button
-                          className="row-menu__item row-menu__item--danger"
-                          type="button"
-                          role="menuitem"
-                          onClick={() => removeMessage(message)}
-                        >
-                          <IoTrashOutline aria-hidden="true" />
-                          Удалить
-                        </button>
-                      )}
-                    </div>
-                  )}
+                  {!own && menu}
 
                   {!own && (
                     /* Ник называет человека, номер рядом — по нему его находят */
@@ -367,8 +371,13 @@ export default function ChatRoom({ clubId }) {
                 </div>
 
                 {/* У своей реплики шапки нет, а внутри пузыря кнопке мешает время —
-                    поэтому она встаёт рядом, со свободной стороны */}
-                {own && more}
+                    поэтому она встаёт рядом, со свободной стороны, и меню вместе с ней */}
+                {own && (
+                  <span className="msg__more-box">
+                    {more}
+                    {menu}
+                  </span>
+                )}
               </div>
             );
           })
