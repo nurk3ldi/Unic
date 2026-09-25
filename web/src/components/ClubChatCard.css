@@ -1,39 +1,79 @@
-/* Лента прижата к низу: свежее — ближе к глазу, как в самом чате */
-.chat-preview {
+/* Содержимое идёт сверху вниз, действие — у нижнего края */
+.chat-card {
   display: flex;
   flex-direction: column;
-  justify-content: flex-end;
-  gap: var(--space-3);
   flex: 1;
   min-height: 0;
-  overflow: hidden;
-  padding: var(--space-4);
+  padding: var(--space-5);
 }
 
-/* Строка не переносится: в квадрате важнее, сколько реплик видно, чем одна целиком */
-.chat-preview__row {
+.chat-card__head {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-width: 0;
+}
+
+.chat-card__avatar {
+  display: grid;
+  place-items: center;
+  width: 2rem;
+  height: 2rem;
+  flex: none;
+  border-radius: 50%;
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
+/* Цвет имени тот же, что в самом чате: человека узнают по нему */
+.chat-card__author {
   min-width: 0;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
   font-size: 0.875rem;
-  line-height: 1.4;
+  font-weight: 600;
+  letter-spacing: var(--tracking-caption);
 }
 
-.chat-preview__author {
-  font-weight: 600;
+/* Длинную реплику обрезаем строками, а не многоточием в конце одной */
+.chat-card__text {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 4;
+  overflow: hidden;
+  margin-top: var(--space-3);
+  font-size: 1rem;
+  line-height: 1.4;
   color: var(--text);
 }
 
-.chat-preview__author::after {
-  content: ' ';
+.chat-card__time {
+  margin-top: var(--space-2);
+  font-size: 0.75rem;
+  color: var(--text-tertiary);
 }
 
-.chat-preview__text {
-  color: var(--text-secondary);
+/* Прижато к низу: до него нужно дойти взглядом, а не встретить сразу */
+.chat-card__more {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  margin-top: auto;
+  padding-top: var(--space-4);
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--accent);
 }
 
-.chat-preview__empty {
+.chat-card__more svg {
+  width: 0.875rem;
+  height: 0.875rem;
+}
+
+.chat-card__empty {
   margin: auto;
   padding: var(--space-4);
   font-size: 0.875rem;
