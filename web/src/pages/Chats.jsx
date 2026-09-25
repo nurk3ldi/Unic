@@ -90,7 +90,9 @@ export default function Chats() {
   }, [chats, search]);
 
   return (
-    <main className="page">
+    <main className="page page--flush">
+      {/* Чат — рабочее место, а не страница для чтения: он встаёт вплотную
+          к краям экрана, без полей и рамки карточки */}
       {/* На узком экране видно что-то одно: список либо разговор */}
       <div className={`chats${id ? ' chats--open' : ''}${info ? ' chats--info' : ''}`}>
         <div className="chats__side">

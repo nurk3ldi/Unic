@@ -1,16 +1,13 @@
-/* Карточка на весь экран, внутри — две панели, разделённые волоском */
+/* Весь экран под шапкой сайта, вплотную к краям: панели разделены волоском,
+   а от страницы чат отделять не нужно — кроме него на экране ничего нет */
 .chats {
   display: grid;
   /* Третья колонка закрыта нулевой шириной, а не убрана: так ширины
      интерполируются и панель выезжает, а не появляется рывком */
   grid-template-columns: minmax(16rem, 22rem) 1fr 0;
   transition: grid-template-columns var(--duration-base) var(--ease-out);
-  margin-top: calc(var(--space-4) - var(--space-8));
-  height: calc(100dvh - var(--header-height) - var(--space-4) - var(--space-8));
-  overflow: hidden; /* скругление режет шапки обеих панелей */
+  height: calc(100dvh - var(--header-height));
   background: var(--surface);
-  border: 1px solid var(--separator);
-  border-radius: var(--radius-widget);
 }
 
 .chats--info {
