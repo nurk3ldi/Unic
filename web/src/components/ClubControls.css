@@ -9,12 +9,7 @@
 }
 
 /* ── Группа строк ───────────────────────────────────────── */
-/* Вставная группа, как в «Настройках»: одна поверхность, делённая волосками */
-.group {
-  overflow: hidden;
-  border-radius: var(--radius-control);
-  background: var(--bg-secondary);
-}
+/* База группы (.group, .group__row, волоски) — в index.css: она нужна и чату */
 
 /* Необратимое стоит внизу карточки, подальше от повседневных действий:
    до него нужно дойти, а не встретить следующей строкой */
@@ -22,35 +17,6 @@
   margin-top: auto;
 }
 
-.group__row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--space-3);
-  width: 100%;
-  min-height: 2.75rem;
-  padding: var(--space-2) var(--space-4);
-  font-size: 0.9375rem;
-  text-align: left;
-  transition: background-color var(--duration-press) var(--ease-out);
-}
-
-/* Волосок начинается после отступа строки — линия делит содержимое, а не карточку */
-.group__row + .group__row {
-  position: relative;
-}
-
-.group__row + .group__row::before {
-  content: '';
-  position: absolute;
-  inset: 0 0 auto var(--space-4);
-  height: 1px;
-  background: var(--separator);
-}
-
-.group__label {
-  color: var(--text);
-}
 
 /* Цвет несёт точка, текст остаётся читаемым */
 .group__value {
@@ -85,7 +51,9 @@
   font-weight: 500;
 }
 
-.group__row--danger {
+/* Селектор составной: база .group__row живёт в index.css с тем же весом,
+   и без этого порядок файлов в сборке решал бы, где стоит «Удалить» */
+.group__row.group__row--danger {
   justify-content: center;
   color: var(--red);
   font-weight: 500;

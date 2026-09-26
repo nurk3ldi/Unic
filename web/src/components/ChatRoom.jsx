@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { Fragment, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import {
   IoAdd,
   IoArrowUp,
@@ -13,13 +13,28 @@ import {
 } from 'react-icons/io5';
 import { api } from '../api.js';
 import { useAuth } from '../AuthContext.jsx';
-import { POLL_MS, messageTime } from '../chat.js';
+import { LINK_RE, POLL_MS, dayLabel, messageTime, sameDay } from '../chat.js';
 import { authorColor, formatPhone, initial, shortName } from '../people.js';
 import { chatPhoto } from '../photo.js';
+import PhotoViewer from './PhotoViewer.jsx';
 import './ChatRoom.css';
 
 // Чужое сообщение убирают те же роли, что управляют клубом
 const MANAGE_ROLES = ['university', 'admin'];
+
+/** Текст с живыми ссылками: адрес открывается в новой вкладке, разговор остаётся. */
+function withLinks(text) {
+  // split с группой кладёт найденное на нечётные места
+  return text.split(new RegExp(`(${LINK_RE.source})`, 'g')).map((part, index) =>
+    index % 2 ? (
+      <a key={index} className="msg__link" href={part} target="_blank" rel="noreferrer">
+        {part}
+      </a>
+    ) : (
+      part
+    ),
+  );
+}
 
 /**
  * Разговор одного клуба: лента и поле ввода.
@@ -47,10 +62,7 @@ export default function ChatRoom({ clubId }) {
   const [replying, setReplying] = useState(null); // сообщение, на которое отвечаем
   const [photo, setPhoto] = useState(null); // { dataUrl, width, height } — снимок к отправке
   const [viewing, setViewing] = useState(null); // снимок, открытый на весь экран
-  const viewerRef = useRef(null);
-  // Окно держит последний снимок, пока растворяется, — иначе он пропал бы раньше окна
-  const shownView = useRef(null);
-  if (viewing) shownView.current = viewing;
+  const [tall, setTall] = useState(false); // поле выросло больше одной строки
   const [copied, setCopied] = useState(false);
   const [text, setText] = useState('');
   const [error, setError] = useState('');
@@ -138,14 +150,25 @@ export default function ChatRoom({ clubId }) {
     }
   }
 
-  // Окно просмотра — нативный <dialog>: Esc, фокус и верхний слой даёт платформа
-  useEffect(() => {
-    const dialog = viewerRef.current;
-    if (!dialog) return;
+  // Поле растёт вместе с текстом (до max-height в CSS, дальше — прокрутка).
+  // До отрисовки: иначе один кадр строка стояла бы в старой высоте
+  useLayoutEffect(() => {
+    const field = inputRef.current;
+    if (!field) return;
 
-    if (viewing && !dialog.open) dialog.showModal();
-    if (!viewing && dialog.open) dialog.close();
-  }, [viewing]);
+    field.style.height = 'auto';
+    field.style.height = `${field.scrollHeight}px`;
+    // Выше одной строки капсула становится карточкой — круглые торцы не для абзаца
+    setTall(field.scrollHeight > parseFloat(getComputedStyle(field).minHeight) + 1);
+  }, [text]);
+
+  /** Enter отправляет, Shift+Enter переносит строку. Пока идёт набор IME, Enter — его. */
+  function sendOnEnter(event) {
+    if (event.key === 'Enter' && !event.shiftKey && !event.nativeEvent.isComposing) {
+      event.preventDefault();
+      event.currentTarget.form.requestSubmit();
+    }
+  }
 
   // Лента живёт концом, но только пока человек сам у конца. Опрос каждые 5 секунд
   // отдаёт новый массив — если прокручивать на каждый, читающего историю
@@ -221,8 +244,11 @@ export default function ChatRoom({ clubId }) {
         ) : messages.length === 0 ? (
           <p className="chat__empty">Здесь пока пусто. Напишите первым.</p>
         ) : (
-          messages.map((message) => {
+          messages.map((message, index) => {
             const own = message.authorId === user?.id;
+            // Новый день начинается с разделителя: иначе вчерашнее и сегодняшнее сливаются
+            const previous = messages[index - 1];
+            const newDay = !previous || !sameDay(previous.createdAt, message.createdAt);
 
             // У чужой реплики есть шапка — кнопка встаёт в её конец, как в мессенджерах.
             // У своей шапки нет, и кнопка висит в углу пузыря
@@ -295,104 +321,108 @@ export default function ChatRoom({ clubId }) {
             );
 
             return (
-              <div
-                className={`msg${own ? ' msg--own' : ''}`}
-                id={`msg-${message.id}`}
-                key={message.id}
-              >
-                {!own && (
-                  <span className="msg__avatar" aria-hidden="true">
-                    {initial(message.author)}
-                  </span>
+              <Fragment key={message.id}>
+                {newDay && (
+                  <time className="chat__day" dateTime={message.createdAt}>
+                    {dayLabel(message.createdAt)}
+                  </time>
                 )}
 
-                <div className={`msg__bubble${message.photo ? ' msg__bubble--photo' : ''}`}>
-                  {!own && menu}
-
+                <div className={`msg${own ? ' msg--own' : ''}`} id={`msg-${message.id}`}>
                   {!own && (
-                    /* Ник называет человека, номер рядом — по нему его находят */
-                    <span className="msg__head">
-                      <span
-                        className="msg__author"
-                        style={{ color: authorColor(message.authorId) }}
-                      >
-                        {message.username ? `@${message.username}` : shortName(message.author)}
-                      </span>
-
-                      {message.phone && (
-                        <span className="msg__phone">{formatPhone(message.phone)}</span>
-                      )}
-
-                      {more}
+                    <span className="msg__avatar" aria-hidden="true">
+                      {initial(message.author)}
                     </span>
                   )}
 
-                  {/* Время плывёт вправо и садится в конец последней строки —
-                      короткая реплика не занимает из-за него вторую */}
-                  {message.replyTo && (
-                    /* Цитата ведёт к оригиналу: разговор не теряет нить */
-                    <button
-                      className="msg__quote"
-                      type="button"
-                      /* Цвет ставится на всю цитату: полоса слева берёт его из currentColor */
-                      style={{ color: own ? undefined : authorColor(message.replyTo.authorId) }}
-                      onClick={() =>
-                        document
-                          .getElementById(`msg-${message.replyTo.id}`)
-                          ?.scrollIntoView({ block: 'center', behavior: 'smooth' })
-                      }
-                    >
-                      <span className="msg__quote-author">
-                        {message.replyTo.username
-                          ? `@${message.replyTo.username}`
-                          : shortName(message.replyTo.author)}
-                      </span>
-                      <span className="msg__quote-text">
-                        {message.replyTo.text || 'Фото'}
-                      </span>
-                    </button>
-                  )}
+                  <div className={`msg__bubble${message.photo ? ' msg__bubble--photo' : ''}`}>
+                    {!own && menu}
 
-                  {message.photo && (
-                    /* Место под снимок известно заранее — лента не прыгает, пока он грузится.
-                       Целиком он открывается тут же, в окне поверх страницы */
-                    <button
-                      className="msg__photo"
-                      type="button"
-                      aria-label="Открыть фото"
-                      style={{ aspectRatio: `${message.photo.width} / ${message.photo.height}` }}
-                      onClick={() => setViewing(message.photo)}
-                    >
-                      <img src={message.photo.url} alt="" loading="lazy" />
+                    {!own && (
+                      /* Ник называет человека, номер рядом — по нему его находят */
+                      <span className="msg__head">
+                        <span
+                          className="msg__author"
+                          style={{ color: authorColor(message.authorId) }}
+                        >
+                          {message.username ? `@${message.username}` : shortName(message.author)}
+                        </span>
 
-                      {/* Без подписи времени негде сесть — оно ложится на сам снимок */}
-                      {!message.text && (
-                        <time className="msg__photo-time" dateTime={message.createdAt}>
+                        {message.phone && (
+                          <span className="msg__phone">{formatPhone(message.phone)}</span>
+                        )}
+
+                        {more}
+                      </span>
+                    )}
+
+                    {/* Время плывёт вправо и садится в конец последней строки —
+                        короткая реплика не занимает из-за него вторую */}
+                    {message.replyTo && (
+                      /* Цитата ведёт к оригиналу: разговор не теряет нить */
+                      <button
+                        className="msg__quote"
+                        type="button"
+                        /* Цвет ставится на всю цитату: полоса слева берёт его из currentColor */
+                        style={{ color: own ? undefined : authorColor(message.replyTo.authorId) }}
+                        onClick={() =>
+                          document
+                            .getElementById(`msg-${message.replyTo.id}`)
+                            ?.scrollIntoView({ block: 'center', behavior: 'smooth' })
+                        }
+                      >
+                        <span className="msg__quote-author">
+                          {message.replyTo.username
+                            ? `@${message.replyTo.username}`
+                            : shortName(message.replyTo.author)}
+                        </span>
+                        <span className="msg__quote-text">
+                          {message.replyTo.text || 'Фото'}
+                        </span>
+                      </button>
+                    )}
+
+                    {message.photo && (
+                      /* Место под снимок известно заранее — лента не прыгает, пока он грузится.
+                         Целиком он открывается тут же, в окне поверх страницы */
+                      <button
+                        className="msg__photo"
+                        type="button"
+                        aria-label="Открыть фото"
+                        style={{ aspectRatio: `${message.photo.width} / ${message.photo.height}` }}
+                        onClick={() => setViewing(message.photo)}
+                      >
+                        <img src={message.photo.url} alt="" loading="lazy" />
+
+                        {/* Без подписи времени негде сесть — оно ложится на сам снимок */}
+                        {!message.text && (
+                          <time className="msg__photo-time" dateTime={message.createdAt}>
+                            {messageTime.format(new Date(message.createdAt))}
+                          </time>
+                        )}
+                      </button>
+                    )}
+
+                    {message.text && (
+                      <p className="msg__text">
+                        {withLinks(message.text)}
+                        <time className="msg__time" dateTime={message.createdAt}>
                           {messageTime.format(new Date(message.createdAt))}
                         </time>
-                      )}
-                    </button>
-                  )}
+                      </p>
+                    )}
+                  </div>
 
-                  {message.text && (
-                    <p className="msg__text">
-                      {message.text}
-                      <time className="msg__time" dateTime={message.createdAt}>
-                        {messageTime.format(new Date(message.createdAt))}
-                      </time>
-                    </p>
+                  {/* У своей реплики шапки нет, а внутри пузыря кнопке мешает время —
+                      поэтому она встаёт рядом, со свободной стороны, и меню вместе с ней */}
+                  {own && (
+                    <span className="msg__more-box">
+                      {more}
+                      {menu}
+                    </span>
                   )}
                 </div>
-
-                {/* У своей реплики шапки нет, а внутри пузыря кнопке мешает время —
-                    поэтому она встаёт рядом, со свободной стороны, и меню вместе с ней */}
-                {own && (
-                  <span className="msg__more-box">
-                    {more}
-                    {menu}
-                  </span>
-                )}
-              </div>
+              </Fragment>
             );
           })
         )}
@@ -404,30 +434,10 @@ export default function ChatRoom({ clubId }) {
         </p>
       )}
 
-      {/* Просмотр снимка. Клик мимо фото — тоже выход: так закрывают любое окно */}
-      <dialog
-        className="photo-viewer"
-        ref={viewerRef}
-        aria-label="Просмотр фото"
-        onClose={() => setViewing(null)}
-        onClick={(event) => event.target === event.currentTarget && setViewing(null)}
-      >
-        {shownView.current && (
-          <img className="photo-viewer__image" src={shownView.current.url} alt="" />
-        )}
-
-        <button
-          className="photo-viewer__close"
-          type="button"
-          aria-label="Закрыть"
-          onClick={() => setViewing(null)}
-        >
-          <IoClose aria-hidden="true" />
-        </button>
-      </dialog>
+      <PhotoViewer photo={viewing} onClose={() => setViewing(null)} />
 
       {/* Ответ и поле ввода — одна карточка: отвечают тут же, где набирают */}
-      <div className="chat__box">
+      <div className={`chat__box${tall ? ' chat__box--tall' : ''}`}>
         <div className={`reveal-y${replying ? ' reveal-y--open' : ''}`}>
         <div className="reveal-y__clip">
             <div className="chat__reply">
@@ -526,13 +536,16 @@ export default function ChatRoom({ clubId }) {
           <label className="visually-hidden" htmlFor="chat-input">
             Сообщение
           </label>
-          <input
+          {/* textarea, а не input: абзацы в сообщении — нормальное дело */}
+          <textarea
             id="chat-input"
             ref={inputRef}
             className="chat__input"
+            rows={1}
             placeholder={photo ? 'Подпись' : 'Сообщение'}
             value={text}
             onChange={(event) => setText(event.target.value)}
+            onKeyDown={sendOnEnter}
           />
 
           <button

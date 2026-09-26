@@ -10,7 +10,10 @@
   flex: 1;
   min-height: 0;
   overflow-y: auto;
-  padding: var(--space-5) var(--space-5) var(--space-4);
+  /* Поля по бокам добирают ширину до колонки: пузыри стоят в ней по центру,
+     а фон под ними — во всю ширину. % в полях — от ширины самой панели */
+  padding: var(--space-5) max(var(--space-5), calc((100% - var(--chat-column)) / 2))
+    var(--space-4);
   /* Обои — design/unic_chat_background.png (WebP без потерь).
      Их фон белый, а чужой пузырь тоже белый — слились бы. multiply с серой
      подложкой делает белое серым (#F5F5F7), а рисунок оставляет как есть */
@@ -25,6 +28,25 @@
   background: var(--surface);
   font-size: 0.9375rem;
   color: var(--text-tertiary);
+}
+
+/* ── Разделитель дней ───────────────────────────────────── */
+/* Липнет к верху, пока листают свой день: всегда видно, от какого числа
+   идёт переписка. Следующий день, дойдя до верха, ложится поверх */
+.chat__day {
+  position: sticky;
+  top: var(--space-2);
+  z-index: 1;
+  align-self: center;
+  padding: 0.25rem 0.75rem;
+  border-radius: var(--radius-pill);
+  /* Плотная, а не прозрачная: под ней проезжают пузыри */
+  background: var(--surface);
+  box-shadow: var(--shadow-card);
+  font-size: 0.8125rem;
+  font-weight: 500;
+  letter-spacing: var(--tracking-caption);
+  color: var(--text-secondary);
 }
 
 /* ── Сообщение ──────────────────────────────────────────── */
@@ -217,6 +239,17 @@
   overflow-wrap: anywhere;
 }
 
+/* Ссылка в пузыре: в чужом — цвет бренда, в своём (он синий) — белая с подчёркиванием */
+.msg__link {
+  color: var(--accent);
+  text-decoration: underline;
+  text-underline-offset: 0.15em;
+}
+
+.msg--own .msg__link {
+  color: var(--text-on-accent);
+}
+
 .msg__time {
   float: right;
   /* Вровень с нижней строкой текста и на расстоянии от неё */
@@ -307,89 +340,8 @@
   }
 }
 
-/* ── Просмотр фото ──────────────────────────────────────── */
-/* Окно на весь экран с глухим фоном: за снимком ничего не видно.
-   Приходит и уходит одним путём — фон растворяется, снимок чуть вырастает */
-.photo-viewer {
-  width: 100vw;
-  height: 100dvh;
-  max-width: none;
-  max-height: none;
-  margin: 0;
-  padding: 0;
-  border: none;
-  background: var(--viewer-bg);
-  opacity: 0;
-  transition:
-    opacity var(--duration-fast) var(--ease-out),
-    overlay var(--duration-fast) allow-discrete,
-    display var(--duration-fast) allow-discrete;
-}
-
-/* display только у открытого: закрытому его прячет сам браузер */
-.photo-viewer[open] {
-  display: grid;
-  place-items: center;
-  opacity: 1;
-}
-
-@starting-style {
-  .photo-viewer[open] {
-    opacity: 0;
-  }
-}
-
-.photo-viewer__image {
-  max-width: calc(100vw - 2 * var(--space-8));
-  max-height: calc(100dvh - 2 * var(--space-8));
-  object-fit: contain;
-  transform: scale(0.96);
-  transition: transform var(--duration-fast) var(--ease-out);
-}
-
-.photo-viewer[open] .photo-viewer__image {
-  transform: scale(1);
-}
-
-@starting-style {
-  .photo-viewer[open] .photo-viewer__image {
-    transform: scale(0.96);
-  }
-}
-
-/* Просто знак ✕ без подложки: на чёрном фоне ему не нужна плашка.
-   Сам знак крупный, а зона нажатия — 44px, как у всех кнопок */
-.photo-viewer__close {
-  position: absolute;
-  top: var(--space-3);
-  right: var(--space-3);
-  display: grid;
-  place-items: center;
-  width: 2.75rem;
-  height: 2.75rem;
-  color: var(--viewer-fg);
-  transition:
-    opacity var(--duration-fast) var(--ease-out),
-    transform var(--duration-press) var(--ease-out);
-}
-
-.photo-viewer__close:hover {
-  opacity: 0.7;
-}
-
-/* Отклик наступает на нажатии, а не на отпускании */
-.photo-viewer__close:active {
-  transform: scale(0.92);
-}
-
-/* Штрих у IoClose занимает меньше половины своего поля — поэтому поле крупнее */
-.photo-viewer__close svg {
-  width: 2.25rem;
-  height: 2.25rem;
-}
-
 .chat__error {
-  padding: 0 var(--space-5) var(--space-2);
+  padding: 0 max(var(--space-5), calc((100% - var(--chat-column)) / 2)) var(--space-2);
   font-size: 0.8125rem;
   letter-spacing: var(--tracking-caption);
   color: var(--red);
@@ -487,7 +439,9 @@
    друг с другом — так у нижней полосы одна граница, а не три */
 .chat__box {
   flex: none;
-  margin: var(--space-3) var(--space-4) var(--space-4);
+  /* Та же колонка, что у ленты: поле стоит под пузырями, а не на всю ширину */
+  margin: var(--space-3) max(var(--space-4), calc((100% - var(--chat-column)) / 2))
+    var(--space-4);
   border-radius: var(--radius-pill);
   background: var(--fill);
   transition:
@@ -500,14 +454,17 @@
   background: var(--fill-hover);
 }
 
-/* С ответом внутри карточка перестаёт быть капсулой: в неё легли две строки */
-.chat__box:has(.reveal-y--open) {
+/* С ответом или абзацем внутри карточка перестаёт быть капсулой: в неё легли
+   несколько строк, круглые торцы для них не годятся */
+.chat__box:has(.reveal-y--open),
+.chat__box--tall {
   border-radius: var(--radius-card);
 }
 
+/* Кнопки прижаты к низу: растёт поле — они остаются у последней строки */
 .chat__composer {
   display: flex;
-  align-items: center;
+  align-items: flex-end;
   gap: var(--space-2);
   padding: var(--space-1);
 }
@@ -567,11 +524,18 @@
 .chat__input {
   flex: 1;
   min-width: 0;
+  /* Одна строка — ровно высота кнопок; дальше растёт до 8 строк и листается */
   min-height: 2.5rem;
+  max-height: 12.5rem;
+  padding: 0.5rem 0;
   border: none;
   background: none;
+  font: inherit;
   font-size: 1rem;
+  line-height: 1.5;
   color: var(--text);
+  resize: none;
+  overflow-y: auto;
 }
 
 .chat__input::placeholder {

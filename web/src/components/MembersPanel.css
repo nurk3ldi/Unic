@@ -43,14 +43,7 @@
 }
 
 /* ── Заголовки секций ───────────────────────────────────── */
-.side-title {
-  padding: 0 var(--space-4) var(--space-2);
-  font-size: 0.75rem;
-  font-weight: 600;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-  color: var(--text-tertiary);
-}
+/* База .side-title — в index.css: её берут и сведения чата */
 
 .lead-block .side-title {
   padding-top: var(--space-3);

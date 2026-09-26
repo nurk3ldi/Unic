@@ -69,8 +69,14 @@
   --radius-widget: 12px; /* карточки-виджеты (клуб) */
   --radius-pill: 980px;
   --shadow-card: 0 1px 3px rgba(0, 0, 0, 0.05), 0 12px 32px rgba(0, 0, 0, 0.07);
+  /* Переключатель: дорожка в выключенном виде и тень ручки — значения iOS */
+  --switch-off: rgba(120, 120, 128, 0.16);
+  --shadow-knob: 0 3px 8px rgba(0, 0, 0, 0.15), 0 3px 1px rgba(0, 0, 0, 0.06);
   --shadow-raised: 0 2px 8px rgba(0, 0, 0, 0.08), 0 24px 56px rgba(0, 0, 0, 0.16);
   --scrim: rgba(0, 0, 0, 0.32);
+  /* Колонка переписки: строка длиннее — глаз теряет начало следующей.
+     Пузыри и поле ввода стоят в ней, обои — во всю ширину */
+  --chat-column: 46rem;
   /* Просмотр фото: фон глухой — за снимком не должно быть видно ничего */
   --viewer-bg: #000000;
   --viewer-fg: #ffffff;
@@ -326,6 +332,55 @@ a:hover {
   .row-menu {
     animation: none;
   }
+}
+
+/* ── Заголовки секций ───────────────────────────────────── */
+/* Мелкие прописные над группой строк, как в «Настройках» */
+.side-title {
+  padding: 0 var(--space-4) var(--space-2);
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text-tertiary);
+}
+
+/* ── Группа строк ───────────────────────────────────────── */
+/* Вставная группа, как в «Настройках»: одна поверхность, делённая волосками */
+.group {
+  overflow: hidden;
+  border-radius: var(--radius-control);
+  background: var(--bg-secondary);
+}
+
+.group__row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  width: 100%;
+  min-height: 2.75rem;
+  padding: var(--space-2) var(--space-4);
+  font-size: 0.9375rem;
+  text-align: left;
+  transition: background-color var(--duration-press) var(--ease-out);
+}
+
+/* Волосок начинается после отступа строки — линия делит содержимое, а не карточку */
+.group__row + .group__row {
+  position: relative;
+}
+
+.group__row + .group__row::before {
+  content: '';
+  position: absolute;
+  inset: 0 0 auto var(--space-4);
+  height: 1px;
+  background: var(--separator);
+}
+
+.group__label {
+  color: var(--text);
 }
 
 /* ── Главное действие ───────────────────────────────────── */

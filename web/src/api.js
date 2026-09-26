@@ -36,6 +36,9 @@ export const api = {
     request(`/clubs/${id}/members/${userId}`, { method: 'DELETE' }),
 
   chats: () => request('/chats'),
+  clubMedia: (id) => request(`/clubs/${id}/media`),
+  setChatNotifications: (id, enabled) =>
+    request(`/clubs/${id}/notifications`, { method: 'PUT', body: { enabled } }),
 
   events: () => request('/events'),
   clubEvents: (id) => request(`/clubs/${id}/events`),

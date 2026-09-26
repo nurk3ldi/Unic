@@ -495,6 +495,88 @@ router.get('/:id/messages/:messageId/photo', requireAuth, async (req, res) => {
     .send(Buffer.from(photo.slice(photo.indexOf(',') + 1), 'base64'));
 });
 
+// Ссылка — до пробела; хвостовую пунктуацию предложения в адрес не берём.
+// Тот же шаблон стоит в ленте (web/src/chat.js): что подсвечено — то и собрано
+const LINK_RE = /https?:\/\/[^\s<]+[^\s<.,:;"')\]!?]/g;
+const MEDIA_LIMIT = 200;
+
+/**
+ * Медиа и ссылки чата: снимки — адресами (байты отдаёт .../photo), ссылки —
+ * выбранными из текста сообщений. Документов пока нет — их нечем отправить.
+ */
+router.get('/:id/media', requireAuth, async (req, res) => {
+  const { id } = req.params;
+  if (!(await findClub(id))) return res.status(404).json({ error: 'Клуб не найден' });
+  if (!(await canReadChat(id, req.user))) {
+    return res.status(403).json({ error: 'Чат доступен только участникам клуба' });
+  }
+
+  const { rows: photos } = await query(
+    `select id, photo_width, photo_height, created_at
+       from club_messages
+      where club_id = $1 and photo is not null
+      order by created_at desc
+      limit $2`,
+    [id, MEDIA_LIMIT],
+  );
+
+  // Грубый отбор в базе (~*), точный — тем же шаблоном, что и в ленте
+  const { rows: texts } = await query(
+    `select m.id, m.body, m.created_at, u.full_name
+       from club_messages m
+       left join users u on u.id = m.author_id
+      where m.club_id = $1 and m.body ~* 'https?://'
+      order by m.created_at desc
+      limit $2`,
+    [id, MEDIA_LIMIT],
+  );
+
+  res.json({
+    photos: photos.map((row) => ({
+      id: row.id,
+      url: `/api/clubs/${id}/messages/${row.id}/photo`,
+      width: row.photo_width,
+      height: row.photo_height,
+      createdAt: row.created_at,
+    })),
+    links: texts.flatMap((row) =>
+      (row.body.match(LINK_RE) ?? []).map((url) => ({
+        messageId: row.id,
+        url,
+        author: row.full_name ?? 'Удалённый участник',
+        createdAt: row.created_at,
+      })),
+    ),
+  });
+});
+
+/**
+ * Уведомления чата для себя: включить или выключить. Выключенные хранятся
+ * строкой в chat_mutes, включённые — её отсутствием.
+ */
+router.put('/:id/notifications', requireAuth, async (req, res) => {
+  const { id } = req.params;
+  if (!(await findClub(id))) return res.status(404).json({ error: 'Клуб не найден' });
+  if (!(await canReadChat(id, req.user))) {
+    return res.status(403).json({ error: 'Чат доступен только участникам клуба' });
+  }
+
+  const enabled = req.body?.enabled;
+  if (typeof enabled !== 'boolean') {
+    return res.status(400).json({ error: 'Укажите, включить уведомления или выключить' });
+  }
+
+  await query(
+    enabled
+      ? 'delete from chat_mutes where user_id = $1 and club_id = $2'
+      : `insert into chat_mutes (user_id, club_id) values ($1, $2)
+         on conflict do nothing`,
+    [req.user.id, id],
+  );
+
+  res.json({ enabled });
+});
+
 /**
  * Удаление сообщения: своё — автору, любое — тому, кто управляет клубом.
  * Правка не предусмотрена: исправленная реплика в чужой памяти уже прочитана,

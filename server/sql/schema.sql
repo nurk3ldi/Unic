@@ -101,3 +101,12 @@ alter table club_messages
 alter table club_messages add column if not exists photo text;
 alter table club_messages add column if not exists photo_width int;
 alter table club_messages add column if not exists photo_height int;
+
+-- Уведомления чата выключены: строка есть — молчим. Хранится исключение,
+-- а не правило: по умолчанию уведомления включены, и новому клубу ничего
+-- заводить не нужно
+create table if not exists chat_mutes (
+  user_id uuid not null references users (id) on delete cascade,
+  club_id uuid not null references clubs (id) on delete cascade,
+  primary key (user_id, club_id)
+);

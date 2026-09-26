@@ -1,0 +1,80 @@
+/* ── Просмотр фото ──────────────────────────────────────── */
+/* Окно на весь экран с глухим фоном: за снимком ничего не видно.
+   Приходит и уходит одним путём — фон растворяется, снимок чуть вырастает */
+.photo-viewer {
+  width: 100vw;
+  height: 100dvh;
+  max-width: none;
+  max-height: none;
+  margin: 0;
+  padding: 0;
+  border: none;
+  background: var(--viewer-bg);
+  opacity: 0;
+  transition:
+    opacity var(--duration-fast) var(--ease-out),
+    overlay var(--duration-fast) allow-discrete,
+    display var(--duration-fast) allow-discrete;
+}
+
+/* display только у открытого: закрытому его прячет сам браузер */
+.photo-viewer[open] {
+  display: grid;
+  place-items: center;
+  opacity: 1;
+}
+
+@starting-style {
+  .photo-viewer[open] {
+    opacity: 0;
+  }
+}
+
+.photo-viewer__image {
+  max-width: calc(100vw - 2 * var(--space-8));
+  max-height: calc(100dvh - 2 * var(--space-8));
+  object-fit: contain;
+  transform: scale(0.96);
+  transition: transform var(--duration-fast) var(--ease-out);
+}
+
+.photo-viewer[open] .photo-viewer__image {
+  transform: scale(1);
+}
+
+@starting-style {
+  .photo-viewer[open] .photo-viewer__image {
+    transform: scale(0.96);
+  }
+}
+
+/* Просто знак ✕ без подложки: на чёрном фоне ему не нужна плашка.
+   Сам знак крупный, а зона нажатия — 44px, как у всех кнопок */
+.photo-viewer__close {
+  position: absolute;
+  top: var(--space-3);
+  right: var(--space-3);
+  display: grid;
+  place-items: center;
+  width: 2.75rem;
+  height: 2.75rem;
+  color: var(--viewer-fg);
+  transition:
+    opacity var(--duration-fast) var(--ease-out),
+    transform var(--duration-press) var(--ease-out);
+}
+
+.photo-viewer__close:hover {
+  opacity: 0.7;
+}
+
+/* Отклик наступает на нажатии, а не на отпускании */
+.photo-viewer__close:active {
+  transform: scale(0.92);
+}
+
+/* Штрих у IoClose занимает меньше половины своего поля — поэтому поле крупнее */
+.photo-viewer__close svg {
+  width: 2.25rem;
+  height: 2.25rem;
+}

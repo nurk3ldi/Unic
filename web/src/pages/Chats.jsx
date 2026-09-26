@@ -1,10 +1,19 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link, NavLink, useParams } from 'react-router-dom';
-import { IoChevronBack, IoClose } from 'react-icons/io5';
+import {
+  IoChevronBack,
+  IoChevronForward,
+  IoClose,
+  IoImagesOutline,
+  IoLinkOutline,
+  IoNotificationsOutline,
+} from 'react-icons/io5';
 import { api } from '../api.js';
 import { POLL_MS, chatStamp } from '../chat.js';
+import { membersLabel } from '../club.js';
 import { initial, shortName } from '../people.js';
 import ChatRoom from '../components/ChatRoom.jsx';
+import PhotoViewer from '../components/PhotoViewer.jsx';
 import SearchField from '../components/SearchField.jsx';
 import './Page.css';
 import './Chats.css';
@@ -29,6 +38,9 @@ export default function Chats() {
   const [chats, setChats] = useState([]);
   const [members, setMembers] = useState([]);
   const [info, setInfo] = useState(false);
+  const [mediaOpen, setMediaOpen] = useState(false);
+  const [media, setMedia] = useState(null); // { photos, links } открытого чата
+  const [viewing, setViewing] = useState(null); // снимок из «Медиа» на весь экран
   const [search, setSearch] = useState('');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -75,7 +87,55 @@ export default function Chats() {
     };
   }, [id]);
 
+  // Медиа читаем, когда открыты сведения: счётчик в строке нужен уже там.
+  // Другой чат или закрытая панель — начинаем со сведений, а не с чужого «Медиа»
+  useEffect(() => {
+    setMediaOpen(false);
+    setMedia(null);
+    if (!id || !info) return undefined;
+
+    let alive = true;
+    api
+      .clubMedia(id)
+      .then((data) => alive && setMedia(data))
+      .catch(() => alive && setMedia({ photos: [], links: [] }));
+
+    return () => {
+      alive = false;
+    };
+  }, [id, info]);
+
   const open = chats.find((chat) => chat.id === id) ?? null;
+  const mediaCount = media ? media.photos.length + media.links.length : 0;
+
+  // Уведомления по умолчанию включены: сервер хранит только выключенные
+  const notify = !open?.muted;
+  const permission = 'Notification' in window ? Notification.permission : 'unsupported';
+  const notifyNote =
+    permission === 'unsupported'
+      ? 'Этот браузер не показывает уведомления.'
+      : notify && permission === 'denied'
+        ? 'Браузер запретил уведомления для Unic — разрешите их в настройках сайта.'
+        : notify
+          ? 'Новые сообщения придут системным уведомлением, пока Unic открыт во вкладке.'
+          : 'Уведомления этого чата выключены.';
+
+  /** Разрешение браузера спрашиваем в момент включения — это ответ на жест человека. */
+  async function toggleNotify(event) {
+    const enabled = event.target.checked;
+    if (enabled && permission === 'default') await Notification.requestPermission();
+
+    const apply = (muted) =>
+      setChats((was) => was.map((chat) => (chat.id === id ? { ...chat, muted } : chat)));
+
+    apply(!enabled); // переключатель отвечает сразу, сервер догоняет
+    try {
+      await api.setChatNotifications(id, enabled);
+    } catch (failure) {
+      apply(enabled);
+      setError(failure.message);
+    }
+  }
 
   // Ищем и по названию клуба, и по последней реплике: в списке видно и то, и другое
   const visible = useMemo(() => {
@@ -209,32 +269,147 @@ export default function Chats() {
           )}
         </div>
 
-        {/* Сведения о клубе: пока пустая — наполним следующим шагом */}
+        {/* Сведения о клубе. «Медиа» открывается внутри той же колонки, как
+            следующий экран в «Настройках», — назад ведёт к сведениям */}
         <aside className="chats__info">
-          <div className="card-header">
-            <button
-              className="card-header__action"
-              type="button"
-              aria-label="Закрыть сведения"
-              onClick={() => setInfo(false)}
-            >
-              <IoClose aria-hidden="true" />
-            </button>
+          {mediaOpen ? (
+            <div className="chats__pane" key="media">
+              <div className="card-header">
+                <button
+                  className="card-header__action"
+                  type="button"
+                  aria-label="Назад к данным клуба"
+                  onClick={() => setMediaOpen(false)}
+                >
+                  <IoChevronBack aria-hidden="true" />
+                </button>
 
-            <h2 className="card-header__title">Данные клуба</h2>
-          </div>
+                <h2 className="card-header__title">Медиа и ссылки</h2>
+              </div>
 
-          <div className="chats__info-body">
-            {/* Снимок клуба крупно: панель начинается с того, о ком она */}
-            <div className="chats__avatar">
-              {open?.photo ? (
-                <img className="chats__avatar-image" src={open.photo} alt="" />
-              ) : (
-                <span aria-hidden="true">{initial(open?.name ?? 'К')}</span>
-              )}
+              <div className="chats__info-body chats__info-body--media">
+                {!media ? (
+                  <p className="chats__info-empty">Загружаем…</p>
+                ) : mediaCount === 0 ? (
+                  <p className="chats__info-empty">Здесь появятся фото и ссылки из чата</p>
+                ) : (
+                  <>
+                    {media.photos.length > 0 && (
+                      <section>
+                        <h3 className="side-title">Фото · {media.photos.length}</h3>
+                        {/* Квадраты, как в «Фото» на iPhone: сетка ровнее, чем кадры
+                            разной формы; целиком снимок открывается по нажатию */}
+                        <div className="chats__photos">
+                          {media.photos.map((photo) => (
+                            <button
+                              key={photo.id}
+                              className="chats__photo"
+                              type="button"
+                              aria-label="Открыть фото"
+                              onClick={() => setViewing(photo)}
+                            >
+                              <img src={photo.url} alt="" loading="lazy" />
+                            </button>
+                          ))}
+                        </div>
+                      </section>
+                    )}
+
+                    {media.links.length > 0 && (
+                      <section className="chats__links">
+                        <h3 className="side-title">Ссылки · {media.links.length}</h3>
+                        <div className="group">
+                          {media.links.map((link, index) => (
+                            <a
+                              key={`${link.messageId}-${index}`}
+                              className="group__row chats__row chats__link"
+                              href={link.url}
+                              target="_blank"
+                              rel="noreferrer"
+                            >
+                              <IoLinkOutline aria-hidden="true" />
+                              <span className="chats__link-body">
+                                {/* Протокол ничего не говорит человеку — показываем адрес */}
+                                <span className="chats__link-url">
+                                  {link.url.replace(/^https?:\/\//, '')}
+                                </span>
+                                <span className="chats__link-meta">
+                                  {shortName(link.author)} · {chatStamp(link.createdAt)}
+                                </span>
+                              </span>
+                            </a>
+                          ))}
+                        </div>
+                      </section>
+                    )}
+                  </>
+                )}
+              </div>
             </div>
-          </div>
+          ) : (
+            <div className="chats__pane" key="info">
+              <div className="card-header">
+                <button
+                  className="card-header__action"
+                  type="button"
+                  aria-label="Закрыть сведения"
+                  onClick={() => setInfo(false)}
+                >
+                  <IoClose aria-hidden="true" />
+                </button>
+
+                <h2 className="card-header__title">Данные клуба</h2>
+              </div>
+
+              <div className="chats__info-body">
+                {/* Снимок клуба крупно: панель начинается с того, о ком она */}
+                <div className="chats__avatar">
+                  {open?.photo ? (
+                    <img className="chats__avatar-image" src={open.photo} alt="" />
+                  ) : (
+                    <span aria-hidden="true">{initial(open?.name ?? 'К')}</span>
+                  )}
+                </div>
+
+                <h3 className="chats__info-name">{open?.name ?? 'Клуб'}</h3>
+                <p className="chats__info-meta">
+                  Клуб · <span className="chats__info-count">{membersLabel(members.length)}</span>
+                </p>
+
+                <div className="group chats__group">
+                  <button
+                    className="group__row chats__row"
+                    type="button"
+                    onClick={() => setMediaOpen(true)}
+                  >
+                    <IoImagesOutline aria-hidden="true" />
+                    <span className="group__label">Медиа, ссылки и документы</span>
+                    {mediaCount > 0 && <span className="chats__row-value">{mediaCount}</span>}
+                    <IoChevronForward className="chats__row-more" aria-hidden="true" />
+                  </button>
+
+                  {/* Вся строка — label: переключают нажатием по ней целиком, не целясь в ручку */}
+                  <label className="group__row chats__row">
+                    <IoNotificationsOutline aria-hidden="true" />
+                    <span className="group__label">Уведомления</span>
+                    <input
+                      className="switch"
+                      type="checkbox"
+                      role="switch"
+                      checked={notify}
+                      onChange={toggleNotify}
+                    />
+                  </label>
+                </div>
+
+                {/* Подпись под группой, как в «Настройках»: что именно обещает переключатель */}
+                <p className="chats__note">{notifyNote}</p>
+              </div>
+            </div>
+          )}
         </aside>
+
+        <PhotoViewer photo={viewing} onClose={() => setViewing(null)} />
       </div>
     </main>
   );
