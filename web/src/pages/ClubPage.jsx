@@ -281,13 +281,14 @@ export default function ClubPage() {
               <ClubChatCard clubId={id} />
             </Link>
 
-            <div className="club-card">
+            {/* Как чат: карточка целиком ведёт в календарь */}
+            <Link className="club-card club-card--tap" to="/events" viewTransition>
               <div className="card-header">
                 <h2 className="card-header__title">События</h2>
               </div>
 
               <UpcomingEvents clubId={id} />
-            </div>
+            </Link>
           </div>
         </div>
 
@@ -307,7 +308,7 @@ export default function ClubPage() {
 
 /**
  * Ближайшие события клуба — коротким списком: плашка даты, название, время и место.
- * Добавлять и смотреть всё — в календаре, туда ведёт строка снизу (как у чата).
+ * Добавлять и смотреть всё — в календаре: туда ведёт вся карточка (как у чата).
  */
 function UpcomingEvents({ clubId }) {
   const [events, setEvents] = useState(null);
@@ -359,10 +360,11 @@ function UpcomingEvents({ clubId }) {
         </ul>
       )}
 
-      <Link className="card-more" to="/events" viewTransition>
+      {/* Карточка и так ссылка, но строка снизу называет, куда именно */}
+      <span className="card-more">
         Открыть календарь
         <IoChevronForward aria-hidden="true" />
-      </Link>
+      </span>
     </div>
   );
 }

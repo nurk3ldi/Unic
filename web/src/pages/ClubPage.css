@@ -58,14 +58,29 @@
   margin-top: 0;
 }
 
-/* Карточка-ссылка: увеличение на наведении — то же, что у карточек в списке */
-.club-card--tap {
-  color: var(--text);
+/* Каждая карточка откликается на наведение — чуть подаётся навстречу,
+   как карточки в списке клубов. 2% роста умещаются в промежутки между ними */
+.club-card,
+.club-page__side {
   transition: transform var(--duration-fast) var(--ease-out);
 }
 
-.club-card--tap:hover {
+.club-card:hover,
+.club-page__side:hover {
   transform: scale(1.02);
+}
+
+/* Пока правят сведения, карточка стоит: текст под курсором не должен плыть */
+.club-card:has(.club-field--editing):hover {
+  transform: none;
+}
+
+/* Карточка-ссылка (чат, события) ещё и нажимается — чуть вдавливается */
+.club-card--tap {
+  color: var(--text);
+}
+
+.club-card--tap:hover {
   text-decoration: none;
 }
 
@@ -74,7 +89,8 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .club-card--tap:hover,
+  .club-card:hover,
+  .club-page__side:hover,
   .club-card--tap:active {
     transform: none;
   }
@@ -169,11 +185,6 @@
   font-size: 0.875rem;
   font-weight: 500;
   color: var(--accent);
-}
-
-a.card-more:hover {
-  background: var(--fill);
-  text-decoration: none;
 }
 
 .card-more svg {

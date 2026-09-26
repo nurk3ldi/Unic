@@ -24,7 +24,7 @@
 /* Пока ищут, разделы уходят под поле — растворяются, а не остаются просвечивать */
 .members-head > .segments,
 .members-head > .members-title {
-  transition: opacity var(--duration-fast) var(--ease-out);
+  transition: opacity var(--duration-base) var(--ease-out);
 }
 
 .members-head--searching > .segments,
@@ -51,8 +51,8 @@
   opacity: 0;
   clip-path: inset(0 0 0 100% round var(--radius-pill));
   transition:
-    clip-path var(--duration-base) var(--ease-out),
-    opacity var(--duration-fast) var(--ease-out);
+    clip-path var(--duration-slow) var(--ease-out),
+    opacity var(--duration-base) var(--ease-out);
 }
 
 .members-find--open .members-find__field {
@@ -81,8 +81,9 @@
   pointer-events: auto;
   transition:
     background-color var(--duration-fast) var(--ease-out),
-    transform var(--duration-base) var(--ease-out),
-    opacity var(--duration-base) var(--ease-out);
+    transform var(--duration-slow) var(--ease-out),
+    /* Лупа видна всю дорогу и тает у края поля, а не в самом начале */
+    opacity var(--duration-slow) var(--ease-in);
 }
 
 /* Открыто: лупа едет с краем маски влево и уменьшается до лупы поля
