@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'react';
-import { IoClose } from 'react-icons/io5';
+import { IoCloseOutline } from 'react-icons/io5';
 import './PhotoViewer.css';
 
 /**
@@ -32,7 +32,8 @@ export default function PhotoViewer({ photo, onClose }) {
       {shown.current && <img className="photo-viewer__image" src={shown.current.url} alt="" />}
 
       <button className="photo-viewer__close" type="button" aria-label="Закрыть" onClick={onClose}>
-        <IoClose aria-hidden="true" />
+        {/* Контурный знак, а не залитый: толщину штриха можно задать */}
+        <IoCloseOutline aria-hidden="true" />
       </button>
     </dialog>
   );

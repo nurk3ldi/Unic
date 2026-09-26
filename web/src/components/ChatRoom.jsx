@@ -22,6 +22,10 @@ import './ChatRoom.css';
 // Чужое сообщение убирают те же роли, что управляют клубом
 const MANAGE_ROLES = ['university', 'admin'];
 
+// Сколько места нужно меню сообщения под кнопкой (три строки по 44px и поля), в rem:
+// меньше — и оно раскрывается вверх, иначе край ленты его обрежет
+const MENU_ROOM_REM = 11;
+
 /** Текст с живыми ссылками: адрес открывается в новой вкладке, разговор остаётся. */
 function withLinks(text) {
   // split с группой кладёт найденное на нечётные места
@@ -59,6 +63,7 @@ export default function ChatRoom({ clubId }) {
   const [messages, setMessages] = useState([]);
   const [attaching, setAttaching] = useState(false);
   const [openMenu, setOpenMenu] = useState(null); // id сообщения
+  const [menuUp, setMenuUp] = useState(false); // снизу нет места — меню раскрывается вверх
   const [replying, setReplying] = useState(null); // сообщение, на которое отвечаем
   const [photo, setPhoto] = useState(null); // { dataUrl, width, height } — снимок к отправке
   const [viewing, setViewing] = useState(null); // снимок, открытый на весь экран
@@ -283,6 +288,14 @@ export default function ChatRoom({ clubId }) {
                         aria-expanded={openMenu === message.id}
                         onClick={(event) => {
                           event.stopPropagation(); // иначе тот же клик сразу закроет меню
+
+                          // Меряем в момент открытия: сколько ленты осталось под кнопкой
+                          const rem = parseFloat(getComputedStyle(document.documentElement).fontSize);
+                          const below =
+                            listRef.current.getBoundingClientRect().bottom -
+                            event.currentTarget.getBoundingClientRect().bottom;
+                          setMenuUp(below < MENU_ROOM_REM * rem);
+
                           setOpenMenu((current) => (current === message.id ? null : message.id));
                         }}
                       >
@@ -295,7 +308,10 @@ export default function ChatRoom({ clubId }) {
                 // Меню растёт из своей кнопки (§4.3): у чужой реплики кнопка в шапке пузыря,
                 // у своей — снаружи, слева от него; меню встаёт туда же, где кнопка
                 const menu = openMenu === message.id && (
-                  <div className="row-menu row-menu--msg" role="menu">
+                  <div
+                    className={`row-menu row-menu--msg${menuUp ? ' row-menu--above' : ''}`}
+                    role="menu"
+                  >
                     {message.text && (
                       <button
                         className="row-menu__item"

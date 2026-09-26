@@ -3,7 +3,7 @@ import { Link, NavLink, useParams } from 'react-router-dom';
 import {
   IoChevronBack,
   IoChevronForward,
-  IoClose,
+  IoCloseOutline,
   IoImagesOutline,
   IoLinkOutline,
   IoNotificationsOutline,
@@ -380,12 +380,12 @@ export default function Chats() {
             <div className="chats__pane" key="info">
               <div className="card-header">
                 <button
-                  className="card-header__action"
+                  className="card-header__action chats__info-close"
                   type="button"
                   aria-label="Закрыть сведения"
                   onClick={() => setInfo(false)}
                 >
-                  <IoClose aria-hidden="true" />
+                  <IoCloseOutline aria-hidden="true" />
                 </button>
 
                 <h2 className="card-header__title">Данные клуба</h2>
@@ -472,18 +472,20 @@ export default function Chats() {
                           {initial(member.name)}
                         </span>
 
+                        {/* Сверху полное ФИО, под ним ник и роль: справа ник отнимал
+                            у имени ширину, и длинное ФИО обрезалось */}
                         <span className="chats__member-body">
                           <span className="chats__member-name">
                             {member.id === user?.id ? 'Вы' : member.name}
                           </span>
-                          {member.role === 'lead' && (
-                            <span className="chats__member-role">Руководитель</span>
-                          )}
+                          <span className="chats__member-meta">
+                            {member.username && `@${member.username}`}
+                            {member.username && member.role === 'lead' && ' · '}
+                            {member.role === 'lead' && (
+                              <span className="chats__member-role">Руководитель</span>
+                            )}
+                          </span>
                         </span>
-
-                        {member.username && (
-                          <span className="chats__member-nick">@{member.username}</span>
-                        )}
                       </li>
                     ))}
 
