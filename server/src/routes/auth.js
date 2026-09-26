@@ -28,7 +28,12 @@ const publicUser = (u) => ({
   fullName: u.full_name,
   role: u.role,
   createdAt: u.created_at,
+  // Фото есть только там, где строку читали целиком (вход, /me); сессия его не несёт
+  photo: u.photo ?? null,
 });
+
+// Тот же предел, что у фото клуба: браузер уже ужал снимок до квадрата 400×400
+const PHOTO_LIMIT = 700_000;
 
 router.post('/register', async (req, res) => {
   const fullName = String(req.body?.fullName ?? '').trim().replace(/\s+/g, ' ');
@@ -108,8 +113,24 @@ router.post('/logout', (_req, res) => {
   res.json({ ok: true });
 });
 
-router.get('/me', requireAuth, (req, res) => {
-  res.json({ user: publicUser(req.user) });
+router.get('/me', requireAuth, async (req, res) => {
+  // Фото дочитываем здесь: /me зовут раз при загрузке, а сессию — на каждый запрос
+  const { rows } = await query('select photo from users where id = $1', [req.user.id]);
+  res.json({ user: publicUser({ ...req.user, photo: rows[0]?.photo }) });
+});
+
+/** Своё фото: data URL поставить, null — убрать. */
+router.put('/photo', requireAuth, async (req, res) => {
+  const photo = req.body?.photo ? String(req.body.photo) : null;
+  if (photo && !photo.startsWith('data:image/')) {
+    return res.status(400).json({ error: 'Некорректный формат изображения' });
+  }
+  if (photo && photo.length > PHOTO_LIMIT) {
+    return res.status(400).json({ error: 'Изображение слишком большое' });
+  }
+
+  await query('update users set photo = $1 where id = $2', [photo, req.user.id]);
+  res.json({ user: publicUser({ ...req.user, photo }) });
 });
 
 /* ── Восстановление пароля ─────────────────────────────── */

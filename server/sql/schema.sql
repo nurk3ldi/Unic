@@ -110,3 +110,7 @@ create table if not exists chat_mutes (
   club_id uuid not null references clubs (id) on delete cascade,
   primary key (user_id, club_id)
 );
+
+-- Фото человека (у университета — логотип): data URL, как у фото клуба.
+-- Сессия его не читает — слишком тяжёл для каждого запроса; отдаёт /me и вход
+alter table users add column if not exists photo text;

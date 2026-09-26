@@ -9,6 +9,14 @@ export function shortName(fullName) {
   return first ? `${first} ${last[0]}.` : last;
 }
 
+/** Роль человека словами — в профиле и везде, где её показывают */
+export const ROLE_LABELS = {
+  admin: 'Администратор',
+  university: 'Университет',
+  club_lead: 'Руководитель клуба',
+  student: 'Студент',
+};
+
 /** Буква для кружка-аватара */
 export const initial = (fullName) => fullName.trim()[0].toUpperCase();
 

@@ -16,21 +16,16 @@
   background: var(--separator);
 }
 
-/* Панель идёт во всю ширину: логотип и профиль прижаты к краям */
+/* Панель идёт во всю ширину: логотип и профиль прижаты к краям, навигация —
+   ровно посередине. Крайние колонки равны (1fr), поэтому центр не сдвигается
+   от того, что логотип шире значка профиля */
 .header__inner {
-  display: flex;
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
   align-items: center;
-  justify-content: space-between;
   gap: var(--space-4);
   height: var(--header-height);
   padding: 0 var(--space-6);
-}
-
-.header__left {
-  display: flex;
-  align-items: center;
-  gap: var(--space-6);
-  min-width: 0;
 }
 
 .header__logo {
@@ -41,30 +36,32 @@
 .header__nav {
   display: flex;
   align-items: center;
-  gap: var(--space-5);
+  gap: var(--space-8);
 }
 
-/* Навигация — только текст; активный раздел темнее остальных */
+/* Навигация — только текст, крупнее подписи (17px — размер навигации у Apple).
+   Разделы — основным цветом, чтобы читались сразу; текущий — цветом бренда */
 .header__link {
-  font-size: 0.9375rem;
+  font-size: 1.0625rem;
   font-weight: 500;
-  letter-spacing: var(--tracking-caption);
-  color: var(--text-secondary);
+  color: var(--text);
   white-space: nowrap;
   transition: color var(--duration-fast) var(--ease-out);
 }
 
+/* Наведение подсказывает переход тем же цветом, каким горит открытый раздел */
 .header__link:hover {
-  color: var(--text);
+  color: var(--accent);
   text-decoration: none;
 }
 
 /* NavLink сам ставит aria-current — отдельный класс не нужен */
 .header__link[aria-current='page'] {
-  color: var(--text);
+  color: var(--accent);
 }
 
 .header__avatar {
+  justify-self: end;
   display: grid;
   place-items: center;
   width: 2.25rem;
@@ -84,108 +81,23 @@
   color: var(--text);
 }
 
+/* Открытый профиль — иконка темнее, как активный раздел навигации */
+.header__avatar[aria-current='page'] {
+  color: var(--text);
+}
+
+/* Своё фото вместо значка — кружок во всю кнопку */
+.header__photo {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
 /* Отклик наступает на нажатии, а не на отпускании */
 .header__avatar:active {
   transform: scale(0.92);
   background: var(--fill-hover);
-}
-
-/* ── Меню профиля ───────────────────────────────────────── */
-.header__menu {
-  position: fixed;
-  inset: auto; /* гасим центрирование, заданное popover по умолчанию */
-  top: 3.25rem;
-  right: var(--space-6);
-  width: 15rem;
-  margin: 0;
-  padding: var(--space-2);
-  border: 1px solid var(--separator);
-  border-radius: var(--radius-card);
-  background: var(--surface);
-  box-shadow: var(--shadow-card);
-
-  /* Меню растёт из иконки, а не из центра экрана */
-  transform-origin: top right;
-  opacity: 0;
-  transform: scale(0.95);
-  transition:
-    opacity var(--duration-fast) var(--ease-out),
-    transform var(--duration-fast) var(--ease-out),
-    overlay var(--duration-fast) allow-discrete,
-    display var(--duration-fast) allow-discrete;
-}
-
-.header__menu:popover-open {
-  opacity: 1;
-  transform: none;
-}
-
-@starting-style {
-  .header__menu:popover-open {
-    opacity: 0;
-    transform: scale(0.95);
-  }
-}
-
-.header__menu::backdrop {
-  background: transparent;
-}
-
-.header__menu-head {
-  display: flex;
-  flex-direction: column;
-  gap: 0.125rem;
-  padding: var(--space-2) var(--space-3) var(--space-3);
-  border-bottom: 1px solid var(--separator);
-  margin-bottom: var(--space-2);
-}
-
-.header__menu-name {
-  font-size: 0.9375rem;
-  font-weight: 500;
-  line-height: 1.3;
-}
-
-.header__menu-role {
-  font-size: 0.8125rem;
-  line-height: 1.3;
-  letter-spacing: var(--tracking-caption);
-  color: var(--text-secondary);
-}
-
-.header__menu-item {
-  display: flex;
-  align-items: center;
-  gap: var(--space-2);
-  width: 100%;
-  padding: var(--space-2) var(--space-3);
-  border-radius: var(--radius-control);
-  font-size: 0.9375rem;
-  color: var(--text);
-  text-align: left;
-  transition: background-color var(--duration-fast) var(--ease-out);
-}
-
-.header__menu-item:hover {
-  background: var(--fill);
-}
-
-.header__menu-item:active {
-  background: var(--fill-hover);
-}
-
-.header__menu-item svg {
-  width: 1.125rem;
-  height: 1.125rem;
-  flex: none;
-  color: var(--text-secondary);
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .header__menu {
-    transition: opacity 120ms linear, overlay 120ms allow-discrete, display 120ms allow-discrete;
-    transform: none;
-  }
 }
 
 @media (max-width: 34rem) {
@@ -193,11 +105,12 @@
     padding-inline: var(--space-4);
   }
 
-  .header__left {
+  /* На телефоне крупная навигация с широкими промежутками не помещается в строку */
+  .header__nav {
     gap: var(--space-4);
   }
 
-  .header__menu {
-    right: var(--space-4);
+  .header__link {
+    font-size: 0.9375rem;
   }
 }

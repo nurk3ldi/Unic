@@ -7,6 +7,7 @@ import Clubs from './pages/Clubs.jsx';
 import Events from './pages/Events.jsx';
 import Home from './pages/Home.jsx';
 import Login from './pages/Login.jsx';
+import Profile from './pages/Profile.jsx';
 import Register from './pages/Register.jsx';
 import Restore from './pages/Restore.jsx';
 
@@ -28,6 +29,7 @@ export default function App() {
         <Route path="/chats" element={<Chats />} />
         <Route path="/chats/:id" element={<Chats />} />
         <Route path="/events" element={<Events />} />
+        <Route path="/profile" element={<Profile />} />
       </Route>
       <Route path="/login" element={guestOnly(<Login />)} />
       <Route path="/register" element={guestOnly(<Register />)} />
