@@ -439,7 +439,7 @@ export default function Chats() {
                   <div className="chats__members-head">
                     <h3 className="chats__members-title">{membersLabel(members.length)}</h3>
                     <button
-                      className="chats__icon-button"
+                      className="search-toggle"
                       type="button"
                       aria-label="Найти участника"
                       aria-expanded={findingMember}

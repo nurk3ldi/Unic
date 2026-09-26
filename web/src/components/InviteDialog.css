@@ -1,0 +1,108 @@
+/* Окно приглашения шире обычного: в нём список людей с полными именами и никами */
+.modal.invite {
+  width: min(36rem, calc(100vw - 2rem));
+}
+
+/* Поиск без своих полей — окно их уже даёт */
+.invite__search .search {
+  padding: 0;
+}
+
+/* Результаты — те же строки, что в составе клуба, только кнопками.
+   Высота ограничена: окно не растёт от длинного списка */
+.invite__results {
+  max-height: 20rem;
+  margin: var(--space-2) calc(var(--space-3) * -1) 0;
+  overflow-y: auto;
+  list-style: none;
+}
+
+/* Селектор составной: база .member живёт в MembersPanel.css с тем же весом */
+.member.invite__option {
+  width: 100%;
+  margin: 0;
+  text-align: left;
+  cursor: pointer;
+}
+
+.member.invite__option:active {
+  background: var(--fill-hover);
+}
+
+/* Уже в клубе или приглашён — видно, но не выбрать */
+.member.invite__option:disabled {
+  cursor: default;
+  background: none;
+}
+
+.member.invite__option:disabled .member__avatar,
+.member.invite__option:disabled .member__text {
+  opacity: 0.5;
+}
+
+.invite__status {
+  flex: none;
+  font-size: 0.8125rem;
+  color: var(--text-tertiary);
+}
+
+.invite__hint {
+  padding: var(--space-4) 0 var(--space-2);
+  font-size: 0.875rem;
+  text-align: center;
+  color: var(--text-tertiary);
+}
+
+/* Выбранный — строкой на подложке, справа «Изменить» */
+.invite__picked {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-control);
+  background: var(--bg-secondary);
+}
+
+.invite__change {
+  flex: none;
+  min-height: 2.75rem;
+  padding: 0 var(--space-2);
+  color: var(--accent);
+  font-size: 0.9375rem;
+  font-weight: 500;
+}
+
+.invite__change:hover {
+  opacity: 0.7;
+}
+
+/* Сообщение — как поля форм: граница, которая на фокусе становится акцентом (§4.5) */
+.invite__note {
+  width: 100%;
+  padding: 0.75rem var(--space-4);
+  border: 1px solid var(--separator-strong);
+  border-radius: var(--radius-control);
+  background: var(--surface);
+  font: inherit;
+  font-size: 1rem;
+  line-height: 1.4;
+  color: var(--text);
+  resize: none;
+  transition: border-color 250ms var(--ease-out);
+}
+
+.invite__note::placeholder {
+  color: var(--text-tertiary);
+}
+
+.invite__note:focus,
+.invite__note:focus-visible {
+  outline: none;
+  border-color: var(--accent);
+}
+
+.invite__error {
+  font-size: 0.8125rem;
+  letter-spacing: var(--tracking-caption);
+  color: var(--red);
+}

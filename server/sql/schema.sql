@@ -65,6 +65,14 @@ create unique index if not exists club_members_lead_idx
 
 create index if not exists club_members_user_idx on club_members (user_id);
 
+-- Приглашение — та же строка состава со status = 'invited': человек войдёт в клуб,
+-- только когда сам согласится. Рядом — кто пригласил и что написал
+alter table club_members drop constraint if exists club_members_status_check;
+alter table club_members add constraint club_members_status_check
+  check (status in ('active', 'pending', 'invited'));
+alter table club_members add column if not exists note text;
+alter table club_members add column if not exists invited_by uuid references users (id) on delete set null;
+
 -- Сообщения клубного чата. Автор обнуляется, а не удаляется вместе с человеком:
 -- переписка остаётся связной, даже когда аккаунта уже нет
 create table if not exists club_messages (

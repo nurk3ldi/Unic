@@ -27,6 +27,10 @@ const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/
 // Фото приходит строкой data URL: клиент уже ужал его до квадрата 400×400
 const PHOTO_LIMIT = 700_000;
 const ABOUT_LIMIT = 2000;
+// Текст к приглашению — пара строк, не письмо
+const NOTE_LIMIT = 300;
+// Сколько людей показывать в поиске при приглашении
+const CANDIDATES_LIMIT = 8;
 const STATUSES = ['active', 'pending', 'suspended'];
 
 // Длина сообщения: столько же, сколько у описания клуба — предел один на проект
@@ -187,7 +191,7 @@ router.delete('/:id', requireAuth, requireRole(...MANAGE_ROLES), async (req, res
 /**
  * Состав клуба. Руководитель идёт первым — это сортировка запроса,
  * а не порядок, в котором строки легли в таблицу.
- * Список заявок видят только те, кто по ним решает.
+ * Заявки и отправленные приглашения видят только те, кто клубом управляет.
  */
 router.get('/:id/members', requireAuth, async (req, res) => {
   if (!(await findClub(req.params.id))) {
@@ -208,6 +212,9 @@ router.get('/:id/members', requireAuth, async (req, res) => {
     requests: canManage(req.user)
       ? rows.filter((row) => row.status === 'pending').map(publicMember)
       : [],
+    invites: canManage(req.user)
+      ? rows.filter((row) => row.status === 'invited').map(publicMember)
+      : [],
     canManage: canManage(req.user),
   });
 });
@@ -225,47 +232,98 @@ router.post('/:id/members/request', requireAuth, async (req, res) => {
     return res.status(403).json({ error: 'Клуб сейчас не принимает заявки' });
   }
 
+  // Если клуб уже пригласил — заявка и есть согласие: человек сразу в клубе
   const { rows } = await query(
     `insert into club_members (club_id, user_id, status)
      values ($1, $2, 'pending')
-     on conflict (club_id, user_id) do nothing
+     on conflict (club_id, user_id) do update set status = 'active', note = null
+       where club_members.status = 'invited'
      returning status`,
     [req.params.id, req.user.id],
   );
   if (!rows[0]) return res.status(409).json({ error: 'Заявка уже отправлена' });
 
-  res.status(201).json({ ok: true });
+  res.status(201).json({ status: rows[0].status });
 });
 
-/** Добавление участника вручную: по никнейму или почте. */
+/**
+ * Кого можно пригласить: поиск по имени, нику или почте. Рядом с каждым — его
+ * отношение к клубу (уже участник, подал заявку, приглашён), чтобы окно не
+ * предлагало пригласить того, кто и так здесь.
+ */
+router.get('/:id/candidates', requireAuth, requireRole(...MANAGE_ROLES), async (req, res) => {
+  if (!(await findClub(req.params.id))) {
+    return res.status(404).json({ error: 'Клуб не найден' });
+  }
+
+  const text = String(req.query.q ?? '').trim().replace(/^@/, '');
+  if (text.length < 2) return res.json({ candidates: [] });
+
+  // % и _ в запросе — обычные символы, а не шаблон LIKE
+  const pattern = `%${text.replace(/[\\%_]/g, (char) => `\\${char}`)}%`;
+  const { rows } = await query(
+    `select u.id, u.full_name, u.username, m.status
+       from users u
+       left join club_members m on m.club_id = $1 and m.user_id = u.id
+      where u.id <> $3
+        and (u.full_name ilike $2 or u.username ilike $2 or u.email ilike $2)
+      order by u.full_name
+      limit ${CANDIDATES_LIMIT}`,
+    [req.params.id, pattern, req.user.id],
+  );
+
+  res.json({
+    candidates: rows.map((row) => ({ ...publicMember(row), status: row.status ?? null })),
+  });
+});
+
+/**
+ * Приглашение в клуб. Человек не попадает в клуб сразу — ему приходит приглашение
+ * с текстом, и участником он становится, только когда сам его примет.
+ * Если он уже подал заявку, согласны обе стороны — он входит сразу.
+ */
 router.post('/:id/members', requireAuth, requireRole(...MANAGE_ROLES), async (req, res) => {
   if (!(await findClub(req.params.id))) {
     return res.status(404).json({ error: 'Клуб не найден' });
   }
 
-  const login = String(req.body?.username ?? '')
-    .trim()
-    .toLowerCase();
-  if (!login) return res.status(400).json({ error: 'Укажите никнейм или почту' });
+  const userId = String(req.body?.userId ?? '');
+  if (!UUID_RE.test(userId)) return res.status(400).json({ error: 'Выберите, кого пригласить' });
 
-  const { rows: found } = await query(
-    'select id, full_name from users where username = $1 or email = $1',
-    [login],
-  );
+  const note = req.body?.note ? String(req.body.note).trim() : '';
+  if (note.length > NOTE_LIMIT) {
+    return res.status(400).json({ error: 'Сообщение слишком длинное' });
+  }
+
+  const { rows: found } = await query('select id, full_name, username from users where id = $1', [
+    userId,
+  ]);
   if (!found[0]) return res.status(404).json({ error: 'Такого пользователя нет' });
 
-  // Заявка того же человека становится участием — отдельным шагом одобрять нечего
   const { rows } = await query(
-    `insert into club_members (club_id, user_id, status)
-     values ($1, $2, 'active')
-     on conflict (club_id, user_id) do update set status = 'active'
+    `insert into club_members (club_id, user_id, status, note, invited_by)
+     values ($1, $2, 'invited', $3, $4)
+     on conflict (club_id, user_id) do update set status = 'active', note = null
        where club_members.status = 'pending'
-     returning *`,
-    [req.params.id, found[0].id],
+     returning role, status`,
+    [req.params.id, userId, note || null, req.user.id],
   );
-  if (!rows[0]) return res.status(409).json({ error: 'Этот человек уже в клубе' });
 
-  res.status(201).json({ member: publicMember({ ...found[0], role: rows[0].role }) });
+  if (!rows[0]) {
+    // Строка уже была и не заявка — значит, участник или уже приглашён
+    const { rows: was } = await query(
+      'select status from club_members where club_id = $1 and user_id = $2',
+      [req.params.id, userId],
+    );
+    return res.status(409).json({
+      error: was[0]?.status === 'invited' ? 'Приглашение уже отправлено' : 'Этот человек уже в клубе',
+    });
+  }
+
+  res.status(201).json({
+    member: publicMember({ ...found[0], role: rows[0].role }),
+    status: rows[0].status,
+  });
 });
 
 /** Одобрение заявки и назначение руководителя. */

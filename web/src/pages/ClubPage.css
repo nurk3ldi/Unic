@@ -162,14 +162,6 @@
   text-overflow: ellipsis;
 }
 
-/* Список будет длинным — прокручиваем его внутри карточки */
-.side-body {
-  flex: 1;
-  min-height: 0;
-  overflow-y: auto;
-  padding: var(--space-4);
-}
-
 /* На узком экране колонка уходит вниз и перестаёт тянуться на всю высоту */
 @media (max-width: 60rem) {
   .club-page {

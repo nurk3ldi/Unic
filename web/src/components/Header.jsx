@@ -2,6 +2,7 @@ import { NavLink } from 'react-router-dom';
 import { IoPersonCircleOutline } from 'react-icons/io5';
 import { useAuth } from '../AuthContext.jsx';
 import logo from '../assets/logo.png';
+import InvitesBell from './InvitesBell.jsx';
 import './Header.css';
 
 /** Верхняя панель: полупрозрачный слой во всю ширину, контент течёт под ним. */
@@ -32,15 +33,20 @@ export default function Header() {
           </NavLink>
         </nav>
 
-        {/* Профиль — отдельная страница: там сведения о себе и выход */}
-        {/* Есть своё фото — кнопка и есть он сам, кружком; нет — общий значок */}
-        <NavLink className="header__avatar" to="/profile" viewTransition aria-label="Профиль">
-          {user?.photo ? (
-            <img className="header__photo" src={user.photo} alt="" />
-          ) : (
-            <IoPersonCircleOutline aria-hidden="true" />
-          )}
-        </NavLink>
+        <div className="header__end">
+          {/* Приглашения в клубы — рядом с профилем: это личное, как и он */}
+          <InvitesBell />
+
+          {/* Профиль — отдельная страница: там сведения о себе и выход */}
+          {/* Есть своё фото — кнопка и есть он сам, кружком; нет — общий значок */}
+          <NavLink className="header__avatar" to="/profile" viewTransition aria-label="Профиль">
+            {user?.photo ? (
+              <img className="header__photo" src={user.photo} alt="" />
+            ) : (
+              <IoPersonCircleOutline aria-hidden="true" />
+            )}
+          </NavLink>
+        </div>
       </div>
     </header>
   );

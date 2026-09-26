@@ -35,7 +35,11 @@ export const api = {
   deleteClub: (id) => request(`/clubs/${id}`, { method: 'DELETE' }),
 
   clubMembers: (id) => request(`/clubs/${id}/members`),
-  addClubMember: (id, payload) => request(`/clubs/${id}/members`, { method: 'POST', body: payload }),
+  clubCandidates: (id, text) => request(`/clubs/${id}/candidates?q=${encodeURIComponent(text)}`),
+  inviteMember: (id, payload) => request(`/clubs/${id}/members`, { method: 'POST', body: payload }),
+  invites: () => request('/invites'),
+  acceptInvite: (clubId) => request(`/invites/${clubId}/accept`, { method: 'POST' }),
+  declineInvite: (clubId) => request(`/invites/${clubId}/decline`, { method: 'POST' }),
   updateClubMember: (id, userId, payload) =>
     request(`/clubs/${id}/members/${userId}`, { method: 'PATCH', body: payload }),
   removeClubMember: (id, userId) =>

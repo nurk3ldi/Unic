@@ -60,8 +60,15 @@
   color: var(--accent);
 }
 
-.header__avatar {
+/* Правый край: колокольчик приглашений и профиль */
+.header__end {
   justify-self: end;
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.header__avatar {
   display: grid;
   place-items: center;
   width: 2.25rem;

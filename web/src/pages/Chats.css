@@ -193,36 +193,6 @@
   color: var(--text-secondary);
 }
 
-/* Иконка-кнопка: знак мелкий, зона нажатия — 44px */
-.chats__icon-button {
-  display: grid;
-  place-items: center;
-  width: 2.75rem;
-  height: 2.75rem;
-  margin-right: calc(var(--space-2) * -1);
-  border-radius: 50%;
-  color: var(--text-secondary);
-  transition:
-    background-color var(--duration-fast) var(--ease-out),
-    transform var(--duration-press) var(--ease-out);
-}
-
-.chats__icon-button svg {
-  width: 1.375rem;
-  height: 1.375rem;
-}
-
-.chats__icon-button:hover,
-.chats__icon-button[aria-expanded='true'] {
-  background: var(--fill);
-  color: var(--text);
-}
-
-/* Отклик наступает на нажатии, а не на отпускании */
-.chats__icon-button:active {
-  transform: scale(0.92);
-}
-
 /* Поле поиска стоит вплотную к списку: у SearchField свои поля, здесь они лишние */
 .chats__members .search {
   padding: var(--space-1) 0 var(--space-2);
