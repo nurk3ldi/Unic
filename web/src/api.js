@@ -46,7 +46,13 @@ export const api = {
   setChatNotifications: (id, enabled) =>
     request(`/clubs/${id}/notifications`, { method: 'PUT', body: { enabled } }),
 
-  events: () => request('/events'),
+  // Без промежутка — ближайшие; с промежутком — всё в нём (для календаря)
+  events: (range) =>
+    request(
+      range
+        ? `/events?from=${encodeURIComponent(range.from)}&to=${encodeURIComponent(range.to)}`
+        : '/events',
+    ),
   clubEvents: (id) => request(`/clubs/${id}/events`),
   createClubEvent: (id, payload) =>
     request(`/clubs/${id}/events`, { method: 'POST', body: payload }),

@@ -1,22 +1,26 @@
 import { useEffect, useState } from 'react';
 import { IoChevronForward } from 'react-icons/io5';
 import { api } from '../api.js';
-import { POLL_MS, messageTime } from '../chat.js';
-import { authorColor, initial, shortName } from '../people.js';
+import { useAuth } from '../AuthContext.jsx';
+import { POLL_MS } from '../chat.js';
+import { authorColor, shortName } from '../people.js';
 import './ClubChatCard.css';
 
+// Сколько последних реплик держим: в квадрат карточки больше не помещается,
+// а лишние всё равно скрылись бы под верхним краем
+const SHOWN = 12;
+
 /**
- * Свёрнутый вид чата: **одна последняя реплика**, как в виджете сообщений.
+ * Свёрнутый чат: живая переписка в миниатюре — те же пузыри, что в самом чате
+ * (своё справа синим, чужое слева с именем), на тех же обоях. Новое приходит
+ * тем же опросом, что и в чате, поэтому видно, как пишут прямо сейчас.
  *
- * Раньше здесь лежали четыре строки подряд, прижатые к низу: половина карточки
- * пустовала, а три одинаковые серые строки ничего не выделяли. Одна реплика
- * крупно отвечает на вопрос «что там нового» и заполняет квадрат сама.
- *
- * Писать отсюда нельзя: поле ввода в квадрате 340px было бы тесным,
- * а карточка целиком ведёт в чат, где для этого есть место.
+ * Писать отсюда нельзя: поле ввода в квадрате было бы тесным, а карточка
+ * целиком ведёт в чат, где для этого есть место.
  */
 export default function ClubChatCard({ clubId }) {
-  const [last, setLast] = useState(null);
+  const { user } = useAuth();
+  const [messages, setMessages] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
@@ -28,7 +32,7 @@ export default function ClubChatCard({ clubId }) {
       try {
         const { messages } = await api.clubMessages(clubId);
         if (alive) {
-          setLast(messages.at(-1) ?? null);
+          setMessages(messages.slice(-SHOWN));
           setError('');
         }
       } catch (failure) {
@@ -48,24 +52,36 @@ export default function ClubChatCard({ clubId }) {
 
   if (loading) return <p className="chat-card__empty">Загружаем…</p>;
   if (error) return <p className="chat-card__empty">{error}</p>;
-  if (!last) return <p className="chat-card__empty">Сообщений пока нет</p>;
 
   return (
     <div className="chat-card">
-      <div className="chat-card__head">
-        <span className="chat-card__avatar" aria-hidden="true">
-          {initial(last.author)}
-        </span>
-        <span className="chat-card__author" style={{ color: authorColor(last.authorId) }}>
-          {shortName(last.author)}
-        </span>
-      </div>
-
-      <p className="chat-card__text">{last.text || 'Фото'}</p>
-
-      <time className="chat-card__time" dateTime={last.createdAt}>
-        {messageTime.format(new Date(last.createdAt))}
-      </time>
+      {messages.length === 0 ? (
+        <p className="chat-card__empty">Сообщений пока нет</p>
+      ) : (
+        /* Лента прижата к низу, как в чате: новое — последней строкой, старое
+           уходит вверх и растворяется под краем */
+        <div className="chat-card__feed">
+          {messages.map((message) => {
+            const own = message.authorId === user?.id;
+            return (
+              <div
+                className={`chat-card__msg${own ? ' chat-card__msg--own' : ''}`}
+                key={message.id}
+              >
+                {!own && (
+                  <span
+                    className="chat-card__author"
+                    style={{ color: authorColor(message.authorId) }}
+                  >
+                    {shortName(message.author)}
+                  </span>
+                )}
+                <span className="chat-card__text">{message.text || 'Фото'}</span>
+              </div>
+            );
+          })}
+        </div>
+      )}
 
       {/* Карточка и так ссылка, но строка снизу называет, куда именно */}
       <span className="chat-card__more">
