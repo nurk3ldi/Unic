@@ -14,7 +14,12 @@ const publicClub = (row) => ({
   createdAt: row.created_at,
 });
 
-const publicMember = (row) => ({ id: row.id, name: row.full_name, role: row.role });
+const publicMember = (row) => ({
+  id: row.id,
+  name: row.full_name,
+  username: row.username ?? null,
+  role: row.role,
+});
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -176,7 +181,7 @@ router.get('/:id/members', requireAuth, async (req, res) => {
   }
 
   const { rows } = await query(
-    `select u.id, u.full_name, m.role, m.status
+    `select u.id, u.full_name, u.username, m.role, m.status
        from club_members m
        join users u on u.id = m.user_id
       where m.club_id = $1

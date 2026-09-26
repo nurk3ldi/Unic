@@ -168,6 +168,119 @@
   color: var(--text-tertiary);
 }
 
+/* ── Состав в сведениях ─────────────────────────────────── */
+/* Как в сведениях группы: сверху «N участников» и лупа, ниже — все поимённо */
+.chats__members {
+  margin-top: var(--space-6);
+}
+
+.chats__members-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-left: var(--space-2);
+}
+
+.chats__members-title {
+  font-size: 0.9375rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+/* Иконка-кнопка: знак мелкий, зона нажатия — 44px */
+.chats__icon-button {
+  display: grid;
+  place-items: center;
+  width: 2.75rem;
+  height: 2.75rem;
+  margin-right: calc(var(--space-2) * -1);
+  border-radius: 50%;
+  color: var(--text-secondary);
+  transition:
+    background-color var(--duration-fast) var(--ease-out),
+    transform var(--duration-press) var(--ease-out);
+}
+
+.chats__icon-button svg {
+  width: 1.375rem;
+  height: 1.375rem;
+}
+
+.chats__icon-button:hover,
+.chats__icon-button[aria-expanded='true'] {
+  background: var(--fill);
+  color: var(--text);
+}
+
+/* Отклик наступает на нажатии, а не на отпускании */
+.chats__icon-button:active {
+  transform: scale(0.92);
+}
+
+/* Поле поиска стоит вплотную к списку: у SearchField свои поля, здесь они лишние */
+.chats__members .search {
+  padding: var(--space-1) 0 var(--space-2);
+}
+
+.chats__member-list {
+  margin-top: var(--space-1);
+}
+
+.chats__member {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  min-height: 3.5rem;
+  padding: var(--space-2);
+  border-radius: var(--radius-control);
+}
+
+/* Тот же круг с буквой, что у автора в ленте: человек узнаётся одинаково */
+.chats__member-avatar {
+  display: grid;
+  place-items: center;
+  width: 2.5rem;
+  height: 2.5rem;
+  flex: none;
+  border-radius: 50%;
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+.chats__member-body {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  flex: 1;
+}
+
+.chats__member-name {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-size: 0.9375rem;
+  color: var(--text);
+}
+
+/* Роль — цветом бренда, как метка в мессенджере: её видно сразу */
+.chats__member-role {
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: var(--accent);
+}
+
+.chats__member-nick {
+  flex: none;
+  max-width: 40%;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-size: 0.8125rem;
+  color: var(--text-tertiary);
+}
+
 /* ── Экраны панели сведений ─────────────────────────────── */
 /* «Медиа» въезжает справа, как следующий экран в навигации iOS; назад —
    сведения въезжают слева. Ключ у каждого экрана свой, поэтому анимация

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, NavLink, useParams } from 'react-router-dom';
 import {
   IoChevronBack,
@@ -7,8 +7,10 @@ import {
   IoImagesOutline,
   IoLinkOutline,
   IoNotificationsOutline,
+  IoSearchOutline,
 } from 'react-icons/io5';
 import { api } from '../api.js';
+import { useAuth } from '../AuthContext.jsx';
 import { POLL_MS, chatStamp } from '../chat.js';
 import { membersLabel } from '../club.js';
 import { initial, shortName } from '../people.js';
@@ -34,6 +36,7 @@ import './Chats.css';
  */
 export default function Chats() {
   const { id } = useParams();
+  const { user } = useAuth();
 
   const [chats, setChats] = useState([]);
   const [members, setMembers] = useState([]);
@@ -41,6 +44,9 @@ export default function Chats() {
   const [mediaOpen, setMediaOpen] = useState(false);
   const [media, setMedia] = useState(null); // { photos, links } открытого чата
   const [viewing, setViewing] = useState(null); // снимок из «Медиа» на весь экран
+  const [findingMember, setFindingMember] = useState(false);
+  const [memberQuery, setMemberQuery] = useState('');
+  const memberSearchRef = useRef(null);
   const [search, setSearch] = useState('');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -77,6 +83,8 @@ export default function Chats() {
 
     let alive = true;
     setMembers([]);
+    setFindingMember(false);
+    setMemberQuery('');
     api
       .clubMembers(id)
       .then(({ members }) => alive && setMembers(members))
@@ -111,14 +119,36 @@ export default function Chats() {
   // Уведомления по умолчанию включены: сервер хранит только выключенные
   const notify = !open?.muted;
   const permission = 'Notification' in window ? Notification.permission : 'unsupported';
+  // Подпись — только когда переключатель обещает то, чего не будет: иначе он говорит сам
   const notifyNote =
     permission === 'unsupported'
       ? 'Этот браузер не показывает уведомления.'
       : notify && permission === 'denied'
         ? 'Браузер запретил уведомления для Unic — разрешите их в настройках сайта.'
-        : notify
-          ? 'Новые сообщения придут системным уведомлением, пока Unic открыт во вкладке.'
-          : 'Уведомления этого чата выключены.';
+        : '';
+
+  // Состав в сведениях: «Вы» — первым, как в мессенджерах; дальше порядок сервера
+  // (руководитель, затем по алфавиту). Поиск — по имени и нику
+  const shownMembers = useMemo(() => {
+    const query = memberQuery.trim().toLowerCase().replace(/^@/, '');
+    return [...members]
+      .sort((a, b) => (b.id === user?.id) - (a.id === user?.id))
+      .filter(
+        (member) =>
+          !query ||
+          member.name.toLowerCase().includes(query) ||
+          member.username?.toLowerCase().includes(query),
+      );
+  }, [members, memberQuery, user?.id]);
+
+  function toggleMemberSearch() {
+    setMemberQuery('');
+    setFindingMember((was) => {
+      // Поле въезжает — фокус сразу в нём, искать можно не целясь
+      if (!was) setTimeout(() => memberSearchRef.current?.querySelector('input')?.focus(), 0);
+      return !was;
+    });
+  }
 
   /** Разрешение браузера спрашиваем в момент включения — это ответ на жест человека. */
   async function toggleNotify(event) {
@@ -402,8 +432,68 @@ export default function Chats() {
                   </label>
                 </div>
 
-                {/* Подпись под группой, как в «Настройках»: что именно обещает переключатель */}
-                <p className="chats__note">{notifyNote}</p>
+                {notifyNote && <p className="chats__note">{notifyNote}</p>}
+
+                {/* Состав — как в сведениях группы: сколько, поиск, все поимённо */}
+                <section className="chats__members">
+                  <div className="chats__members-head">
+                    <h3 className="chats__members-title">{membersLabel(members.length)}</h3>
+                    <button
+                      className="chats__icon-button"
+                      type="button"
+                      aria-label="Найти участника"
+                      aria-expanded={findingMember}
+                      onClick={toggleMemberSearch}
+                    >
+                      <IoSearchOutline aria-hidden="true" />
+                    </button>
+                  </div>
+
+                  {/* inert: свёрнутое поле не должно ловить Tab */}
+                  <div
+                    className={`reveal-y${findingMember ? ' reveal-y--open' : ''}`}
+                    ref={memberSearchRef}
+                    inert={!findingMember}
+                  >
+                    <div className="reveal-y__clip">
+                      <SearchField
+                        label="Поиск участника"
+                        value={memberQuery}
+                        onChange={(event) => setMemberQuery(event.target.value)}
+                        onClear={() => setMemberQuery('')}
+                      />
+                    </div>
+                  </div>
+
+                  <ul className="chats__member-list">
+                    {shownMembers.map((member) => (
+                      <li className="chats__member" key={member.id}>
+                        <span className="chats__member-avatar" aria-hidden="true">
+                          {initial(member.name)}
+                        </span>
+
+                        <span className="chats__member-body">
+                          <span className="chats__member-name">
+                            {member.id === user?.id ? 'Вы' : member.name}
+                          </span>
+                          {member.role === 'lead' && (
+                            <span className="chats__member-role">Руководитель</span>
+                          )}
+                        </span>
+
+                        {member.username && (
+                          <span className="chats__member-nick">@{member.username}</span>
+                        )}
+                      </li>
+                    ))}
+
+                    {shownMembers.length === 0 && (
+                      <li className="chats__info-empty">
+                        {memberQuery ? 'Никого не нашли' : 'Участников пока нет'}
+                      </li>
+                    )}
+                  </ul>
+                </section>
               </div>
             </div>
           )}
