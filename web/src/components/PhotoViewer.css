@@ -85,3 +85,160 @@
 .photo-viewer__close svg * {
   stroke-width: 24;
 }
+
+/* ── Плеер ──────────────────────────────────────────────── */
+/* Своей коробки у обёртки нет: видео и панель — прямо в окне */
+.player {
+  display: contents;
+}
+
+.player__video {
+  cursor: pointer;
+}
+
+/* Пока видео играет и мышь стоит, прячется и курсор — кадр чистый */
+.player--idle .player__video {
+  cursor: none;
+}
+
+/* Панель — плавающая капсула из тёмного материала, как в «Фото» на iPhone:
+   видео под ней просвечивает размытым, а не перекрывается плитой */
+.player__bar {
+  position: absolute;
+  left: 50%;
+  bottom: var(--space-6);
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  width: min(40rem, calc(100vw - 2 * var(--space-4)));
+  padding: var(--space-1) var(--space-3);
+  border-radius: var(--radius-pill);
+  background: var(--viewer-material);
+  -webkit-backdrop-filter: var(--material-blur);
+  backdrop-filter: var(--material-blur);
+  color: var(--viewer-fg);
+  transform: translateX(-50%);
+  transition:
+    opacity var(--duration-base) var(--ease-out),
+    transform var(--duration-base) var(--ease-out);
+}
+
+/* Уходит вниз и растворяется — тем же путём и вернётся */
+.player--idle .player__bar {
+  opacity: 0;
+  transform: translate(-50%, 0.75rem);
+  pointer-events: none;
+}
+
+.player__button {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 2.75rem;
+  height: 2.75rem;
+  border-radius: 50%;
+  color: var(--viewer-fg);
+  font-size: 1.25rem;
+  transition:
+    opacity var(--duration-fast) var(--ease-out),
+    transform var(--duration-press) var(--ease-out);
+}
+
+.player__button:hover {
+  opacity: 0.75;
+  text-decoration: none;
+}
+
+/* Отклик наступает на нажатии, а не на отпускании */
+.player__button:active {
+  transform: scale(0.9);
+}
+
+.player__button--play {
+  font-size: 1.5rem;
+}
+
+/* Скорость — словом «1,5×», а не значком: так её видно сразу */
+.player__rate {
+  width: auto;
+  min-width: 2.75rem;
+  padding: 0 var(--space-2);
+  font-size: 0.875rem;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.player__time {
+  flex: none;
+  min-width: 2.5rem;
+  font-size: 0.8125rem;
+  font-variant-numeric: tabular-nums;
+  text-align: center;
+}
+
+/* Ползунок: тонкая дорожка, пройденное — белым, ручка — белый круг.
+   Системный range: стрелки и скринридер работают без своего кода */
+.player__scrubber {
+  flex: 1;
+  min-width: 0;
+  height: 1.75rem;
+  margin: 0;
+  background: none;
+  appearance: none;
+  cursor: pointer;
+}
+
+.player__scrubber::-webkit-slider-runnable-track {
+  height: 0.25rem;
+  border-radius: var(--radius-pill);
+  background: linear-gradient(
+    to right,
+    var(--viewer-fg) var(--progress),
+    var(--viewer-track) var(--progress)
+  );
+}
+
+.player__scrubber::-moz-range-track {
+  height: 0.25rem;
+  border-radius: var(--radius-pill);
+  background: var(--viewer-track);
+}
+
+.player__scrubber::-moz-range-progress {
+  height: 0.25rem;
+  border-radius: var(--radius-pill);
+  background: var(--viewer-fg);
+}
+
+.player__scrubber::-webkit-slider-thumb {
+  width: 0.875rem;
+  height: 0.875rem;
+  margin-top: -0.3125rem;
+  border-radius: 50%;
+  background: var(--viewer-fg);
+  appearance: none;
+  transition: transform var(--duration-press) var(--ease-out);
+}
+
+.player__scrubber::-moz-range-thumb {
+  width: 0.875rem;
+  height: 0.875rem;
+  border: none;
+  border-radius: 50%;
+  background: var(--viewer-fg);
+}
+
+/* Взялись за ручку — она чуть крупнее: видно, что её держат */
+.player__scrubber:active::-webkit-slider-thumb {
+  transform: scale(1.3);
+}
+
+.player__scrubber:focus-visible {
+  outline: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .player--idle .player__bar {
+    transform: translateX(-50%);
+  }
+}

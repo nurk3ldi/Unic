@@ -54,7 +54,7 @@ export function chatStamp(iso) {
  */
 export function messageLabel(message) {
   if (message.text) return message.text;
-  if (message.photo) return 'Фото';
+  if (message.photo || message.file?.kind === 'image') return 'Фото';
   if (message.file?.kind === 'video') return 'Видео';
   if (message.file) return message.file.name;
   return '';
@@ -82,9 +82,14 @@ export const VIDEO_EXTENSIONS = ['mp4', 'm4v', 'webm', 'mov'];
 export const DOCUMENT_EXTENSIONS = [
   'pdf', 'doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx', 'odt', 'ods', 'odp',
   'rtf', 'txt', 'csv', 'zip', 'rar', '7z',
+  // iWork от Apple — только скачать: ни один браузер их не открывает
+  'pages', 'numbers', 'key',
 ];
+// Снимки Apple: Safari их читает и сам переведёт в JPEG; остальные отправят оригиналом
+export const IMAGE_EXTENSIONS = ['heic', 'heif'];
 export const VIDEO_LIMIT = 100 * 1024 * 1024;
 export const DOCUMENT_LIMIT = 25 * 1024 * 1024;
+export const IMAGE_LIMIT = 25 * 1024 * 1024;
 
 /** Расширение файла без точки, строчными. */
 export const extensionOf = (name) =>

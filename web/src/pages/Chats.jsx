@@ -5,6 +5,7 @@ import {
   IoChevronForward,
   IoCloseOutline,
   IoDocumentTextOutline,
+  IoDownloadOutline,
   IoImagesOutline,
   IoPlay,
   IoLinkOutline,
@@ -51,7 +52,7 @@ export default function Chats() {
   const [members, setMembers] = useState([]);
   const [info, setInfo] = useState(false);
   const [mediaOpen, setMediaOpen] = useState(false);
-  const [media, setMedia] = useState(null); // { photos, videos, documents, links } открытого чата
+  const [media, setMedia] = useState(null); // { photos, images, videos, documents, links } открытого чата
   const [viewing, setViewing] = useState(null); // снимок из «Медиа» на весь экран
   const [findingMember, setFindingMember] = useState(false);
   const [memberQuery, setMemberQuery] = useState('');
@@ -115,7 +116,9 @@ export default function Chats() {
     api
       .clubMedia(id)
       .then((data) => alive && setMedia(data))
-      .catch(() => alive && setMedia({ photos: [], videos: [], documents: [], links: [] }));
+      .catch(() =>
+        alive && setMedia({ photos: [], images: [], videos: [], documents: [], links: [] }),
+      );
 
     return () => {
       alive = false;
@@ -123,8 +126,10 @@ export default function Chats() {
   }, [id, info]);
 
   const open = chats.find((chat) => chat.id === id) ?? null;
+  // Снимки Apple оригиналом — в той же сетке, что обычные фото
+  const allPhotos = media ? [...media.photos, ...(media.images ?? [])] : [];
   const mediaCount = media
-    ? media.photos.length + media.videos.length + media.documents.length + media.links.length
+    ? allPhotos.length + media.videos.length + media.documents.length + media.links.length
     : 0;
 
   // Уведомления по умолчанию включены: сервер хранит только выключенные
@@ -337,22 +342,20 @@ export default function Chats() {
                   </p>
                 ) : (
                   <>
-                    {media.photos.length > 0 && (
+                    {allPhotos.length > 0 && (
                       <section>
-                        <h3 className="side-title">Фото · {media.photos.length}</h3>
+                        <h3 className="side-title">Фото · {allPhotos.length}</h3>
                         {/* Квадраты, как в «Фото» на iPhone: сетка ровнее, чем кадры
                             разной формы; целиком снимок открывается по нажатию */}
                         <div className="chats__photos">
-                          {media.photos.map((photo) => (
-                            <button
+                          {allPhotos.map((photo) => (
+                            <MediaTile
                               key={photo.id}
-                              className="chats__photo"
-                              type="button"
-                              aria-label="Открыть фото"
-                              onClick={() => setViewing(photo)}
-                            >
-                              <img src={photo.url} alt="" loading="lazy" />
-                            </button>
+                              url={photo.url}
+                              name={photo.name}
+                              label="Открыть фото"
+                              onOpen={() => setViewing(photo)}
+                            />
                           ))}
                         </div>
                       </section>
@@ -365,19 +368,26 @@ export default function Chats() {
                             Смотрят в том же окне на весь экран */}
                         <div className="chats__photos">
                           {media.videos.map((video) => (
-                            <button
+                            <MediaTile
                               key={video.id}
-                              className="chats__photo chats__video"
-                              type="button"
-                              aria-label="Смотреть видео"
-                              onClick={() => setViewing({ url: video.url, kind: 'video' })}
+                              url={video.url}
+                              name={video.name}
+                              label="Смотреть видео"
+                              onOpen={() =>
+                                setViewing({
+                                  url: video.url,
+                                  kind: 'video',
+                                  name: video.name,
+                                  duration: video.duration,
+                                })
+                              }
+                              video
                             >
-                              <video src={`${video.url}#t=0.1`} preload="metadata" muted />
                               <span className="chats__video-badge">
                                 <IoPlay aria-hidden="true" />
                                 {video.duration ? formatDuration(video.duration) : ''}
                               </span>
-                            </button>
+                            </MediaTile>
                           ))}
                         </div>
                       </section>
@@ -567,5 +577,51 @@ export default function Chats() {
         <PhotoViewer photo={viewing} onClose={() => setViewing(null)} />
       </div>
     </main>
+  );
+}
+
+/**
+ * Плитка сетки «Медиа». Если браузер кадр не прочитал (HEIC, HEVC-видео не в
+ * Safari), плитка показывает формат и по нажатию скачивает файл, а не открывает
+ * пустое окно.
+ */
+function MediaTile({ url, name, label, onOpen, video = false, children }) {
+  const [failed, setFailed] = useState(false);
+  const ext = name ? extensionOf(name).toUpperCase() : '';
+
+  if (failed) {
+    return (
+      <a
+        className="chats__photo chats__photo--failed"
+        href={url}
+        download={name}
+        title="Не открывается в этом браузере — скачать"
+      >
+        <IoDownloadOutline aria-hidden="true" />
+        {ext}
+      </a>
+    );
+  }
+
+  return (
+    <button
+      className={`chats__photo${video ? ' chats__video' : ''}`}
+      type="button"
+      aria-label={label}
+      onClick={onOpen}
+    >
+      {video ? (
+        <video
+          src={`${url}#t=0.1`}
+          preload="metadata"
+          muted
+          onError={() => setFailed(true)}
+          onLoadedMetadata={(event) => event.currentTarget.videoWidth === 0 && setFailed(true)}
+        />
+      ) : (
+        <img src={url} alt="" loading="lazy" onError={() => setFailed(true)} />
+      )}
+      {children}
+    </button>
   );
 }

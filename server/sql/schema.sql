@@ -157,3 +157,8 @@ alter table club_messages add column if not exists file_id uuid references chat_
 
 -- Один файл — одно сообщение: дважды приложить тот же нельзя
 create unique index if not exists club_messages_file_idx on club_messages (file_id) where file_id is not null;
+
+-- Снимки Apple (HEIC/HEIF) оригиналом — третий вид вложения
+alter table chat_files drop constraint if exists chat_files_kind_check;
+alter table chat_files add constraint chat_files_kind_check
+  check (kind in ('video', 'document', 'image'));

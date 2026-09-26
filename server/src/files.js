@@ -20,6 +20,7 @@ export const filePath = (id) => join(UPLOAD_DIR, id);
 
 export const VIDEO_LIMIT = 100 * 1024 * 1024;
 export const DOCUMENT_LIMIT = 25 * 1024 * 1024;
+export const IMAGE_LIMIT = 25 * 1024 * 1024;
 
 // Тип решает сервер — по расширению из белого списка, а не по заголовку
 // браузера. Отдаём файл с этим же типом: чужого «text/html» не бывает
@@ -27,7 +28,17 @@ const VIDEO_TYPES = {
   mp4: 'video/mp4',
   m4v: 'video/mp4',
   webm: 'video/webm',
+  // MOV с iPhone чаще в HEVC: Safari играет, Chrome на Windows — нет. Принимаем
+  // всё равно; где не играет, лента скажет это сама (web/src/components/ChatRoom.jsx)
   mov: 'video/quicktime',
+};
+
+// Снимки Apple (HEIC/HEIF) — оригиналом. Браузер, который их читает (Safari),
+// сам переводит снимок в JPEG до отправки; оригинал уходит только из того,
+// что прочитать не смог. Показывает его тоже только тот, кто умеет
+const IMAGE_TYPES = {
+  heic: 'image/heic',
+  heif: 'image/heif',
 };
 
 const DOCUMENT_TYPES = {
@@ -47,12 +58,17 @@ const DOCUMENT_TYPES = {
   zip: 'application/zip',
   rar: 'application/vnd.rar',
   '7z': 'application/x-7z-compressed',
+  // iWork: в браузере не открываются нигде — только скачать
+  pages: 'application/vnd.apple.pages',
+  numbers: 'application/vnd.apple.numbers',
+  key: 'application/vnd.apple.keynote',
 };
 
 /** Что это за файл: вид, тип для отдачи и предел размера. Неизвестное — null. */
 export function classify(name) {
   const ext = name.includes('.') ? name.split('.').pop().toLowerCase() : '';
   if (VIDEO_TYPES[ext]) return { kind: 'video', mime: VIDEO_TYPES[ext], limit: VIDEO_LIMIT };
+  if (IMAGE_TYPES[ext]) return { kind: 'image', mime: IMAGE_TYPES[ext], limit: IMAGE_LIMIT };
   if (DOCUMENT_TYPES[ext]) {
     return { kind: 'document', mime: DOCUMENT_TYPES[ext], limit: DOCUMENT_LIMIT };
   }

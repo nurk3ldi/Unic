@@ -664,7 +664,11 @@ router.post('/:id/files', requireAuth, async (req, res) => {
       res.status(400).json({ error: 'Такой файл отправить нельзя' }),
     );
   }
-  const tooLarge = type.kind === 'video' ? 'Видео больше 100 МБ' : 'Документ больше 25 МБ';
+  const tooLarge = {
+    video: 'Видео больше 100 МБ',
+    image: 'Фото больше 25 МБ',
+    document: 'Документ больше 25 МБ',
+  }[type.kind];
 
   // Размер сверяем до записи: на диск не ляжет то, что всё равно отвергнем
   const declared = Number(req.get('Content-Length'));
@@ -739,7 +743,8 @@ router.get('/:id/files/:fileId', requireAuth, async (req, res) => {
   if (!rows[0]) return res.status(404).json({ error: 'Файл не найден' });
 
   const { kind, name, mime } = rows[0];
-  const disposition = kind === 'video' ? 'inline' : 'attachment';
+  // Видео и снимок смотрят на месте; документ — только скачать
+  const disposition = kind === 'document' ? 'attachment' : 'inline';
   res.set({
     'Content-Type': mime,
     'Content-Disposition': `${disposition}; filename*=UTF-8''${encodeURIComponent(name)}`,
@@ -814,6 +819,8 @@ router.get('/:id/media', requireAuth, async (req, res) => {
   });
 
   res.json({
+    // Снимки Apple оригиналом — в той же сетке, что и обычные фото (см. photos ниже)
+    images: files.filter((row) => row.kind === 'image').map(fileOf),
     videos: files.filter((row) => row.kind === 'video').map(fileOf),
     documents: files.filter((row) => row.kind === 'document').map(fileOf),
     photos: photos.map((row) => ({

@@ -7,15 +7,21 @@ import {
   IoClose,
   IoCopyOutline,
   IoDocumentTextOutline,
+  IoDownloadOutline,
+  IoImageOutline,
+  IoPlay,
   IoImagesOutline,
   IoMusicalNotesOutline,
   IoTrashOutline,
+  IoVideocamOutline,
 } from 'react-icons/io5';
 import { api } from '../api.js';
 import { useAuth } from '../AuthContext.jsx';
 import {
   DOCUMENT_EXTENSIONS,
   DOCUMENT_LIMIT,
+  IMAGE_EXTENSIONS,
+  IMAGE_LIMIT,
   LINK_RE,
   POLL_MS,
   VIDEO_EXTENSIONS,
@@ -37,7 +43,9 @@ import './ChatRoom.css';
 const MANAGE_ROLES = ['university', 'admin'];
 
 // Что предлагает системное окно выбора: снимки и видео — одним пунктом, документы — другим
-const MEDIA_ACCEPT = `image/*,${VIDEO_EXTENSIONS.map((ext) => `.${ext}`).join(',')}`;
+const MEDIA_ACCEPT = `image/*,${[...IMAGE_EXTENSIONS, ...VIDEO_EXTENSIONS]
+  .map((ext) => `.${ext}`)
+  .join(',')}`;
 const DOCUMENT_ACCEPT = DOCUMENT_EXTENSIONS.map((ext) => `.${ext}`).join(',');
 
 /**
@@ -54,6 +62,105 @@ function readVideo(url) {
     video.onerror = () => resolve({});
     video.src = url;
   });
+}
+
+/**
+ * Вложение, которое этот браузер показать не может (HEIC или HEVC-видео с iPhone
+ * в Chrome на Windows). Пузырь не ломается: говорит, в чём дело, где откроется
+ * и даёт скачать.
+ */
+function Unplayable({ file, what }) {
+  return (
+    <div className="msg__unplayable">
+      <span className="msg__file-icon" aria-hidden="true">
+        {what === 'Видео' ? <IoVideocamOutline /> : <IoImageOutline />}
+      </span>
+      <span className="msg__file-body">
+        <span className="msg__file-name">{what} не открывается в этом браузере</span>
+        <span className="msg__unplayable-hint">Откройте в Safari или скачайте файл</span>
+        <a className="msg__unplayable-download" href={file.url} download={file.name}>
+          <IoDownloadOutline aria-hidden="true" />
+          Скачать · {extensionOf(file.name).toUpperCase()} · {formatSize(file.size)}
+        </a>
+      </span>
+    </div>
+  );
+}
+
+/**
+ * Видео в ленте — как в «Сообщениях»: первый кадр, по центру круглая ▶ из
+ * матового стекла, в углу длительность. Нажатие открывает свой плеер на весь
+ * экран (PhotoViewer). Системных кнопок браузера в ленте нет.
+ *
+ * Не прочиталось — Unplayable. Кодек, которого браузер не знает, бывает двух
+ * видов: сразу ошибка, либо «открылось», но без картинки (ширина кадра 0 —
+ * только звук). Оба — как «не открывается».
+ */
+function ChatVideo({ file, time, onOpen }) {
+  const [failed, setFailed] = useState(false);
+  if (failed) return <Unplayable file={file} what="Видео" />;
+
+  return (
+    /* Место под кадр известно заранее — лента не прыгает, пока он грузится */
+    <button
+      className="msg__video"
+      type="button"
+      aria-label="Смотреть видео"
+      style={{
+        aspectRatio: file.width && file.height ? `${file.width} / ${file.height}` : '16 / 9',
+      }}
+      onClick={() => onOpen({ url: file.url, kind: 'video', name: file.name, duration: file.duration })}
+    >
+      {/* #t=0.1 — браузер показывает кадр, а не чёрный прямоугольник */}
+      <video
+        src={`${file.url}#t=0.1`}
+        preload="metadata"
+        muted
+        playsInline
+        onError={() => setFailed(true)}
+        onLoadedMetadata={(event) => event.currentTarget.videoWidth === 0 && setFailed(true)}
+      />
+
+      <span className="msg__video-play" aria-hidden="true">
+        <IoPlay />
+      </span>
+
+      {file.duration && <span className="msg__video-duration">{formatDuration(file.duration)}</span>}
+      {time}
+    </button>
+  );
+}
+
+/**
+ * Снимок Apple оригиналом (HEIC). Размер кадра заранее неизвестен — место держим
+ * 3:4, как у снимка с iPhone, и подстраиваем, когда он загрузился. Не прочитался —
+ * Unplayable.
+ */
+function ChatImage({ file, time, onOpen }) {
+  const [failed, setFailed] = useState(false);
+  const [ratio, setRatio] = useState('3 / 4');
+  if (failed) return <Unplayable file={file} what="Фото" />;
+
+  return (
+    <button
+      className="msg__photo"
+      type="button"
+      aria-label="Открыть фото"
+      style={{ aspectRatio: ratio }}
+      onClick={() => onOpen({ url: file.url })}
+    >
+      <img
+        src={file.url}
+        alt=""
+        loading="lazy"
+        onError={() => setFailed(true)}
+        onLoad={(event) =>
+          setRatio(`${event.currentTarget.naturalWidth} / ${event.currentTarget.naturalHeight}`)
+        }
+      />
+      {time}
+    </button>
+  );
 }
 
 // Сколько места нужно меню сообщения под кнопкой (три строки по 44px и поля), в rem:
@@ -263,16 +370,29 @@ export default function ChatRoom({ clubId }) {
     event.target.value = ''; // тот же файл можно выбрать снова
     if (!file) return;
 
-    if (VIDEO_EXTENSIONS.includes(extensionOf(file.name))) return pickVideo(file);
+    const ext = extensionOf(file.name);
+    if (VIDEO_EXTENSIONS.includes(ext)) return pickVideo(file);
 
     try {
+      // Сжимаем и переводим в JPEG — так снимок увидят все. Safari умеет это и с HEIC
       setPhoto(await chatPhoto(file));
       setAttachment(null);
       setError('');
       inputRef.current?.focus();
     } catch {
-      setError('Не удалось прочитать фото. Выберите JPEG или PNG.');
+      // HEIC, который этот браузер не читает, уходит оригиналом: увидят те, кто умеет
+      if (IMAGE_EXTENSIONS.includes(ext)) return pickAppleImage(file);
+      setError('Не удалось прочитать фото. Выберите JPEG, PNG или HEIC.');
     }
+  }
+
+  function pickAppleImage(file) {
+    if (file.size > IMAGE_LIMIT) return setError('Фото больше 25 МБ');
+
+    setAttachment({ kind: 'image', file, name: file.name, size: file.size });
+    setPhoto(null);
+    setError('');
+    inputRef.current?.focus();
   }
 
   async function pickVideo(file) {
@@ -424,6 +544,20 @@ export default function ChatRoom({ clubId }) {
                       </button>
                     )}
 
+                    {message.file && (
+                      /* У видео и документа — «Скачать», как было в системном «⋮» плеера */
+                      <a
+                        className="row-menu__item"
+                        role="menuitem"
+                        href={message.file.url}
+                        download={message.file.name}
+                        onClick={() => setOpenMenu(null)}
+                      >
+                        <IoDownloadOutline aria-hidden="true" />
+                        Скачать
+                      </a>
+                    )}
+
                     <button
                       className="row-menu__item"
                       type="button"
@@ -466,7 +600,9 @@ export default function ChatRoom({ clubId }) {
 
                     <div
                       className={`msg__bubble${
-                        message.photo || message.file?.kind === 'video' ? ' msg__bubble--photo' : ''
+                        message.photo || message.file?.kind === 'video' || message.file?.kind === 'image'
+                          ? ' msg__bubble--photo'
+                          : ''
                       }${message.file?.kind === 'document' ? ' msg__bubble--file' : ''}`}
                     >
                       {!own && menu}
@@ -535,25 +671,32 @@ export default function ChatRoom({ clubId }) {
                       )}
 
                       {message.file?.kind === 'video' && (
-                        /* Место под кадр известно заранее; смотрят тут же, со своей перемоткой */
-                        <div
-                          className="msg__video"
-                          style={{
-                            aspectRatio:
-                              message.file.width && message.file.height
-                                ? `${message.file.width} / ${message.file.height}`
-                                : '16 / 9',
-                          }}
-                        >
-                          <video src={message.file.url} controls preload="metadata" playsInline />
+                        <ChatVideo
+                          file={message.file}
+                          onOpen={setViewing}
+                          time={
+                            // Внизу у видео свои кнопки — время садится в верхний угол
+                            !message.text && (
+                              <time className="msg__photo-time" dateTime={message.createdAt}>
+                                {messageTime.format(new Date(message.createdAt))}
+                              </time>
+                            )
+                          }
+                        />
+                      )}
 
-                          {/* Внизу у видео свои кнопки — время садится в верхний угол */}
-                          {!message.text && (
-                            <time className="msg__photo-time" dateTime={message.createdAt}>
-                              {messageTime.format(new Date(message.createdAt))}
-                            </time>
-                          )}
-                        </div>
+                      {message.file?.kind === 'image' && (
+                        <ChatImage
+                          file={message.file}
+                          onOpen={setViewing}
+                          time={
+                            !message.text && (
+                              <time className="msg__photo-time" dateTime={message.createdAt}>
+                                {messageTime.format(new Date(message.createdAt))}
+                              </time>
+                            )
+                          }
+                        />
                       )}
 
                       {message.file?.kind === 'document' && (
@@ -674,15 +817,23 @@ export default function ChatRoom({ clubId }) {
                   />
                 ) : (
                   <span className="chat__photo-preview chat__file-icon" aria-hidden="true">
-                    <IoDocumentTextOutline />
+                    {shownAttachment.current.kind === 'image' ? (
+                      <IoImageOutline />
+                    ) : (
+                      <IoDocumentTextOutline />
+                    )}
                   </span>
                 )}
 
                 <span className="chat__file-body">
                   <span className="chat__file-name">
-                    {shownAttachment.current.kind === 'video' ? 'Видео' : shownAttachment.current.name}
+                    {{ video: 'Видео', image: 'Фото' }[shownAttachment.current.kind] ??
+                      shownAttachment.current.name}
                   </span>
                   <span className="chat__photo-label">
+                    {shownAttachment.current.kind === 'image'
+                      ? `${extensionOf(shownAttachment.current.name).toUpperCase()} · `
+                      : ''}
                     {shownAttachment.current.duration
                       ? `${formatDuration(shownAttachment.current.duration)} · `
                       : ''}
