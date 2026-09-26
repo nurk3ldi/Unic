@@ -79,16 +79,264 @@
 
 /* ── Карточка университета ──────────────────────────────── */
 /* Как карточки страницы клуба: белая, с тонкой границей, подтянута к шапке.
-   70% ширины страницы и половина высоты экрана под шапкой */
+   70% ширины страницы и вся высота экрана под шапкой.
+   Сверху и снизу — одинаковый зазор --space-4: поля страницы (--space-8) гасятся
+   отрицательным отступом, а высота считается за их вычетом — прокрутки нет */
 .profile-card {
   width: 70%;
-  height: calc((100dvh - var(--header-height)) / 2);
-  /* Сверху — подтянута к шапке, по бокам — по центру страницы */
-  margin: calc(var(--space-4) - var(--space-8)) auto 0;
+  height: calc(100dvh - var(--header-height) - 2 * var(--space-4));
+  /* Сверху и снизу — вплотную к краям экрана, по бокам — по центру страницы */
+  margin: calc(var(--space-4) - var(--space-8)) auto;
+  display: flex;
+  flex-direction: column;
   padding: var(--space-5);
   background: var(--surface);
   border: 1px solid var(--separator);
   border-radius: var(--radius-widget);
+}
+
+/* Выход — внизу карточки (margin-top: auto), красным текстом с иконкой, как
+   «Выйти» в «Настройках». Зона нажатия — 44px */
+.profile-card__signout {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  align-self: flex-start;
+  min-height: 2.75rem;
+  margin-top: auto;
+  padding: 0 var(--space-3);
+  margin-left: calc(-1 * var(--space-3));
+  border-radius: var(--radius-control);
+  color: var(--red);
+  font-size: 1.0625rem;
+  transition:
+    background-color var(--duration-fast) var(--ease-out),
+    transform var(--duration-press) var(--ease-out);
+}
+
+.profile-card__signout:hover {
+  background: var(--fill);
+}
+
+/* Отклик наступает на нажатии, а не на отпускании */
+.profile-card__signout:active {
+  transform: scale(0.97);
+}
+
+.profile-card__signout svg {
+  width: 1.25rem;
+  height: 1.25rem;
+}
+
+/* Верх карточки — логотип и сведения в строку. Высоту задаёт логотип, сведения
+   тянутся на неё (stretch) и раздвигаются: название — у верха логотипа, последняя
+   строка — у низа. Не наоборот: квадрат, берущий высоту от соседа, не знает своей
+   ширины (она сама от высоты) и схлопывается */
+.profile-card__head {
+  display: flex;
+  gap: var(--space-6);
+  /* Общий волосок под логотипом и сведениями — отделяет «кто это» от того, что ниже */
+  padding-bottom: var(--space-5);
+  border-bottom: 1px solid var(--separator);
+}
+
+.profile__photo-box {
+  display: flex;
+  flex-direction: column;
+  flex: none;
+}
+
+/* Справа от снимка — название и сведения; занимают всю оставшуюся ширину */
+.profile-card__info {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  flex: 1;
+  min-width: 0;
+}
+
+/* Строка названия: поле слева, действия — в правом верхнем углу */
+.profile-card__title {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+}
+
+/* ── Поля правки ────────────────────────────────────────── */
+/* Поле есть всегда; в покое рамка прозрачна и текст стоит ровно там же, где
+   стоял бы обычный текст: рамка раскрывается наружу (отрицательный отступ равен
+   внутреннему), поэтому правка не сдвигает ни строку, ни выравнивание с логотипом */
+.profile-edit {
+  --inset-y: var(--space-1);
+  --inset-x: var(--space-2);
+  margin: calc(-1 * var(--inset-y) - 1px) calc(-1 * var(--inset-x) - 1px);
+  padding: var(--inset-y) var(--inset-x);
+  border: 1px solid transparent;
+  border-radius: var(--radius-control);
+  background: none;
+  font: inherit;
+  color: var(--text);
+  cursor: default;
+  transition:
+    background-color var(--duration-fast) var(--ease-out),
+    border-color var(--duration-fast) var(--ease-out);
+}
+
+/* Правка: поле проступает — фон и рамка (§4.5: без ореола, только цвет рамки) */
+.profile-edit--on {
+  background: var(--surface);
+  border-color: var(--separator-strong);
+  cursor: text;
+}
+
+.profile-edit--on:focus,
+.profile-edit--on:focus-within {
+  outline: none;
+  border-color: var(--accent);
+}
+
+/* Название — размером заголовка в обоих состояниях; обычным весом: крупного
+   размера хватает, жирный делал строку грубой */
+.profile-edit--name {
+  flex: 1;
+  min-width: 0;
+  font-size: 2rem;
+  font-weight: 400;
+  line-height: 1.1;
+  letter-spacing: var(--tracking-title);
+  text-overflow: ellipsis;
+}
+
+/* ── Действия ───────────────────────────────────────────── */
+/* Текстовые кнопки цветом бренда, как в навигации iOS; зона нажатия — 44px */
+.profile-card__actions {
+  display: flex;
+  align-items: center;
+  flex: none;
+  /* кнопка выше строки названия — не даём ей раздвинуть строку */
+  margin-block: -0.5rem;
+}
+
+.profile-card__action {
+  min-height: 2.75rem;
+  padding: 0 var(--space-3);
+  border-radius: var(--radius-control);
+  color: var(--accent);
+  font-size: 1.0625rem;
+  white-space: nowrap;
+  transition:
+    opacity var(--duration-fast) var(--ease-out),
+    transform var(--duration-press) var(--ease-out);
+}
+
+/* «Готово» — главное действие правки, чуть плотнее */
+.profile-card__action--primary {
+  font-weight: 600;
+}
+
+.profile-card__action:hover {
+  opacity: 0.7;
+}
+
+/* Отклик наступает на нажатии, а не на отпускании */
+.profile-card__action:active {
+  transform: scale(0.97);
+}
+
+.profile-card__action:disabled {
+  opacity: 0.5;
+  cursor: progress;
+}
+
+/* ── Сведения: подпись над значением, две колонки ───────── */
+/* Как карточка в «Контактах»: иерархию несёт цвет, а не жирность.
+   Подпись прижата к своему значению, от соседней пары — дальше: пары читаются парами */
+.profile-facts {
+  --column-gap: var(--space-8);
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  column-gap: var(--column-gap);
+  margin-top: var(--space-6);
+}
+
+/* Волоски разделяют ячейки и не касаются друг друга: горизонтальный — у каждой
+   ячейки свой и рвётся в промежутке между колонками, вертикальный стоит в этом
+   промежутке и не доходит до горизонтальных на величину отступа ячейки.
+   Отступы — в переменных: по ним же вертикальный волосок знает, где кончиться */
+.profile-facts__item {
+  --pad-top: var(--space-3);
+  --pad-bottom: var(--space-3);
+  position: relative;
+  min-width: 0;
+  padding-block: var(--pad-top) var(--pad-bottom);
+}
+
+/* Крайние строки не отступают наружу: верх и низ сетки совпадают с логотипом */
+.profile-facts__item:nth-child(-n + 2) {
+  --pad-top: 0px;
+}
+
+.profile-facts__item:nth-last-child(-n + 2) {
+  --pad-bottom: 0px;
+}
+
+/* Горизонтальный волосок — над каждой строкой, кроме первой */
+.profile-facts__item:nth-child(n + 3) {
+  border-top: 1px solid var(--separator);
+}
+
+/* Вертикальный — справа от левой ячейки, посередине промежутка, только по высоте её текста */
+.profile-facts__item:nth-child(odd)::after {
+  content: '';
+  position: absolute;
+  top: var(--pad-top);
+  bottom: var(--pad-bottom);
+  right: calc(var(--column-gap) / -2);
+  width: 1px;
+  background: var(--separator);
+}
+
+/* Подпись — что это: мелко, серо, с лёгкой разрядкой (§4.2 — мелкому +0.01em) */
+.profile-facts__label {
+  font-size: 0.8125rem;
+  letter-spacing: var(--tracking-caption);
+  color: var(--text-secondary);
+}
+
+/* Значение и «Изменить» — в строку: значение слева, правка справа, как в Apple ID */
+.profile-facts__row {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-3);
+  margin-top: var(--space-1);
+}
+
+/* Правка — тихой ссылкой цветом бренда, а не кнопкой: главное в строке — значение */
+.profile-facts__edit {
+  flex: none;
+  margin-left: auto;
+  font-size: 0.9375rem;
+  color: var(--accent);
+  transition: opacity var(--duration-fast) var(--ease-out);
+}
+
+.profile-facts__edit:hover {
+  opacity: 0.7;
+}
+
+/* Значение — обычным весом в размер основного текста (17px, как в списках Apple).
+   Одной строкой: адрес и номер не рвутся посередине; не влезло — многоточие,
+   а целиком значение видно в подсказке. Цифры одной ширины — столбцы ровные */
+.profile-facts__value {
+  display: block;
+  min-width: 0;
+  font-size: 1.0625rem;
+  line-height: 1.35;
+  color: var(--text);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 /* Узко — 70% мало: карточка во всю ширину */
@@ -104,19 +352,18 @@
   position: relative;
   display: grid;
   place-items: center;
-  /* 400×400 при обычном размере шрифта — ровно размер, в котором снимок хранится
-     (squareDataUrl), поэтому на обычном экране он пиксель в пиксель. В rem — растёт
-     вместе со шрифтом; не выше карточки: на низком экране квадрат уменьшается */
-  height: min(25rem, 100%);
+  /* 256×256 — чуть выше естественной высоты сведений (~245px), чтобы они тянулись
+     до низа логотипа, а не наоборот. Снимок хранится 400×400 (squareDataUrl) —
+     уменьшенный, он чёткий и на Retina. В rem — растёт вместе со шрифтом, как и текст */
+  width: 16rem;
   aspect-ratio: 1;
-  padding: 0;
   overflow: hidden;
   /* Тонкая граница: логотип на белом фоне иначе растворяется в белой странице */
   border: 1px solid var(--separator);
   border-radius: var(--radius-card);
   background: var(--accent-soft);
   color: var(--accent);
-  font-size: 10rem;
+  font-size: 6rem;
   font-weight: 600;
   transition:
     transform var(--duration-press) var(--ease-out),
@@ -131,40 +378,71 @@
   object-fit: cover;
 }
 
+/* Пока снимок уходит на сервер — квадрат приглушён */
+.profile__photo--busy {
+  opacity: 0.6;
+}
+
+/* Две кнопки на снимке внизу — каждая своей плашкой, с промежутком между ними.
+   Появляются при наведении или когда фокус на одной из них */
+.profile__photo-actions {
+  position: absolute;
+  inset: auto 0 0;
+  display: flex;
+  gap: var(--space-2);
+  padding: var(--space-3);
+  opacity: 0;
+  transform: translateY(0.5rem);
+  transition:
+    opacity var(--duration-fast) var(--ease-out),
+    transform var(--duration-fast) var(--ease-out);
+}
+
+.profile__photo:hover .profile__photo-actions,
+.profile__photo:focus-within .profile__photo-actions {
+  opacity: 1;
+  transform: none;
+}
+
+/* Где наведения нет, кнопки видны всегда — иначе до них не добраться */
+@media (hover: none) {
+  .profile__photo-actions {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* Равные плашки (базис 0 — длинное слово не отнимает ширину у соседа), 44px в высоту:
+   «Изменить» — цветом бренда, «Удалить» — красным */
+.profile__photo-button {
+  flex: 1 1 0;
+  min-height: 2.75rem;
+  border-radius: var(--radius-control);
+  background: var(--accent);
+  color: var(--text-on-accent);
+  font-size: 0.9375rem;
+  font-weight: 500;
+  transition:
+    filter var(--duration-fast) var(--ease-out),
+    transform var(--duration-press) var(--ease-out);
+}
+
+.profile__photo-button--danger {
+  background: var(--red);
+}
+
+.profile__photo-button:hover {
+  filter: brightness(1.08);
+}
+
 /* Отклик наступает на нажатии, а не на отпускании */
-.profile__photo:active {
+.profile__photo-button:active {
   transform: scale(0.97);
 }
 
-/* Пока снимок уходит на сервер — квадрат приглушён и не нажимается */
-.profile__photo:disabled {
+.profile__photo-button:disabled {
   opacity: 0.6;
   cursor: progress;
-}
-
-/* Полоса с подсказкой внизу квадрата, на тёмной плашке — читается на любом снимке */
-.profile__photo-hint {
-  position: absolute;
-  inset: auto 0 0;
-  padding: var(--space-2);
-  background: var(--scrim);
-  color: var(--text-on-accent);
-  font-size: 0.8125rem;
-  font-weight: 500;
-  opacity: 0;
-  transition: opacity var(--duration-fast) var(--ease-out);
-}
-
-.profile__photo:hover .profile__photo-hint,
-.profile__photo:focus-visible .profile__photo-hint {
-  opacity: 1;
-}
-
-/* Где наведения нет, подсказка видна всегда — иначе не понять, что квадрат нажимается */
-@media (hover: none) {
-  .profile__photo-hint {
-    opacity: 1;
-  }
 }
 
 .profile__photo-error {

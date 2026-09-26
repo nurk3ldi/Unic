@@ -19,9 +19,22 @@ const transport = configured
     })
   : null;
 
+// Тексты писем с кодом. Макет один — различаются только слова
+const RESET_TEXT = {
+  title: 'Восстановление пароля',
+  lead: 'Введите этот код на странице восстановления',
+  ignore: 'Если вы не запрашивали восстановление, просто проигнорируйте это письмо.',
+};
+
+const EMAIL_TEXT = {
+  title: 'Подтверждение почты',
+  lead: 'Введите этот код в профиле Unic, чтобы сменить почту',
+  ignore: 'Если вы не меняли почту в Unic, просто проигнорируйте это письмо.',
+};
+
 /* Почтовые клиенты не читают внешние стили — всё оформление живёт в атрибуте style.
    Ширину держит таблица: только она центрируется одинаково везде. */
-export const layout = (code) => `
+export const layout = (code, text = RESET_TEXT) => `
 <!doctype html>
 <html lang="ru">
   <body style="margin:0;padding:0;background:#f5f5f7;">
@@ -34,8 +47,8 @@ export const layout = (code) => `
 
                 <img src="cid:${LOGO_CID}" alt="Unic" width="132" style="display:block;border:0;margin:0 auto 24px;" />
 
-                <p style="margin:0 0 8px;font-size:22px;font-weight:600;color:#1d1d1f;letter-spacing:-0.4px;">Восстановление пароля</p>
-                <p style="margin:0 0 28px;font-size:15px;line-height:1.5;color:#6e6e73;">Введите этот код на странице восстановления</p>
+                <p style="margin:0 0 8px;font-size:22px;font-weight:600;color:#1d1d1f;letter-spacing:-0.4px;">${text.title}</p>
+                <p style="margin:0 0 28px;font-size:15px;line-height:1.5;color:#6e6e73;">${text.lead}</p>
 
                 <table role="presentation" cellpadding="0" cellspacing="0" style="margin:0 auto 28px;">
                   <tr>
@@ -46,7 +59,7 @@ export const layout = (code) => `
                 </table>
 
                 <p style="margin:0 0 4px;font-size:13px;line-height:1.5;color:#86868b;">Код действует 10 минут.</p>
-                <p style="margin:0;font-size:13px;line-height:1.5;color:#86868b;">Если вы не запрашивали восстановление, просто проигнорируйте это письмо.</p>
+                <p style="margin:0;font-size:13px;line-height:1.5;color:#86868b;">${text.ignore}</p>
 
               </td>
             </tr>          </table>
@@ -69,6 +82,24 @@ export async function sendResetCode(email, code) {
     subject: 'Код для восстановления пароля',
     text: `Код для восстановления пароля: ${code}\n\nКод действует 10 минут. Если вы не запрашивали восстановление, просто проигнорируйте это письмо.\n\n`,
     html: layout(code),
+    attachments: [{ filename: 'logo.png', path: LOGO_PATH, cid: LOGO_CID }],
+  });
+}
+
+/** Код на новый адрес при смене почты: тот же макет, другие слова. */
+export async function sendEmailCode(email, code) {
+  if (!transport) {
+    console.log(`[почта не настроена] код смены почты для ${email}: ${code}`);
+    return;
+  }
+
+  await transport.sendMail({
+    from: MAIL_FROM || `Unic <${SMTP_USER}>`,
+    to: email,
+    // В теме кода нет: она видна в уведомлениях и на экране блокировки
+    subject: 'Код для подтверждения почты',
+    text: `Код для подтверждения почты: ${code}\n\nКод действует 10 минут. ${EMAIL_TEXT.ignore}\n\n`,
+    html: layout(code, EMAIL_TEXT),
     attachments: [{ filename: 'logo.png', path: LOGO_PATH, cid: LOGO_CID }],
   });
 }

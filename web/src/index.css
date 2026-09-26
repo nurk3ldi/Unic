@@ -334,6 +334,132 @@ a:hover {
   }
 }
 
+/* ── Окно ───────────────────────────────────────────────── */
+/* Нативный <dialog>: создание клуба, смена ника, почты, пароля */
+.modal {
+  margin: auto; /* без этого окно прилипает к левому верхнему углу */
+  width: min(24rem, calc(100vw - 2rem));
+  padding: var(--space-6);
+  border: none;
+  border-radius: var(--radius-card);
+  background: var(--surface);
+  color: var(--text);
+  box-shadow: var(--shadow-raised);
+
+  /* Окно приходит как материал: появляется вместе с масштабом */
+  opacity: 0;
+  transform: scale(0.96);
+  transition:
+    opacity var(--duration-fast) var(--ease-out),
+    transform var(--duration-fast) var(--ease-out),
+    overlay var(--duration-fast) allow-discrete,
+    display var(--duration-fast) allow-discrete;
+}
+
+.modal[open] {
+  opacity: 1;
+  transform: none;
+}
+
+@starting-style {
+  .modal[open] {
+    opacity: 0;
+    transform: scale(0.96);
+  }
+}
+
+/* Затемнение отодвигает фон назад, но не прячет его полностью */
+.modal::backdrop {
+  background: var(--scrim);
+  opacity: 0;
+  transition:
+    opacity var(--duration-fast) var(--ease-out),
+    overlay var(--duration-fast) allow-discrete,
+    display var(--duration-fast) allow-discrete;
+}
+
+.modal[open]::backdrop {
+  opacity: 1;
+}
+
+@starting-style {
+  .modal[open]::backdrop {
+    opacity: 0;
+  }
+}
+
+.modal__form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.modal__title {
+  font-size: 1.3125rem;
+  font-weight: 600;
+  line-height: 1.2;
+  letter-spacing: var(--tracking-title);
+}
+
+/* ── Действия ───────────────────────────────────────────── */
+.modal__actions {
+  display: flex;
+  gap: var(--space-3);
+  margin-top: var(--space-2);
+}
+
+.modal__button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  flex: 1;
+  min-height: 3rem;
+  padding: 0 var(--space-5);
+  border-radius: var(--radius-control);
+  background: var(--fill);
+  color: var(--text);
+  font-size: 1rem;
+  font-weight: 500;
+  transition:
+    background-color var(--duration-fast) var(--ease-out),
+    transform var(--duration-press) var(--ease-out);
+}
+
+.modal__button:hover {
+  background: var(--fill-hover);
+}
+
+.modal__button:active {
+  transform: scale(0.97);
+}
+
+.modal__button--primary {
+  background: var(--accent);
+  color: var(--text-on-accent);
+}
+
+.modal__button--primary:hover {
+  background: var(--accent-hover);
+}
+
+.modal__button--primary:active {
+  background: var(--accent-active);
+}
+
+.modal__button svg {
+  width: 1.125rem;
+  height: 1.125rem;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .modal,
+  .modal::backdrop {
+    transition: opacity 120ms linear, overlay 120ms allow-discrete, display 120ms allow-discrete;
+    transform: none;
+  }
+}
+
 /* ── Заголовки секций ───────────────────────────────────── */
 /* Мелкие прописные над группой строк, как в «Настройках» */
 .side-title {

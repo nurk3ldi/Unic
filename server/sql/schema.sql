@@ -114,3 +114,15 @@ create table if not exists chat_mutes (
 -- Фото человека (у университета — логотип): data URL, как у фото клуба.
 -- Сессия его не читает — слишком тяжёл для каждого запроса; отдаёт /me и вход
 alter table users add column if not exists photo text;
+
+-- Смена почты: код уходит на новый адрес и живёт здесь, пока его не введут.
+-- Одна строка на человека: новый запрос заменяет прежний. Код — хэшем, как при
+-- восстановлении пароля
+create table if not exists email_changes (
+  user_id    uuid primary key references users (id) on delete cascade,
+  email      text not null,
+  code_hash  text not null,
+  expires_at timestamptz not null,
+  attempts   int not null default 0,
+  created_at timestamptz not null default now()
+);

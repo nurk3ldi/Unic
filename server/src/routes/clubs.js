@@ -103,6 +103,14 @@ router.get('/', requireAuth, async (_req, res) => {
   res.json({ clubs: rows.map(publicClub) });
 });
 
+/** Цифры для профиля университета. Путь стоит выше /:id, иначе 'stats' ушёл бы в id. */
+router.get('/stats', requireAuth, requireRole(...MANAGE_ROLES), async (_req, res) => {
+  const { rows } = await query(
+    'select count(*)::int as clubs from clubs',
+  );
+  res.json({ stats: rows[0] });
+});
+
 router.get('/:id', requireAuth, async (req, res) => {
   if (!UUID_RE.test(req.params.id)) {
     return res.status(404).json({ error: 'Клуб не найден' });

@@ -1,0 +1,25 @@
+/* Пояснение в окне — одной строкой, что сейчас произойдёт */
+.security__text {
+  margin-top: calc(-1 * var(--space-2));
+  font-size: 0.9375rem;
+  line-height: 1.47;
+  color: var(--text-secondary);
+}
+
+.security__text strong {
+  font-weight: 500;
+  color: var(--text);
+}
+
+/* Возврат к адресу — тихая ссылка, не третья кнопка */
+.security__link {
+  align-self: flex-start;
+  margin-top: calc(-1 * var(--space-2));
+  font-size: 0.9375rem;
+  color: var(--accent);
+  transition: opacity var(--duration-fast) var(--ease-out);
+}
+
+.security__link:hover {
+  opacity: 0.7;
+}

@@ -15,6 +15,10 @@ async function request(path, { method = 'GET', body } = {}) {
 export const api = {
   me: () => request('/auth/me'),
   setPhoto: (photo) => request('/auth/photo', { method: 'PUT', body: { photo } }),
+  updateMe: (payload) => request('/auth/me', { method: 'PATCH', body: payload }),
+  changePassword: (payload) => request('/auth/password', { method: 'POST', body: payload }),
+  startEmailChange: (payload) => request('/auth/email', { method: 'POST', body: payload }),
+  confirmEmailChange: (code) => request('/auth/email/confirm', { method: 'POST', body: { code } }),
   logout: () => request('/auth/logout', { method: 'POST' }),
   login: (credentials) => request('/auth/login', { method: 'POST', body: credentials }),
   register: (payload) => request('/auth/register', { method: 'POST', body: payload }),
@@ -23,6 +27,7 @@ export const api = {
   reset: (payload) => request('/auth/reset', { method: 'POST', body: payload }),
 
   clubs: () => request('/clubs'),
+  clubStats: () => request('/clubs/stats'),
   club: (id) => request(`/clubs/${id}`),
   createClub: (payload) => request('/clubs', { method: 'POST', body: payload }),
   updateClub: (id, payload) => request(`/clubs/${id}`, { method: 'PATCH', body: payload }),
