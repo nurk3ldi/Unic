@@ -4,14 +4,23 @@ import {
   IoChevronBack,
   IoChevronForward,
   IoCloseOutline,
+  IoDocumentTextOutline,
   IoImagesOutline,
+  IoPlay,
   IoLinkOutline,
   IoNotificationsOutline,
   IoSearchOutline,
 } from 'react-icons/io5';
 import { api } from '../api.js';
 import { useAuth } from '../AuthContext.jsx';
-import { POLL_MS, chatStamp } from '../chat.js';
+import {
+  POLL_MS,
+  chatStamp,
+  extensionOf,
+  formatDuration,
+  formatSize,
+  messageLabel,
+} from '../chat.js';
 import { membersLabel } from '../club.js';
 import { initial, shortName } from '../people.js';
 import ChatRoom from '../components/ChatRoom.jsx';
@@ -42,7 +51,7 @@ export default function Chats() {
   const [members, setMembers] = useState([]);
   const [info, setInfo] = useState(false);
   const [mediaOpen, setMediaOpen] = useState(false);
-  const [media, setMedia] = useState(null); // { photos, links } открытого чата
+  const [media, setMedia] = useState(null); // { photos, videos, documents, links } открытого чата
   const [viewing, setViewing] = useState(null); // снимок из «Медиа» на весь экран
   const [findingMember, setFindingMember] = useState(false);
   const [memberQuery, setMemberQuery] = useState('');
@@ -106,7 +115,7 @@ export default function Chats() {
     api
       .clubMedia(id)
       .then((data) => alive && setMedia(data))
-      .catch(() => alive && setMedia({ photos: [], links: [] }));
+      .catch(() => alive && setMedia({ photos: [], videos: [], documents: [], links: [] }));
 
     return () => {
       alive = false;
@@ -114,7 +123,9 @@ export default function Chats() {
   }, [id, info]);
 
   const open = chats.find((chat) => chat.id === id) ?? null;
-  const mediaCount = media ? media.photos.length + media.links.length : 0;
+  const mediaCount = media
+    ? media.photos.length + media.videos.length + media.documents.length + media.links.length
+    : 0;
 
   // Уведомления по умолчанию включены: сервер хранит только выключенные
   const notify = !open?.muted;
@@ -225,7 +236,7 @@ export default function Chats() {
                             <span className="chat-row__author">
                               {shortName(chat.last.author)}:
                             </span>{' '}
-                            {chat.last.text || 'Фото'}
+                            {messageLabel(chat.last)}
                           </>
                         ) : (
                           'Сообщений пока нет'
@@ -314,14 +325,16 @@ export default function Chats() {
                   <IoChevronBack aria-hidden="true" />
                 </button>
 
-                <h2 className="card-header__title">Медиа и ссылки</h2>
+                <h2 className="card-header__title">Медиа, ссылки и документы</h2>
               </div>
 
               <div className="chats__info-body chats__info-body--media">
                 {!media ? (
                   <p className="chats__info-empty">Загружаем…</p>
                 ) : mediaCount === 0 ? (
-                  <p className="chats__info-empty">Здесь появятся фото и ссылки из чата</p>
+                  <p className="chats__info-empty">
+                    Здесь появятся фото, видео, документы и ссылки из чата
+                  </p>
                 ) : (
                   <>
                     {media.photos.length > 0 && (
@@ -340,6 +353,56 @@ export default function Chats() {
                             >
                               <img src={photo.url} alt="" loading="lazy" />
                             </button>
+                          ))}
+                        </div>
+                      </section>
+                    )}
+
+                    {media.videos.length > 0 && (
+                      <section className="chats__links">
+                        <h3 className="side-title">Видео · {media.videos.length}</h3>
+                        {/* Та же сетка, что у фото: первый кадр, значок и длительность.
+                            Смотрят в том же окне на весь экран */}
+                        <div className="chats__photos">
+                          {media.videos.map((video) => (
+                            <button
+                              key={video.id}
+                              className="chats__photo chats__video"
+                              type="button"
+                              aria-label="Смотреть видео"
+                              onClick={() => setViewing({ url: video.url, kind: 'video' })}
+                            >
+                              <video src={`${video.url}#t=0.1`} preload="metadata" muted />
+                              <span className="chats__video-badge">
+                                <IoPlay aria-hidden="true" />
+                                {video.duration ? formatDuration(video.duration) : ''}
+                              </span>
+                            </button>
+                          ))}
+                        </div>
+                      </section>
+                    )}
+
+                    {media.documents.length > 0 && (
+                      <section className="chats__links">
+                        <h3 className="side-title">Документы · {media.documents.length}</h3>
+                        <div className="group">
+                          {media.documents.map((doc) => (
+                            <a
+                              key={doc.id}
+                              className="group__row chats__row chats__link"
+                              href={doc.url}
+                              download={doc.name}
+                            >
+                              <IoDocumentTextOutline aria-hidden="true" />
+                              <span className="chats__link-body">
+                                <span className="chats__doc-name">{doc.name}</span>
+                                <span className="chats__link-meta">
+                                  {extensionOf(doc.name).toUpperCase()} · {formatSize(doc.size)} ·{' '}
+                                  {shortName(doc.author)} · {chatStamp(doc.createdAt)}
+                                </span>
+                              </span>
+                            </a>
                           ))}
                         </div>
                       </section>

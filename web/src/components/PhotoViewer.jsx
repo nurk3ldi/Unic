@@ -3,12 +3,14 @@ import { IoCloseOutline } from 'react-icons/io5';
 import './PhotoViewer.css';
 
 /**
- * Снимок на весь экран поверх страницы. Нативный <dialog>: Esc, фокус и верхний
- * слой даёт платформа. Клик мимо фото — тоже выход: так закрывают любое окно.
+ * Снимок или видео на весь экран поверх страницы. Нативный <dialog>: Esc, фокус и
+ * верхний слой даёт платформа. Клик мимо — тоже выход: так закрывают любое окно.
  * Нужен и ленте, и разделу «Медиа», поэтому живёт отдельно.
+ * `photo` — { url } снимка или { url, kind: 'video' } видео.
  */
 export default function PhotoViewer({ photo, onClose }) {
   const dialogRef = useRef(null);
+  const videoRef = useRef(null);
   // Окно держит последний снимок, пока растворяется, — иначе он пропал бы раньше окна
   const shown = useRef(null);
   if (photo) shown.current = photo;
@@ -18,7 +20,11 @@ export default function PhotoViewer({ photo, onClose }) {
     if (!dialog) return;
 
     if (photo && !dialog.open) dialog.showModal();
-    if (!photo && dialog.open) dialog.close();
+    if (!photo && dialog.open) {
+      // Окно ещё растворяется, а звук уже не нужен
+      videoRef.current?.pause();
+      dialog.close();
+    }
   }, [photo]);
 
   return (
@@ -29,7 +35,18 @@ export default function PhotoViewer({ photo, onClose }) {
       onClose={onClose}
       onClick={(event) => event.target === event.currentTarget && onClose()}
     >
-      {shown.current && <img className="photo-viewer__image" src={shown.current.url} alt="" />}
+      {shown.current?.kind === 'video' ? (
+        <video
+          ref={videoRef}
+          className="photo-viewer__image"
+          src={shown.current.url}
+          controls
+          autoPlay
+          playsInline
+        />
+      ) : (
+        shown.current && <img className="photo-viewer__image" src={shown.current.url} alt="" />
+      )}
 
       <button className="photo-viewer__close" type="button" aria-label="Закрыть" onClick={onClose}>
         {/* Контурный знак, а не залитый: толщину штриха можно задать */}

@@ -1,6 +1,15 @@
 import { Router } from 'express';
 import { pool, query } from '../db.js';
 import { requireAuth, requireRole } from '../middleware/auth.js';
+import {
+  TooLarge,
+  classify,
+  cleanName,
+  filePath,
+  rejectAfterBody,
+  removeFile,
+  saveBody,
+} from '../files.js';
 
 const router = Router();
 
@@ -182,9 +191,14 @@ router.delete('/:id', requireAuth, requireRole(...MANAGE_ROLES), async (req, res
     return res.status(404).json({ error: 'Клуб не найден' });
   }
 
+  // Сведения о вложениях уйдут каскадом, а файлы с диска — только если стереть их самим
+  const { rows: files } = await query('select id from chat_files where club_id = $1', [
+    req.params.id,
+  ]);
   const { rows } = await query('delete from clubs where id = $1 returning id', [req.params.id]);
   if (!rows[0]) return res.status(404).json({ error: 'Клуб не найден' });
 
+  await Promise.all(files.map((file) => removeFile(file.id)));
   res.json({ ok: true });
 });
 
@@ -443,12 +457,25 @@ const publicMessage = (row) => ({
         height: row.photo_height,
       }
     : null,
+  // Видео или документ: сам файл отдаёт .../files/:id, в ленте — только сведения
+  file: row.file_id
+    ? {
+        url: `/api/clubs/${row.club_id}/files/${row.file_id}`,
+        kind: row.file_kind,
+        name: row.file_name,
+        size: Number(row.file_size),
+        width: row.file_width,
+        height: row.file_height,
+        duration: row.file_duration,
+      }
+    : null,
   // Процитированное могли удалить — тогда ссылка есть, а показывать нечего
   replyTo: row.reply_id
     ? {
         id: row.reply_id,
         text: row.reply_body,
         photo: row.reply_has_photo,
+        file: row.reply_file_kind ? { kind: row.reply_file_kind, name: row.reply_file_name } : null,
         authorId: row.reply_author_id,
         author: row.reply_full_name ?? 'Удалённый участник',
         username: row.reply_username ?? null,
@@ -462,11 +489,16 @@ const MESSAGE_FIELDS = `m.id, m.club_id, m.body, m.author_id, m.created_at,
           u.full_name, u.username, u.phone,
           r.id as reply_id, r.body as reply_body, r.author_id as reply_author_id,
           r.photo is not null as reply_has_photo,
-          ru.full_name as reply_full_name, ru.username as reply_username`;
+          ru.full_name as reply_full_name, ru.username as reply_username,
+          f.id as file_id, f.kind as file_kind, f.name as file_name, f.size as file_size,
+          f.width as file_width, f.height as file_height, f.duration as file_duration,
+          rf.kind as reply_file_kind, rf.name as reply_file_name`;
 
 const MESSAGE_JOINS = `left join users u on u.id = m.author_id
        left join club_messages r on r.id = m.reply_to
-       left join users ru on ru.id = r.author_id`;
+       left join users ru on ru.id = r.author_id
+       left join chat_files f on f.id = m.file_id
+       left join chat_files rf on rf.id = r.file_id`;
 
 /**
  * Лента чата: последние сообщения, в порядке чтения — сверху старые.
@@ -506,8 +538,24 @@ router.post('/:id/messages', requireAuth, async (req, res) => {
 
   const text = String(req.body?.text ?? '').trim();
   const photo = req.body?.photo ? String(req.body.photo) : null;
-  // Фото может уйти без подписи, но пустым сообщение быть не может
-  if (!text && !photo) return res.status(400).json({ error: 'Сообщение пустое' });
+  const fileId = req.body?.fileId ? String(req.body.fileId) : null;
+  // Вложение может уйти без подписи, но пустым сообщение быть не может
+  if (!text && !photo && !fileId) return res.status(400).json({ error: 'Сообщение пустое' });
+  if (photo && fileId) {
+    return res.status(400).json({ error: 'Одно вложение на сообщение' });
+  }
+  // Приложить можно только свой, только что загруженный в этот же чат файл
+  if (fileId) {
+    const { rows: own } = UUID_RE.test(fileId)
+      ? await query(
+          `select 1 from chat_files f
+            where f.id = $1 and f.club_id = $2 and f.uploader_id = $3
+              and not exists (select 1 from club_messages m where m.file_id = f.id)`,
+          [fileId, req.params.id, req.user.id],
+        )
+      : { rows: [] };
+    if (!own[0]) return res.status(400).json({ error: 'Файл не найден — загрузите его ещё раз' });
+  }
   if (text.length > MESSAGE_LIMIT) {
     return res.status(400).json({ error: 'Сообщение слишком длинное' });
   }
@@ -533,13 +581,14 @@ router.post('/:id/messages', requireAuth, async (req, res) => {
   }
 
   const { rows: created } = await query(
-    `insert into club_messages (club_id, author_id, body, reply_to, photo, photo_width, photo_height)
+    `insert into club_messages
+       (club_id, author_id, body, reply_to, photo, photo_width, photo_height, file_id)
      -- отвечать можно только на сообщение этого же клуба
-     select $1, $2, $3, r.id, $5, $6, $7
+     select $1, $2, $3, r.id, $5, $6, $7, $8
        from (select null::uuid as id) empty
        left join club_messages r on r.id = $4 and r.club_id = $1
      returning id`,
-    [req.params.id, req.user.id, text, replyTo, photo, photoWidth, photoHeight],
+    [req.params.id, req.user.id, text, replyTo, photo, photoWidth, photoHeight, fileId],
   );
 
   // Читаем обратно вместе с цитатой — тем же запросом, что и ленту
@@ -579,14 +628,138 @@ router.get('/:id/messages/:messageId/photo', requireAuth, async (req, res) => {
     .send(Buffer.from(photo.slice(photo.indexOf(',') + 1), 'base64'));
 });
 
+/** Размер кадра и длительность видео: присылает браузер, прочитав файл до отправки. */
+const videoNumber = (value, max) => {
+  const number = Number(value);
+  return Number.isFinite(number) && number > 0 && number <= max ? number : null;
+};
+
+// Файл, загруженный, но так и не отправленный, дольше этого не хранится
+const ORPHAN_AGE = '1 hour';
+
+/**
+ * Загрузка вложения: тело запроса — сам файл (application/octet-stream), имя —
+ * в заголовке X-File-Name (encodeURIComponent: заголовки не несут кириллицу).
+ * Файл сразу ложится на диск; сообщением он становится следующим запросом.
+ */
+router.post('/:id/files', requireAuth, async (req, res) => {
+  if (!(await findClub(req.params.id))) {
+    return res.status(404).json({ error: 'Клуб не найден' });
+  }
+  if (!(await canReadChat(req.params.id, req.user))) {
+    return res.status(403).json({ error: 'Писать в чат могут только участники клуба' });
+  }
+
+  let name = '';
+  try {
+    name = cleanName(decodeURIComponent(req.get('X-File-Name') ?? ''));
+  } catch {
+    // кривая кодировка имени — то же, что пустое имя
+  }
+  if (!name) return res.status(400).json({ error: 'Не указано имя файла' });
+
+  const type = classify(name);
+  if (!type) {
+    return rejectAfterBody(req, () =>
+      res.status(400).json({ error: 'Такой файл отправить нельзя' }),
+    );
+  }
+  const tooLarge = type.kind === 'video' ? 'Видео больше 100 МБ' : 'Документ больше 25 МБ';
+
+  // Размер сверяем до записи: на диск не ляжет то, что всё равно отвергнем
+  const declared = Number(req.get('Content-Length'));
+  if (declared > type.limit) {
+    return rejectAfterBody(req, () => res.status(413).json({ error: tooLarge }));
+  }
+
+  const { rows } = await query('select gen_random_uuid() as id');
+  const id = rows[0].id;
+
+  let size;
+  try {
+    size = await saveBody(req, id, type.limit);
+  } catch (failure) {
+    if (failure instanceof TooLarge) return res.status(413).json({ error: tooLarge });
+    throw failure;
+  }
+  if (!size) {
+    await removeFile(id);
+    return res.status(400).json({ error: 'Файл пустой' });
+  }
+
+  const video = type.kind === 'video';
+  await query(
+    `insert into chat_files (id, club_id, uploader_id, kind, name, mime, size, width, height, duration)
+     values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)`,
+    [
+      id,
+      req.params.id,
+      req.user.id,
+      type.kind,
+      name,
+      type.mime,
+      size,
+      video ? videoNumber(req.get('X-Video-Width'), 8192) : null,
+      video ? videoNumber(req.get('X-Video-Height'), 8192) : null,
+      video ? videoNumber(req.get('X-Video-Duration'), 86400) : null,
+    ],
+  );
+
+  // Заодно убираем брошенные: загрузили, но так и не отправили
+  const { rows: orphans } = await query(
+    `delete from chat_files f
+      where f.club_id = $1 and f.created_at < now() - interval '${ORPHAN_AGE}'
+        and not exists (select 1 from club_messages m where m.file_id = f.id)
+      returning id`,
+    [req.params.id],
+  );
+  await Promise.all(orphans.map((orphan) => removeFile(orphan.id)));
+
+  res.status(201).json({ file: { id, kind: type.kind, name, size } });
+});
+
+/**
+ * Файл вложения — с теми же правами, что и лента. Видео отдаётся на месте и с
+ * перемоткой (sendFile понимает Range), документ — только скачиванием: ничего
+ * из присланного не открывается страницей. Тип — наш, не угаданный браузером.
+ */
+router.get('/:id/files/:fileId', requireAuth, async (req, res) => {
+  const { id, fileId } = req.params;
+  if (!UUID_RE.test(fileId) || !(await findClub(id))) {
+    return res.status(404).json({ error: 'Файл не найден' });
+  }
+  if (!(await canReadChat(id, req.user))) {
+    return res.status(403).json({ error: 'Чат доступен только участникам клуба' });
+  }
+
+  const { rows } = await query(
+    'select kind, name, mime from chat_files where id = $1 and club_id = $2',
+    [fileId, id],
+  );
+  if (!rows[0]) return res.status(404).json({ error: 'Файл не найден' });
+
+  const { kind, name, mime } = rows[0];
+  const disposition = kind === 'video' ? 'inline' : 'attachment';
+  res.set({
+    'Content-Type': mime,
+    'Content-Disposition': `${disposition}; filename*=UTF-8''${encodeURIComponent(name)}`,
+    'X-Content-Type-Options': 'nosniff',
+    // Сообщение не редактируется — файл по этому адресу не меняется никогда
+    'Cache-Control': 'private, max-age=31536000, immutable',
+  });
+  res.sendFile(filePath(fileId), (failure) => {
+    if (failure && !res.headersSent) res.status(404).json({ error: 'Файл не найден' });
+  });
+});
+
 // Ссылка — до пробела; хвостовую пунктуацию предложения в адрес не берём.
 // Тот же шаблон стоит в ленте (web/src/chat.js): что подсвечено — то и собрано
 const LINK_RE = /https?:\/\/[^\s<]+[^\s<.,:;"')\]!?]/g;
 const MEDIA_LIMIT = 200;
 
 /**
- * Медиа и ссылки чата: снимки — адресами (байты отдаёт .../photo), ссылки —
- * выбранными из текста сообщений. Документов пока нет — их нечем отправить.
+ * Медиа, ссылки и документы чата: снимки и видео — адресами (байты отдаются
+ * отдельно), ссылки — выбранными из текста сообщений, документы — списком.
  */
 router.get('/:id/media', requireAuth, async (req, res) => {
   const { id } = req.params;
@@ -615,7 +788,34 @@ router.get('/:id/media', requireAuth, async (req, res) => {
     [id, MEDIA_LIMIT],
   );
 
+  const { rows: files } = await query(
+    `select m.id as message_id, m.created_at, f.id, f.kind, f.name, f.size,
+            f.width, f.height, f.duration, u.full_name
+       from club_messages m
+       join chat_files f on f.id = m.file_id
+       left join users u on u.id = m.author_id
+      where m.club_id = $1
+      order by m.created_at desc
+      limit $2`,
+    [id, MEDIA_LIMIT],
+  );
+  const fileOf = (row) => ({
+    id: row.id,
+    messageId: row.message_id,
+    url: `/api/clubs/${id}/files/${row.id}`,
+    kind: row.kind,
+    name: row.name,
+    size: Number(row.size),
+    width: row.width,
+    height: row.height,
+    duration: row.duration,
+    author: row.full_name ?? 'Удалённый участник',
+    createdAt: row.created_at,
+  });
+
   res.json({
+    videos: files.filter((row) => row.kind === 'video').map(fileOf),
+    documents: files.filter((row) => row.kind === 'document').map(fileOf),
     photos: photos.map((row) => ({
       id: row.id,
       url: `/api/clubs/${id}/messages/${row.id}/photo`,
@@ -678,11 +878,16 @@ router.delete('/:id/messages/:messageId', requireAuth, async (req, res) => {
   const { rows } = await query(
     `delete from club_messages
       where id = $1 and club_id = $2 and ($3 or author_id = $4)
-      returning id`,
+      returning id, file_id`,
     [messageId, id, canManage(req.user), req.user.id],
   );
   if (!rows[0]) return res.status(404).json({ error: 'Сообщение не найдено' });
 
+  // Вложение живёт только ради своего сообщения — уходит вместе с ним
+  if (rows[0].file_id) {
+    await query('delete from chat_files where id = $1', [rows[0].file_id]);
+    await removeFile(rows[0].file_id);
+  }
   res.json({ ok: true });
 });
 

@@ -67,4 +67,36 @@ export const api = {
     request(`/clubs/${id}/messages`, { method: 'POST', body: payload }),
   deleteClubMessage: (id, messageId) =>
     request(`/clubs/${id}/messages/${messageId}`, { method: 'DELETE' }),
+
+  /**
+   * Вложение чата — сам файл телом запроса. Здесь XMLHttpRequest, а не fetch:
+   * только он сообщает ход отправки, а видео в десятки мегабайт без полосы
+   * хода выглядит зависшим. Имя — в заголовке, закодированным: заголовки не
+   * несут кириллицу. `onProgress` получает долю от 0 до 1.
+   */
+  uploadChatFile: (id, file, meta = {}, onProgress) =>
+    new Promise((resolve, reject) => {
+      const xhr = new XMLHttpRequest();
+      xhr.open('POST', `/api/clubs/${id}/files`);
+      xhr.setRequestHeader('Content-Type', 'application/octet-stream');
+      xhr.setRequestHeader('X-File-Name', encodeURIComponent(file.name));
+      if (meta.width) xhr.setRequestHeader('X-Video-Width', String(meta.width));
+      if (meta.height) xhr.setRequestHeader('X-Video-Height', String(meta.height));
+      if (meta.duration) xhr.setRequestHeader('X-Video-Duration', String(meta.duration));
+
+      xhr.upload.onprogress = (event) =>
+        event.lengthComputable && onProgress?.(event.loaded / event.total);
+      xhr.onload = () => {
+        let data = {};
+        try {
+          data = JSON.parse(xhr.responseText);
+        } catch {
+          // пустой или не JSON ответ — ниже обычное сообщение об ошибке
+        }
+        if (xhr.status >= 200 && xhr.status < 300) resolve(data);
+        else reject(new Error(data.error ?? 'Не удалось загрузить файл'));
+      };
+      xhr.onerror = () => reject(new Error('Не удалось загрузить файл'));
+      xhr.send(file);
+    }),
 };

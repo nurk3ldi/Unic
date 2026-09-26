@@ -13,7 +13,21 @@ import {
 } from 'react-icons/io5';
 import { api } from '../api.js';
 import { useAuth } from '../AuthContext.jsx';
-import { LINK_RE, POLL_MS, dayLabel, messageTime, sameDay } from '../chat.js';
+import {
+  DOCUMENT_EXTENSIONS,
+  DOCUMENT_LIMIT,
+  LINK_RE,
+  POLL_MS,
+  VIDEO_EXTENSIONS,
+  VIDEO_LIMIT,
+  dayLabel,
+  extensionOf,
+  formatDuration,
+  formatSize,
+  messageLabel,
+  messageTime,
+  sameDay,
+} from '../chat.js';
 import { authorColor, formatPhone, initial, shortName } from '../people.js';
 import { chatPhoto } from '../photo.js';
 import PhotoViewer from './PhotoViewer.jsx';
@@ -21,6 +35,26 @@ import './ChatRoom.css';
 
 // Чужое сообщение убирают те же роли, что управляют клубом
 const MANAGE_ROLES = ['university', 'admin'];
+
+// Что предлагает системное окно выбора: снимки и видео — одним пунктом, документы — другим
+const MEDIA_ACCEPT = `image/*,${VIDEO_EXTENSIONS.map((ext) => `.${ext}`).join(',')}`;
+const DOCUMENT_ACCEPT = DOCUMENT_EXTENSIONS.map((ext) => `.${ext}`).join(',');
+
+/**
+ * Размер кадра и длительность видео — браузер читает их из самого файла до
+ * отправки: место под видео в ленте известно заранее, и она не прыгает.
+ * Не прочиталось (редкий кодек) — отправляем без них, лента возьмёт 16:9.
+ */
+function readVideo(url) {
+  return new Promise((resolve) => {
+    const video = document.createElement('video');
+    video.preload = 'metadata';
+    video.onloadedmetadata = () =>
+      resolve({ width: video.videoWidth, height: video.videoHeight, duration: video.duration });
+    video.onerror = () => resolve({});
+    video.src = url;
+  });
+}
 
 // Сколько места нужно меню сообщения под кнопкой (три строки по 44px и поля), в rem:
 // меньше — и оно раскрывается вверх, иначе край ленты его обрежет
@@ -56,9 +90,11 @@ export default function ChatRoom({ clubId }) {
   const listRef = useRef(null);
   const inputRef = useRef(null);
   const fileRef = useRef(null);
-  // Превью держит последний снимок, пока полоса сворачивается, — иначе
-  // картинка исчезла бы раньше, чем закрылось место под неё
+  const documentRef = useRef(null);
+  // Превью держит последнее вложение, пока полоса сворачивается, — иначе
+  // оно исчезло бы раньше, чем закрылось место под него
   const shownPhoto = useRef(null);
+  const shownAttachment = useRef(null);
 
   const [messages, setMessages] = useState([]);
   const [attaching, setAttaching] = useState(false);
@@ -66,6 +102,9 @@ export default function ChatRoom({ clubId }) {
   const [menuUp, setMenuUp] = useState(false); // снизу нет места — меню раскрывается вверх
   const [replying, setReplying] = useState(null); // сообщение, на которое отвечаем
   const [photo, setPhoto] = useState(null); // { dataUrl, width, height } — снимок к отправке
+  // Видео или документ к отправке: { kind, file, name, size, preview?, width?, height?, duration? }
+  const [attachment, setAttachment] = useState(null);
+  const [progress, setProgress] = useState(null); // доля загрузки 0…1, пока файл уходит
   const [viewing, setViewing] = useState(null); // снимок, открытый на весь экран
   const [tall, setTall] = useState(false); // поле выросло больше одной строки
   const [copied, setCopied] = useState(false);
@@ -194,6 +233,13 @@ export default function ChatRoom({ clubId }) {
   }
 
   if (photo) shownPhoto.current = photo;
+  if (attachment) shownAttachment.current = attachment;
+
+  // Превью видео — адрес на файл в памяти браузера; отпускаем, когда он не нужен
+  useEffect(() => {
+    const url = attachment?.preview;
+    return () => url && URL.revokeObjectURL(url);
+  }, [attachment?.preview]);
 
   // Лента по дням: у каждого дня своя секция с датой наверху
   const days = [];
@@ -208,14 +254,20 @@ export default function ChatRoom({ clubId }) {
       });
   }
 
-  /** Снимок сжимается в браузере и ждёт в поле ввода: к нему можно дописать подпись. */
-  async function pickPhoto(event) {
+  /**
+   * «Фото и видео»: снимок сжимается в браузере, видео уходит как есть. И то и
+   * другое ждёт в поле ввода — к нему можно дописать подпись.
+   */
+  async function pickMedia(event) {
     const file = event.target.files?.[0];
     event.target.value = ''; // тот же файл можно выбрать снова
     if (!file) return;
 
+    if (VIDEO_EXTENSIONS.includes(extensionOf(file.name))) return pickVideo(file);
+
     try {
       setPhoto(await chatPhoto(file));
+      setAttachment(null);
       setError('');
       inputRef.current?.focus();
     } catch {
@@ -223,20 +275,63 @@ export default function ChatRoom({ clubId }) {
     }
   }
 
+  async function pickVideo(file) {
+    // Большое останавливаем до загрузки: ждать минуту, чтобы услышать «нельзя», — обидно
+    if (file.size > VIDEO_LIMIT) return setError('Видео больше 100 МБ — выберите покороче');
+
+    const preview = URL.createObjectURL(file);
+    const meta = await readVideo(preview);
+    setAttachment({ kind: 'video', file, name: file.name, size: file.size, preview, ...meta });
+    setPhoto(null);
+    setError('');
+    inputRef.current?.focus();
+  }
+
+  /** «Документ»: файл ждёт в поле ввода как есть, с именем и размером. */
+  function pickDocument(event) {
+    const file = event.target.files?.[0];
+    event.target.value = '';
+    if (!file) return;
+
+    if (!DOCUMENT_EXTENSIONS.includes(extensionOf(file.name))) {
+      return setError('Такой файл отправить нельзя: подойдут PDF, Word, Excel, PowerPoint, TXT, ZIP');
+    }
+    if (file.size > DOCUMENT_LIMIT) return setError('Документ больше 25 МБ');
+
+    setAttachment({ kind: 'document', file, name: file.name, size: file.size });
+    setPhoto(null);
+    setError('');
+    inputRef.current?.focus();
+  }
+
   async function send(event) {
     event.preventDefault();
 
     const body = text.trim();
-    if ((!body && !photo) || sending) return;
+    if ((!body && !photo && !attachment) || sending) return;
 
     setSending(true);
     try {
+      // Вложение сначала ложится на сервер (с полосой хода), потом им отправляют сообщение
+      let fileId = null;
+      if (attachment) {
+        setProgress(0);
+        const { file } = await api.uploadChatFile(
+          clubId,
+          attachment.file,
+          { width: attachment.width, height: attachment.height, duration: attachment.duration },
+          setProgress,
+        );
+        fileId = file.id;
+      }
+
       const { message } = await api.sendClubMessage(clubId, {
         text: body,
         replyTo: replying?.id ?? null,
         photo: photo?.dataUrl ?? null,
         photoWidth: photo?.width ?? null,
         photoHeight: photo?.height ?? null,
+        fileId,
       });
       // Своё сообщение показываем сразу, не дожидаясь следующего опроса,
       // и к нему ведём всегда — даже если перед этим читали историю
@@ -245,10 +340,12 @@ export default function ChatRoom({ clubId }) {
       setText('');
       setReplying(null);
       setPhoto(null);
+      setAttachment(null);
       setError('');
     } catch (failure) {
       setError(failure.message);
     } finally {
+      setProgress(null);
       setSending(false);
       inputRef.current?.focus();
     }
@@ -367,7 +464,11 @@ export default function ChatRoom({ clubId }) {
                       </span>
                     )}
 
-                    <div className={`msg__bubble${message.photo ? ' msg__bubble--photo' : ''}`}>
+                    <div
+                      className={`msg__bubble${
+                        message.photo || message.file?.kind === 'video' ? ' msg__bubble--photo' : ''
+                      }${message.file?.kind === 'document' ? ' msg__bubble--file' : ''}`}
+                    >
                       {!own && menu}
 
                       {!own && (
@@ -408,9 +509,7 @@ export default function ChatRoom({ clubId }) {
                               ? `@${message.replyTo.username}`
                               : shortName(message.replyTo.author)}
                           </span>
-                          <span className="msg__quote-text">
-                            {message.replyTo.text || 'Фото'}
-                          </span>
+                          <span className="msg__quote-text">{messageLabel(message.replyTo)}</span>
                         </button>
                       )}
 
@@ -433,6 +532,49 @@ export default function ChatRoom({ clubId }) {
                             </time>
                           )}
                         </button>
+                      )}
+
+                      {message.file?.kind === 'video' && (
+                        /* Место под кадр известно заранее; смотрят тут же, со своей перемоткой */
+                        <div
+                          className="msg__video"
+                          style={{
+                            aspectRatio:
+                              message.file.width && message.file.height
+                                ? `${message.file.width} / ${message.file.height}`
+                                : '16 / 9',
+                          }}
+                        >
+                          <video src={message.file.url} controls preload="metadata" playsInline />
+
+                          {/* Внизу у видео свои кнопки — время садится в верхний угол */}
+                          {!message.text && (
+                            <time className="msg__photo-time" dateTime={message.createdAt}>
+                              {messageTime.format(new Date(message.createdAt))}
+                            </time>
+                          )}
+                        </div>
+                      )}
+
+                      {message.file?.kind === 'document' && (
+                        /* Документ — карточкой: что это, сколько весит; нажатие скачивает */
+                        <a className="msg__file" href={message.file.url} download={message.file.name}>
+                          <span className="msg__file-icon" aria-hidden="true">
+                            <IoDocumentTextOutline />
+                          </span>
+                          <span className="msg__file-body">
+                            <span className="msg__file-name">{message.file.name}</span>
+                            <span className="msg__file-meta">
+                              {extensionOf(message.file.name).toUpperCase()} ·{' '}
+                              {formatSize(message.file.size)}
+                              {!message.text && (
+                                <time className="msg__file-time" dateTime={message.createdAt}>
+                                  {messageTime.format(new Date(message.createdAt))}
+                                </time>
+                              )}
+                            </span>
+                          </span>
+                        </a>
                       )}
 
                       {message.text && (
@@ -479,7 +621,7 @@ export default function ChatRoom({ clubId }) {
                   {replying?.username ? `@${replying.username}` : shortName(replying?.author ?? '')}
                 </span>
                 <span className="chat__reply-text">
-                  {replying && (replying.text || 'Фото')}
+                  {replying && messageLabel(replying)}
                 </span>
               </span>
 
@@ -518,17 +660,70 @@ export default function ChatRoom({ clubId }) {
           </div>
         </div>
 
+        {/* Видео или документ ждут так же. Пока файл уходит, под ним полоса хода */}
+        <div className={`reveal-y${attachment ? ' reveal-y--open' : ''}`}>
+          <div className="reveal-y__clip">
+            {shownAttachment.current && (
+              <div className="chat__photo">
+                {shownAttachment.current.kind === 'video' ? (
+                  <video
+                    className="chat__photo-preview"
+                    src={`${shownAttachment.current.preview}#t=0.1`}
+                    muted
+                    preload="metadata"
+                  />
+                ) : (
+                  <span className="chat__photo-preview chat__file-icon" aria-hidden="true">
+                    <IoDocumentTextOutline />
+                  </span>
+                )}
+
+                <span className="chat__file-body">
+                  <span className="chat__file-name">
+                    {shownAttachment.current.kind === 'video' ? 'Видео' : shownAttachment.current.name}
+                  </span>
+                  <span className="chat__photo-label">
+                    {shownAttachment.current.duration
+                      ? `${formatDuration(shownAttachment.current.duration)} · `
+                      : ''}
+                    {progress === null
+                      ? formatSize(shownAttachment.current.size)
+                      : `Загружаем… ${Math.round(progress * 100)}%`}
+                  </span>
+                  {progress !== null && (
+                    <span className="chat__progress" aria-hidden="true">
+                      <span style={{ transform: `scaleX(${progress})` }} />
+                    </span>
+                  )}
+                </span>
+
+                <button
+                  className="chat__reply-close"
+                  type="button"
+                  aria-label="Убрать вложение"
+                  tabIndex={attachment ? undefined : -1}
+                  disabled={sending}
+                  onClick={() => setAttachment(null)}
+                >
+                  <IoClose aria-hidden="true" />
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+
         <form className="chat__composer" onSubmit={send}>
           {/* Системный выбор файла: своё окно выбора платформа уже умеет */}
+          <input ref={fileRef} type="file" accept={MEDIA_ACCEPT} hidden onChange={pickMedia} />
           <input
-            ref={fileRef}
+            ref={documentRef}
             type="file"
-            accept="image/*"
+            accept={DOCUMENT_ACCEPT}
             hidden
-            onChange={pickPhoto}
+            onChange={pickDocument}
           />
 
-          {/* Меню вложений: пока работает «Фото», документы и аудио — позже */}
+          {/* Меню вложений: фото, видео и документы; аудио — позже */}
           <div className="chat__attach-box">
             <button
               className="chat__attach"
@@ -545,7 +740,12 @@ export default function ChatRoom({ clubId }) {
 
             {attaching && (
               <div className="row-menu row-menu--up" role="menu">
-                <button className="row-menu__item" type="button" role="menuitem">
+                <button
+                  className="row-menu__item"
+                  type="button"
+                  role="menuitem"
+                  onClick={() => documentRef.current?.click()}
+                >
                   <IoDocumentTextOutline aria-hidden="true" />
                   Документ
                 </button>
@@ -575,7 +775,7 @@ export default function ChatRoom({ clubId }) {
             ref={inputRef}
             className="chat__input"
             rows={1}
-            placeholder={photo ? 'Подпись' : 'Сообщение'}
+            placeholder={photo || attachment ? 'Подпись' : 'Сообщение'}
             value={text}
             onChange={(event) => setText(event.target.value)}
             onKeyDown={sendOnEnter}
@@ -584,7 +784,7 @@ export default function ChatRoom({ clubId }) {
           <button
             className="chat__send"
             type="submit"
-            disabled={(!text.trim() && !photo) || sending}
+            disabled={(!text.trim() && !photo && !attachment) || sending}
             aria-label="Отправить"
           >
             <IoArrowUp aria-hidden="true" />

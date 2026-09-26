@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { IoChevronForward } from 'react-icons/io5';
 import { api } from '../api.js';
 import { useAuth } from '../AuthContext.jsx';
-import { POLL_MS } from '../chat.js';
+import { POLL_MS, messageLabel } from '../chat.js';
 import { authorColor, shortName } from '../people.js';
 import './ClubChatCard.css';
 
@@ -76,7 +76,7 @@ export default function ClubChatCard({ clubId }) {
                     {shortName(message.author)}
                   </span>
                 )}
-                <span className="chat-card__text">{message.text || 'Фото'}</span>
+                <span className="chat-card__text">{messageLabel(message)}</span>
               </div>
             );
           })}

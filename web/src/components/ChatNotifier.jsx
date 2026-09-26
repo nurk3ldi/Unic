@@ -2,7 +2,7 @@ import { useEffect, useRef } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { api } from '../api.js';
 import { useAuth } from '../AuthContext.jsx';
-import { POLL_MS } from '../chat.js';
+import { POLL_MS, messageLabel } from '../chat.js';
 import { shortName } from '../people.js';
 
 /**
@@ -52,7 +52,7 @@ export default function ChatNotifier() {
 
             // tag: новое сообщение того же чата заменяет прошлое оповещение, а не копится
             const note = new Notification(chat.name, {
-              body: `${shortName(last.author)}: ${last.text || 'Фото'}`,
+              body: `${shortName(last.author)}: ${messageLabel(last)}`,
               icon: '/favicon.png',
               tag: chat.id,
             });

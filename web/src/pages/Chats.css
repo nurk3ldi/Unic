@@ -320,6 +320,46 @@
   margin-top: var(--space-6);
 }
 
+/* Разделы идут друг за другом; первый — без отступа сверху, какой бы он ни был */
+.chats__info-body--media > .chats__links:first-child {
+  margin-top: 0;
+}
+
+/* Видео в сетке — первый кадр и плашка «▶ 0:12» в углу, как в «Фото» на iPhone */
+.chats__video {
+  position: relative;
+}
+
+.chats__video video {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  pointer-events: none;
+}
+
+.chats__video-badge {
+  position: absolute;
+  left: var(--space-1);
+  bottom: var(--space-1);
+  display: flex;
+  align-items: center;
+  gap: 0.125rem;
+  padding: 0.0625rem 0.3125rem;
+  border-radius: var(--radius-pill);
+  background: var(--scrim);
+  color: var(--text-on-accent);
+  font-size: 0.6875rem;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Имя документа — основным цветом: это название, а не адрес */
+.chats__doc-name {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
 /* Строка ссылки — вход наружу: адрес цветом бренда, ниже — кто и когда */
 .chats__link {
   color: inherit;

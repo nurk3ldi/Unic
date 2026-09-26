@@ -342,6 +342,110 @@
   object-fit: cover;
 }
 
+/* Видео — по тем же правилам, что снимок: кайма пузыря, скругление параллельно,
+   высота из пропорций. Свои кнопки у видео внизу — время уходит наверх */
+.msg__video {
+  position: relative;
+  width: 100%;
+  max-height: 20rem;
+  border-radius: calc(18px - var(--inset));
+  overflow: hidden;
+  background: var(--viewer-bg);
+}
+
+.msg__video video {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.msg__video .msg__photo-time {
+  top: var(--space-2);
+  bottom: auto;
+}
+
+.msg:hover .msg__video .msg__photo-time {
+  opacity: 1;
+}
+
+/* Документ — карточкой в пузыре: значок, имя, «PDF · 1,2 МБ». Нажатие скачивает */
+.msg__bubble--file {
+  min-width: 15rem;
+}
+
+.msg__file {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-1) 0;
+  color: inherit;
+  text-decoration: none;
+}
+
+.msg__file:hover {
+  text-decoration: none;
+}
+
+.msg__file-icon {
+  display: grid;
+  place-items: center;
+  width: 2.75rem;
+  height: 2.75rem;
+  flex: none;
+  border-radius: var(--radius-control);
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-size: 1.375rem;
+  transition: transform var(--duration-press) var(--ease-out);
+}
+
+/* Отклик на нажатии — значок чуть вдавливается */
+.msg__file:active .msg__file-icon {
+  transform: scale(0.94);
+}
+
+/* На своём синем пузыре — светлая плашка */
+.msg--own .msg__file-icon {
+  background: var(--on-accent-fill);
+  color: var(--text-on-accent);
+}
+
+.msg__file-body {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  flex: 1;
+}
+
+.msg__file-name {
+  font-size: 0.9375rem;
+  font-weight: 500;
+  line-height: 1.3;
+  overflow-wrap: anywhere;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
+}
+
+.msg__file-meta {
+  display: flex;
+  gap: var(--space-1);
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+}
+
+.msg--own .msg__file-meta {
+  color: var(--on-accent-secondary);
+}
+
+/* Без подписи время живёт в строке размера, справа */
+.msg__file-time {
+  margin-left: auto;
+  padding-left: var(--space-3);
+}
+
 /* Время поверх снимка — на тёмной плашке, чтобы читалось на любом кадре.
    В покое его нет: кадр не перекрыт; появляется, когда на сообщение наводят */
 .msg__photo-time {
@@ -461,6 +565,53 @@
   flex: 1;
   font-size: 0.8125rem;
   color: var(--text-secondary);
+}
+
+/* Видео в ожидании — первый кадр, без звука и кнопок */
+video.chat__photo-preview {
+  background: var(--viewer-bg);
+}
+
+/* Документ в ожидании — значок на мягкой плашке вместо превью */
+.chat__file-icon {
+  display: grid;
+  place-items: center;
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-size: 1.5rem;
+}
+
+.chat__file-body {
+  display: flex;
+  flex-direction: column;
+  gap: 0.125rem;
+  flex: 1;
+  min-width: 0;
+}
+
+.chat__file-name {
+  font-size: 0.9375rem;
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Полоса хода загрузки: растёт transform'ом, раскладка не пересчитывается */
+.chat__progress {
+  height: 0.1875rem;
+  margin-top: var(--space-1);
+  border-radius: var(--radius-pill);
+  background: var(--fill);
+  overflow: hidden;
+}
+
+.chat__progress span {
+  display: block;
+  height: 100%;
+  background: var(--accent);
+  transform-origin: left;
+  transition: transform var(--duration-fast) var(--ease-out);
 }
 
 /* ── Поле ввода ─────────────────────────────────────────── */

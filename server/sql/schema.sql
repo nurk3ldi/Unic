@@ -136,3 +136,24 @@ create table if not exists email_changes (
   attempts   int not null default 0,
   created_at timestamptz not null default now()
 );
+
+-- Вложения чата: видео и документы. Сам файл — на диске (server/uploads/<id>),
+-- здесь — сведения о нём. Сначала файл загружают, потом им отправляют сообщение
+create table if not exists chat_files (
+  id          uuid primary key default gen_random_uuid(),
+  club_id     uuid not null references clubs (id) on delete cascade,
+  uploader_id uuid references users (id) on delete set null,
+  kind        text not null check (kind in ('video', 'document')),
+  name        text not null,
+  mime        text not null,
+  size        bigint not null,
+  width       int,
+  height      int,
+  duration    real,
+  created_at  timestamptz not null default now()
+);
+
+alter table club_messages add column if not exists file_id uuid references chat_files (id) on delete set null;
+
+-- Один файл — одно сообщение: дважды приложить тот же нельзя
+create unique index if not exists club_messages_file_idx on club_messages (file_id) where file_id is not null;
