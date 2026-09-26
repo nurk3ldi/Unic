@@ -11,6 +11,25 @@
 /* ── Группа строк ───────────────────────────────────────── */
 /* База группы (.group, .group__row, волоски) — в index.css: она нужна и чату */
 
+/* Строка-переключатель: нажимается вся, откликается подсветкой */
+.controls__switch-row {
+  cursor: pointer;
+}
+
+.controls__switch-row:active {
+  background: var(--fill-hover);
+}
+
+.controls__switch-row:has(.switch:disabled) {
+  cursor: default;
+  background: none;
+}
+
+.switch:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
 /* Необратимое стоит внизу карточки, подальше от повседневных действий:
    до него нужно дойти, а не встретить следующей строкой */
 .group--apart {

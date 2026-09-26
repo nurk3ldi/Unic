@@ -379,46 +379,6 @@
   color: var(--text-tertiary);
 }
 
-/* ── Переключатель ──────────────────────────────────────── */
-/* Системный checkbox в облике iOS-переключателя: клавиатура, скринридер
-   (role="switch") и label работают сами, своего JS нет. Ручка ездит
-   transform'ом, дорожка меняет цвет — больше ничего не анимируется */
-.switch {
-  appearance: none;
-  position: relative;
-  flex: none;
-  width: 3.1875rem; /* 51px — размер iOS */
-  height: 1.9375rem;
-  margin: 0;
-  border-radius: var(--radius-pill);
-  background: var(--switch-off);
-  cursor: pointer;
-  transition: background-color var(--duration-fast) var(--ease-out);
-}
-
-.switch::before {
-  content: '';
-  position: absolute;
-  top: 0.125rem;
-  left: 0.125rem;
-  width: 1.6875rem;
-  height: 1.6875rem;
-  border-radius: 50%;
-  background: var(--surface);
-  box-shadow: var(--shadow-knob);
-  transition: transform var(--duration-fast) var(--ease-out);
-}
-
-/* Включённый — цветом бренда: Apple разрешает красить переключатель в акцент */
-.switch:checked {
-  background: var(--accent);
-}
-
-/* 51 − 27 − 2 × 2 = 20px хода */
-.switch:checked::before {
-  transform: translateX(1.25rem);
-}
-
 /* Шапка разговора — кнопка: отклик на нажатии, как у остальных */
 .chat-head {
   text-align: left;

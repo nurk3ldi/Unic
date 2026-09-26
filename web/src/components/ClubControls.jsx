@@ -5,7 +5,7 @@ import { STATUS_LABELS } from '../club.js';
 import './ClubControls.css';
 
 /**
- * Управление самим клубом: состояние и удаление.
+ * Управление самим клубом: состояние, приём заявок и удаление.
  *
  * Строки собраны в группы, как в «Настройках» Apple: значение и действие над
  * ним стоят в одной группе — рядом с тем, на что они влияют, — а необратимое
@@ -19,6 +19,9 @@ import './ClubControls.css';
  * Оба действия, которые что-то отнимают — остановка и удаление — спрашивают
  * подтверждение в нативном alert. Возобновление не спрашивает: оно ничего
  * не теряет, а вопрос без повода учит жать «да» не читая.
+ *
+ * Приём заявок — переключатель: он отвечает сразу, сервер догоняет,
+ * а при ошибке ручка возвращается на место.
  */
 export default function ClubControls({ club, canManage, onUpdated }) {
   const navigate = useNavigate();
@@ -54,6 +57,18 @@ export default function ClubControls({ club, canManage, onUpdated }) {
     } finally {
       setAsking(null);
       setBusy(false);
+    }
+  }
+
+  async function setAccepting(next) {
+    setError('');
+    onUpdated({ ...club, accepting: next });
+    try {
+      const { club: saved } = await api.updateClub(club.id, { accepting: next });
+      onUpdated(saved);
+    } catch (failure) {
+      onUpdated({ ...club, accepting: !next });
+      setError(failure.message);
     }
   }
 
@@ -110,6 +125,20 @@ export default function ClubControls({ club, canManage, onUpdated }) {
             {paused ? 'Возобновить работу' : 'Приостановить клуб'}
           </button>
         )}
+
+        {/* Вся строка — label: переключают нажатием по ней целиком, не целясь в ручку.
+            Кто не управляет клубом, видит то же состояние, но ручка не двигается */}
+        <label className="group__row controls__switch-row">
+          <span className="group__label">Принимать заявки</span>
+          <input
+            className="switch"
+            type="checkbox"
+            role="switch"
+            checked={club.accepting}
+            disabled={!canManage}
+            onChange={(event) => setAccepting(event.target.checked)}
+          />
+        </label>
       </div>
 
       {canManage && (

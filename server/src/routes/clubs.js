@@ -10,6 +10,7 @@ const publicClub = (row) => ({
   photo: row.photo_url,
   description: row.description,
   status: row.status,
+  accepting: row.accepting,
   members: row.members ?? 0,
   createdAt: row.created_at,
 });
@@ -76,6 +77,11 @@ function readClubFields(body) {
     const status = String(body.status);
     if (!STATUSES.includes(status)) return { error: 'Неизвестное состояние клуба' };
     fields.status = status;
+  }
+
+  if (body?.accepting !== undefined) {
+    if (typeof body.accepting !== 'boolean') return { error: 'Некорректное значение' };
+    fields.accepting = body.accepting;
   }
 
   if (body?.description !== undefined) {
@@ -206,10 +212,17 @@ router.get('/:id/members', requireAuth, async (req, res) => {
   });
 });
 
-/** Заявка на вступление — та же строка состава, только со status = 'pending'. */
+/**
+ * Заявка на вступление — та же строка состава, только со status = 'pending'.
+ * Закрытый для заявок клуб отказывает здесь же: скрытой кнопки мало.
+ */
 router.post('/:id/members/request', requireAuth, async (req, res) => {
-  if (!(await findClub(req.params.id))) {
-    return res.status(404).json({ error: 'Клуб не найден' });
+  const club = UUID_RE.test(req.params.id)
+    ? (await query('select accepting from clubs where id = $1', [req.params.id])).rows[0]
+    : null;
+  if (!club) return res.status(404).json({ error: 'Клуб не найден' });
+  if (!club.accepting) {
+    return res.status(403).json({ error: 'Клуб сейчас не принимает заявки' });
   }
 
   const { rows } = await query(

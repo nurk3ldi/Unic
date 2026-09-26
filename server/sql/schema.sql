@@ -38,6 +38,8 @@ create table if not exists clubs (
 -- Схема применяется поверх существующей базы: create table её не тронет,
 -- поэтому новые столбцы добавляются отдельно
 alter table clubs add column if not exists description text;
+-- Принимает ли клуб заявки на вступление. По умолчанию — да: новый клуб открыт
+alter table clubs add column if not exists accepting boolean not null default true;
 
 -- Руководитель хранится в club_members.role. Два места для одного факта
 -- рано или поздно расходятся, поэтому старый столбец убираем
