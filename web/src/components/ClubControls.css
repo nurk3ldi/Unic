@@ -1,5 +1,7 @@
-/* Занимает тело карточки: список короткий, но карточка фиксирована по высоте */
+/* Занимает тело карточки: список короткий, но карточка фиксирована по высоте.
+   Приходит после загрузки клуба — проявляется */
 .controls {
+  animation: content-in var(--duration-fast) var(--ease-out) backwards;
   display: flex;
   flex-direction: column;
   flex: 1;
@@ -37,8 +39,9 @@
 }
 
 
-/* Цвет несёт точка, текст остаётся читаемым */
+/* Цвет несёт точка, текст остаётся читаемым. Сменилось — растворением (ключ в JSX) */
 .group__value {
+  animation: content-in var(--duration-fast) var(--ease-out) backwards;
   display: flex;
   align-items: center;
   gap: var(--space-2);

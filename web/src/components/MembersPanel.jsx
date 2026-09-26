@@ -26,6 +26,8 @@ const TABS = [
 // Сколько места нужно меню под кнопкой (два пункта по 44px и поля).
 // Меньше — оно раскрывается вверх, иначе нижний край списка его обрежет
 const MENU_ROOM_REM = 7.5;
+// Столько длится уход меню (row-menu-out в index.css)
+const MENU_OUT_MS = 150;
 
 /**
  * Управление участниками клуба. Панель сама ходит в API: состав — её предмет,
@@ -52,6 +54,9 @@ export default function MembersPanel({ clubId, onCountChange }) {
   const [searching, setSearching] = useState(false);
   const searchRef = useRef(null);
   const [openMenu, setOpenMenu] = useState(null); // id участника
+  // Меню, которое уходит: держим его ещё на время анимации ухода
+  const [leavingMenu, setLeavingMenu] = useState(null);
+  const shownMenu = useRef(null);
   const [menuUp, setMenuUp] = useState(false);
 
   // Окно приглашения; счётчик сеансов — чтобы форма открывалась чистой
@@ -130,6 +135,16 @@ export default function MembersPanel({ clubId, onCountChange }) {
     setTab(key);
   }
 
+  // Закрытое меню не пропадает, а уходит тем же путём, что пришло
+  useEffect(() => {
+    const was = shownMenu.current;
+    shownMenu.current = openMenu;
+    if (was === null || was === openMenu) return undefined;
+    setLeavingMenu(was);
+    const timer = setTimeout(() => setLeavingMenu(null), MENU_OUT_MS);
+    return () => clearTimeout(timer);
+  }, [openMenu]);
+
   // Меню закрывается кликом вне и клавишей Esc
   useEffect(() => {
     if (openMenu === null) return undefined;
@@ -164,12 +179,42 @@ export default function MembersPanel({ clubId, onCountChange }) {
 
   return (
     <>
-      {/* Сколько людей — и лупа в той же строке. Поле поиска раскрывается прямо
-          в этой строке: от лупы влево, до заголовка — список не сдвигается */}
-      <div className="members-head">
-        <h3 className="members-title">
-          {current.label} · {list.length}
-        </h3>
+      {/* Одна строка: разделы с числами (у управляющего) или «Участники · N» —
+          и лупа. Заголовок не повторяет вкладку: число живёт в самом разделе.
+          Поле поиска раскрывается поверх строки, от лупы к левому краю */}
+      <div className={`members-head${searching ? ' members-head--searching' : ''}`}>
+        {canManage ? (
+          // Сегменты, как в iOS: одна подложка, выбранный — белая плашка, которая
+          // переезжает к нажатому. Заявки ждут решения — их число горит красным
+          <div className="segments" role="tablist" aria-label="Разделы" inert={searching || undefined}>
+            <span
+              className="segments__thumb"
+              style={{ '--index': TABS.findIndex((item) => item.key === tab) }}
+              aria-hidden="true"
+            />
+            {TABS.map((item) => {
+              const count = lists[item.key].length;
+              const urgent = item.key === 'requests' && count > 0;
+              return (
+                <button
+                  className="segments__item"
+                  key={item.key}
+                  type="button"
+                  role="tab"
+                  aria-selected={tab === item.key}
+                  onClick={() => openTab(item.key)}
+                >
+                  {item.label}
+                  <span className={urgent ? 'segments__badge' : 'segments__count'}>{count}</span>
+                </button>
+              );
+            })}
+          </div>
+        ) : (
+          <h3 className="members-title" inert={searching || undefined}>
+            Участники · {members.length}
+          </h3>
+        )}
 
         {/* Лупа едет влево вместе с краем поля и растворяется в лупе самого поля —
             двух значков рядом не бывает. Закрывается как в iOS: Esc или уход
@@ -209,33 +254,6 @@ export default function MembersPanel({ clubId, onCountChange }) {
         </div>
       </div>
 
-      {/* Разделы — сегментами, как в iOS: одна подложка, выбранный — белая плашка,
-          которая переезжает к нажатому. Заявки ждут решения — их число горит красным */}
-      {canManage && (
-        <div className="segments" role="tablist" aria-label="Разделы">
-          <span
-            className="segments__thumb"
-            style={{ '--index': TABS.findIndex((item) => item.key === tab) }}
-            aria-hidden="true"
-          />
-          {TABS.map((item) => (
-            <button
-              className="segments__item"
-              key={item.key}
-              type="button"
-              role="tab"
-              aria-selected={tab === item.key}
-              onClick={() => openTab(item.key)}
-            >
-              {item.label}
-              {item.key === 'requests' && requests.length > 0 && (
-                <span className="segments__badge">{requests.length}</span>
-              )}
-            </button>
-          ))}
-        </div>
-      )}
-
       <div className="side-body" role="tabpanel">
         {error && (
           <p className="side-error" role="alert">
@@ -248,7 +266,8 @@ export default function MembersPanel({ clubId, onCountChange }) {
         ) : visible.length === 0 ? (
           <p className="side-empty">{search ? 'Никого не нашли' : current.empty}</p>
         ) : (
-          <ul className="members">
+          // Ключ — раздел: сменили вкладку — список приходит заново, растворением
+          <ul className="members" key={tab}>
             {visible.map((person) =>
               tab === 'requests' ? (
                       <li className="member" key={person.id}>
@@ -291,7 +310,13 @@ export default function MembersPanel({ clubId, onCountChange }) {
                         </button>
                       </li>
               ) : (
-                      <li className="member" key={person.id}>
+                      // Управляющему строка целиком открывает меню — как «···», только
+                      // целиться не нужно. Остальным строка — просто сведения, без подсветки
+                      <li
+                        className={`member${canManage ? ' member--tap' : ''}`}
+                        key={person.id}
+                        onClick={canManage ? toggleMenu(person.id) : undefined}
+                      >
                         <Person person={person} lead={person.role === 'lead'} />
 
                         {canManage && (
@@ -309,8 +334,15 @@ export default function MembersPanel({ clubId, onCountChange }) {
 
                         {/* Меню ложится поверх списка, из-под кнопки; у нижнего края — вверх.
                             Оно же и подтверждение: до красного пункта нужно дойти вторым касанием */}
-                        {openMenu === person.id && (
-                          <div className={`row-menu${menuUp ? ' row-menu--above' : ''}`} role="menu">
+                        {(openMenu === person.id || leavingMenu === person.id) && (
+                          <div
+                            className={`row-menu${menuUp ? ' row-menu--above' : ''}${
+                              openMenu === person.id ? '' : ' row-menu--leaving'
+                            }`}
+                            role="menu"
+                            // Нажатие внутри меню — не нажатие по строке
+                            onClick={(event) => event.stopPropagation()}
+                          >
                             {person.role === 'lead' ? (
                               <button
                                 className="row-menu__item"

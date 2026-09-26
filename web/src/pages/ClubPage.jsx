@@ -1,15 +1,19 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
-import { IoChevronBack, IoCameraOutline } from 'react-icons/io5';
+import { IoChevronBack, IoChevronForward, IoCameraOutline } from 'react-icons/io5';
 import { api } from '../api.js';
 import { useAuth } from '../AuthContext.jsx';
 import { squareDataUrl } from '../photo.js';
-import { STATUS_LABELS, membersLabel } from '../club.js';
+import { membersLabel } from '../club.js';
+import { eventDay, eventMonth, eventTime } from '../events.js';
 import ClubChatCard from '../components/ClubChatCard.jsx';
 import ClubControls from '../components/ClubControls.jsx';
 import MembersPanel from '../components/MembersPanel.jsx';
 import './Page.css';
 import './ClubPage.css';
+
+// Сколько ближайших событий помещается в карточку
+const SHOWN_EVENTS = 4;
 
 // Правят клуб те же роли, что и создают его
 const CAN_EDIT = ['university', 'admin'];
@@ -120,7 +124,7 @@ export default function ClubPage() {
   }
 
   return (
-    <main className="page">
+    <main className="page page--grouped">
       <div className="club-page">
         <div className="club-page__main">
           {error && (
@@ -216,10 +220,9 @@ export default function ClubPage() {
                       }}
                     />
 
-                    <p className={`club-hero__status club-hero__status--${club.status}`}>
-                      <span className="club-hero__dot" aria-hidden="true" />
-                      {STATUS_LABELS[club.status] ?? club.status} · {membersLabel(club.members)}
-                    </p>
+                    {/* Состояние клуба живёт в «Управлении клубом» рядом с тем, что
+                        его меняет; здесь — только сколько людей */}
+                    <p className="club-hero__status">{membersLabel(club.members)}</p>
 
                     <label className="visually-hidden" htmlFor="club-about">
                       Информация о клубе
@@ -282,18 +285,84 @@ export default function ClubPage() {
               <div className="card-header">
                 <h2 className="card-header__title">События</h2>
               </div>
+
+              <UpcomingEvents clubId={id} />
             </div>
           </div>
         </div>
 
         <aside className="club-page__side">
-          <div className="side-header">
-            <h2 className="side-header__title">Управление участниками</h2>
+          {/* «Состав», а не «Управление участниками»: вкладки ниже уже называют
+              разделы, и студент здесь ничем не управляет — он смотрит */}
+          <div className="card-header">
+            <h2 className="card-header__title">Состав клуба</h2>
           </div>
 
           <MembersPanel clubId={id} onCountChange={syncMembers} />
         </aside>
       </div>
     </main>
+  );
+}
+
+/**
+ * Ближайшие события клуба — коротким списком: плашка даты, название, время и место.
+ * Добавлять и смотреть всё — в календаре, туда ведёт строка снизу (как у чата).
+ */
+function UpcomingEvents({ clubId }) {
+  const [events, setEvents] = useState(null);
+
+  useEffect(() => {
+    let alive = true;
+    api
+      .clubEvents(clubId)
+      .then(({ events }) => {
+        const now = Date.now();
+        if (alive) {
+          setEvents(
+            events.filter((event) => new Date(event.startsAt) >= now).slice(0, SHOWN_EVENTS),
+          );
+        }
+      })
+      .catch(() => alive && setEvents([]));
+    return () => {
+      alive = false;
+    };
+  }, [clubId]);
+
+  return (
+    <div className="club-events">
+      {events === null ? null : events.length === 0 ? (
+        <p className="club-events__empty">Ближайших событий нет</p>
+      ) : (
+        <ul className="club-events__list">
+          {events.map((event) => {
+            const when = new Date(event.startsAt);
+            return (
+              <li className="club-event" key={event.id}>
+                <span className="club-event__date" aria-hidden="true">
+                  <span className="club-event__day">{eventDay.format(when)}</span>
+                  <span className="club-event__month">
+                    {eventMonth.format(when).replace('.', '')}
+                  </span>
+                </span>
+                <span className="club-event__body">
+                  <span className="club-event__title">{event.title}</span>
+                  <span className="club-event__meta">
+                    {eventTime.format(when)}
+                    {event.place ? ` · ${event.place}` : ''}
+                  </span>
+                </span>
+              </li>
+            );
+          })}
+        </ul>
+      )}
+
+      <Link className="card-more" to="/events" viewTransition>
+        Открыть календарь
+        <IoChevronForward aria-hidden="true" />
+      </Link>
+    </div>
   );
 }

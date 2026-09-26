@@ -109,7 +109,7 @@ export default function ClubControls({ club, canManage, onUpdated }) {
       <div className="group">
         <div className="group__row">
           <span className="group__label">Состояние</span>
-          <span className={`group__value group__value--${club.status}`}>
+          <span className={`group__value group__value--${club.status}`} key={club.status}>
             <span className="group__dot" aria-hidden="true" />
             {STATUS_LABELS[club.status] ?? club.status}
           </span>

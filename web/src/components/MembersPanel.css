@@ -1,35 +1,47 @@
 /* ── Заголовок ──────────────────────────────────────────── */
-/* «Участники · N» и лупа — одной строкой наверху панели. Левый край текста —
-   там же, где аватары в строках ниже (8px отступ строки + 12px поле) */
+/* Разделы (или «Участники · N») и лупа — одной строкой. Края — там же, где у
+   строк списка (8px от карточки); справа место под лупу */
 .members-head {
+  position: relative;
   display: flex;
   align-items: center;
-  gap: var(--space-3);
   flex: none;
-  padding: var(--space-2) var(--space-4) 0 var(--space-5);
+  min-height: 2.75rem;
+  margin: var(--space-2) var(--space-2) 0;
+  padding-right: calc(2.75rem + var(--space-2));
 }
 
-/* Читается сразу: обычный текст, а не мелкая серая подпись раздела */
+/* Читается сразу: обычный текст, а не мелкая серая подпись раздела.
+   Левый край — по аватарам строк (8px отступ строки + 12px поле) */
 .members-title {
+  padding-left: var(--space-3);
   font-size: 1.0625rem;
   font-weight: 600;
   line-height: 1.3;
   color: var(--text);
 }
 
-/* Место между заголовком и правым краем. Поле занимает его всегда, но видно
-   только открытым: маска съезжает справа налево — поле вытягивается из лупы
-   к заголовку. Анимируются clip-path, transform и прозрачность — раскладка
-   не пересчитывается. Контейнер — чтобы лупа знала его ширину (cqw) */
+/* Пока ищут, разделы уходят под поле — растворяются, а не остаются просвечивать */
+.members-head > .segments,
+.members-head > .members-title {
+  transition: opacity var(--duration-fast) var(--ease-out);
+}
+
+.members-head--searching > .segments,
+.members-head--searching > .members-title {
+  opacity: 0;
+}
+
+/* Поле лежит поверх всей строки. Видно только открытым: маска съезжает справа
+   налево — поле вытягивается из лупы к левому краю. Анимируются clip-path,
+   transform и прозрачность — раскладка не пересчитывается. Контейнер — чтобы
+   лупа знала его ширину (cqw) */
 .members-find {
-  position: relative;
+  position: absolute;
+  inset: 0;
   display: flex;
   align-items: center;
-  flex: 1;
-  min-width: 0;
-  min-height: 2.75rem;
-  /* правый край — там же, где у строк списка */
-  margin-right: calc(var(--space-2) * -1);
+  pointer-events: none;
   container-type: inline-size;
 }
 
@@ -38,7 +50,6 @@
   min-width: 0;
   opacity: 0;
   clip-path: inset(0 0 0 100% round var(--radius-pill));
-  pointer-events: none;
   transition:
     clip-path var(--duration-base) var(--ease-out),
     opacity var(--duration-fast) var(--ease-out);
@@ -50,18 +61,24 @@
   pointer-events: auto;
 }
 
-/* Поле живёт в строке — своих полей вокруг ему не нужно */
+/* Поле живёт в строке — своих полей вокруг ему не нужно. Подложка плотная:
+   под ним лежат разделы, просвечивать им нечего */
 .members-find .search {
   padding: 0;
 }
 
-/* Лупа стоит у правого края поверх поля */
+.members-find .search__field {
+  background: var(--bg-secondary);
+}
+
+/* Лупа стоит у правого края */
 .members-find .search-toggle {
   position: absolute;
   top: 0;
   bottom: 0;
   right: 0;
   margin: auto 0;
+  pointer-events: auto;
   transition:
     background-color var(--duration-fast) var(--ease-out),
     transform var(--duration-base) var(--ease-out),
@@ -84,8 +101,8 @@
   position: relative;
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  flex: none;
-  margin: var(--space-2) var(--space-2) var(--space-1);
+  flex: 1;
+  min-width: 0;
   padding: 0.125rem;
   border-radius: var(--radius-control);
   background: var(--fill);
@@ -117,12 +134,34 @@
   font-weight: 500;
   color: var(--text-secondary);
   white-space: nowrap;
-  transition: color var(--duration-fast) var(--ease-out);
+  transition:
+    color var(--duration-fast) var(--ease-out),
+    opacity var(--duration-press) var(--ease-out);
 }
 
 .segments__item:hover,
 .segments__item[aria-selected='true'] {
   color: var(--text);
+}
+
+/* Отклик наступает на нажатии: сегмент притухает, как в iOS */
+.segments__item:active {
+  opacity: 0.6;
+}
+
+/* Сам сегмент 32px, как в iOS; зона нажатия доведена до 44px по вертикали —
+   невидимым полем, не раздувая подложку */
+.segments__item::after {
+  content: '';
+  position: absolute;
+  inset: -0.375rem 0;
+}
+
+/* Сколько в разделе — тихой цифрой после названия */
+.segments__count {
+  font-weight: 400;
+  color: var(--text-tertiary);
+  font-variant-numeric: tabular-nums;
 }
 
 .segments__item[aria-selected='true'] {
@@ -153,8 +192,10 @@
   padding-bottom: var(--space-3);
 }
 
+/* Список проявляется: после загрузки и при смене раздела (ключ — раздел) */
 .members {
   list-style: none;
+  animation: content-in var(--duration-fast) var(--ease-out) backwards;
 }
 
 /* Строка — как в списке чатов WhatsApp: без разделителей, при наведении
@@ -171,8 +212,17 @@
   transition: background-color var(--duration-fast) var(--ease-out);
 }
 
-.member:hover {
+/* Подсвечивается только то, что нажимается: строка участника у управляющего */
+.member--tap {
+  cursor: pointer;
+}
+
+.member--tap:hover {
   background: var(--fill);
+}
+
+.member--tap:active {
+  background: var(--fill-hover);
 }
 
 /* Буква — цветом человека, подложка — тот же цвет, едва заметно.
@@ -276,8 +326,8 @@
 }
 
 .icon-button--yes:hover {
-  background: rgba(52, 199, 89, 0.14);
-  color: #1f7a3d;
+  background: var(--green-soft);
+  color: var(--green-strong);
 }
 
 .icon-button--no:hover {

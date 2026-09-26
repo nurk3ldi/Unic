@@ -76,3 +76,10 @@
 .page.page--flush {
   padding: 0;
 }
+
+/* Сгруппированный экран, как «Настройки» и «Здоровье»: серый фон, белые карточки
+   без рамок — их отделяет контраст, а не линии. Фон — на весь экран под шапкой */
+.page.page--grouped {
+  min-height: calc(100dvh - var(--header-height));
+  background: var(--bg-secondary);
+}

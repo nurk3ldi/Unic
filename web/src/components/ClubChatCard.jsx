@@ -84,7 +84,7 @@ export default function ClubChatCard({ clubId }) {
       )}
 
       {/* Карточка и так ссылка, но строка снизу называет, куда именно */}
-      <span className="chat-card__more">
+      <span className="card-more">
         Открыть чат
         <IoChevronForward aria-hidden="true" />
       </span>

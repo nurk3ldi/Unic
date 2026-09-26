@@ -40,7 +40,7 @@
   overflow: hidden; /* скругление режет собственную шапку карточки */
   height: var(--card-height);
   background: var(--surface);
-  border: 1px solid var(--separator);
+  /* Рамки нет: белую карточку от серого фона отделяет контраст (page--grouped) */
   border-radius: var(--radius-widget);
 }
 
@@ -80,7 +80,10 @@
   }
 }
 
-/* Своя шапка карточки — как у боковой панели */
+/* Шапка карточки — светлый тулбар, как в «Сообщениях»: пять одинаковых синих
+   плит спорили друг с другом, и главное на странице не выделялось. Синий остаётся
+   там, где он что-то значит, — у действий («‹ Клубы», «Редактировать»).
+   Один стиль на все карточки страницы, включая боковую */
 .card-header {
   display: flex;
   align-items: center;
@@ -90,11 +93,12 @@
   flex: none;
   height: 3rem;
   padding: 0 var(--space-4);
-  background: var(--accent);
-  color: var(--text-on-accent);
+  background: var(--surface);
+  color: var(--text);
+  border-bottom: 1px solid var(--separator);
 }
 
-/* Возврат на синем фоне: белый, без подчёркивания */
+/* Возврат — цветом действия, как «назад» в iOS */
 .card-header__back {
   display: inline-flex;
   align-items: center;
@@ -102,7 +106,7 @@
   margin-left: calc(var(--space-2) * -1);
   padding: var(--space-2);
   border-radius: var(--radius-control);
-  color: var(--text-on-accent);
+  color: var(--accent);
   font-size: 0.9375rem;
   font-weight: 500;
   letter-spacing: var(--tracking-caption);
@@ -112,7 +116,7 @@
 }
 
 .card-header__back:hover {
-  background: rgba(255, 255, 255, 0.18);
+  background: var(--fill);
   text-decoration: none;
 }
 
@@ -136,23 +140,11 @@
   display: flex;
   flex-direction: column;
   background: var(--surface);
-  border: 1px solid var(--separator);
+  /* Рамки нет: белую карточку от серого фона отделяет контраст (page--grouped) */
   border-radius: var(--radius-widget);
   overflow: hidden; /* скругление режет и шапку карточки */
 }
 
-/* Своя шапка — как у клубной карточки, только мельче */
-.side-header {
-  display: flex;
-  align-items: center;
-  flex: none;
-  height: 3rem;
-  padding: 0 var(--space-4);
-  background: var(--accent);
-  color: var(--text-on-accent);
-}
-
-.side-header__title,
 .card-header__title {
   font-size: 0.9375rem;
   font-weight: 600;
@@ -160,6 +152,179 @@
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+
+/* ── Переход из карточки ────────────────────────────────── */
+/* «Открыть чат», «Открыть календарь» — полосой под содержимым, отделённой
+   волоском; надпись по центру. Одна на обе карточки нижнего ряда */
+.card-more {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-1);
+  flex: none;
+  margin-top: auto;
+  padding: var(--space-3) var(--space-4);
+  border-top: 1px solid var(--separator);
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--accent);
+}
+
+a.card-more:hover {
+  background: var(--fill);
+  text-decoration: none;
+}
+
+.card-more svg {
+  width: 0.875rem;
+  height: 0.875rem;
+}
+
+/* ── Ближайшие события ──────────────────────────────────── */
+.club-events {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+}
+
+.club-events__list {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: var(--space-2);
+  list-style: none;
+  animation: content-in var(--duration-fast) var(--ease-out) backwards;
+}
+
+.club-event {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-2) var(--space-3);
+}
+
+/* Дата плашкой, как листок календаря: число крупно, месяц мелко */
+.club-event__date {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 3rem;
+  height: 3rem;
+  flex: none;
+  border-radius: var(--radius-control);
+  background: var(--accent-soft);
+  color: var(--accent);
+  line-height: 1.05;
+}
+
+.club-event__day {
+  font-size: 1.125rem;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.club-event__month {
+  font-size: 0.6875rem;
+  font-weight: 500;
+  letter-spacing: var(--tracking-caption);
+}
+
+.club-event__body {
+  display: flex;
+  flex-direction: column;
+  gap: 0.125rem;
+  min-width: 0;
+}
+
+.club-event__title {
+  font-size: 0.9375rem;
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.club-event__meta {
+  font-size: 0.8125rem;
+  color: var(--text-secondary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.club-events__empty {
+  margin: auto;
+  padding: var(--space-4);
+  font-size: 0.875rem;
+  text-align: center;
+  color: var(--text-tertiary);
+  animation: content-in var(--duration-fast) var(--ease-out) backwards;
+}
+
+/* ── Появление ─────────────────────────────────────────── */
+/* Карточки приходят как материал — растворение с лёгким масштабом (как карточка
+   входа, §4.4), по очереди чтения: сведения → управление клубом → участники →
+   чат → события. Шаг 60ms: очередь читается, но не заставляет ждать.
+   fill-mode backwards — анимация держит только начальный кадр до старта;
+   после — не вмешивается, и наведение на карточку чата работает как обычно */
+.club-card,
+.club-page__side {
+  animation: club-card-in 420ms var(--ease-out) backwards;
+}
+
+.club-top > .club-card:nth-child(2) {
+  animation-delay: 60ms;
+}
+
+.club-page__side {
+  animation-delay: 120ms;
+}
+
+.club-bottom > .club-card:nth-child(1) {
+  animation-delay: 180ms;
+}
+
+.club-bottom > .club-card:nth-child(2) {
+  animation-delay: 240ms;
+}
+
+@keyframes club-card-in {
+  from {
+    opacity: 0;
+    transform: scale(0.97);
+  }
+}
+
+/* Сведения приходят с сервера позже карточки — проявляются, а не выскакивают */
+.club-hero {
+  animation: content-in var(--duration-fast) var(--ease-out) backwards;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  /* Движение убираем, растворение оставляем (§14 apple-design): без масштаба и
+     без очереди — задержки иначе стали бы паузой перед показом */
+  .club-card,
+  .club-page__side {
+    animation-name: content-in;
+    animation-delay: 0s;
+  }
+
+  /* Глобальное правило (index.css) обнуляет длительность всего; растворение —
+     не движение, ему возвращаем короткую длительность. Селекторы с классом
+     весомее «*», поэтому их !important побеждает */
+  .club-card,
+  .club-page__side,
+  .club-hero,
+  .controls,
+  .group__value,
+  .members,
+  .club-events__list,
+  .club-events__empty {
+    animation-duration: 160ms !important;
+  }
 }
 
 /* На узком экране колонка уходит вниз и перестаёт тянуться на всю высоту */
@@ -227,35 +392,13 @@
   border-left: 1px solid var(--separator);
 }
 
-/* Цвет несёт точка, текст остаётся читаемым */
+/* Сколько людей в клубе — тихой строкой под названием */
 .club-hero__status {
-  display: flex;
-  align-items: center;
-  gap: var(--space-2);
   /* Поля держат собственный отступ, и строка состояния встаёт по ним */
   margin-top: var(--space-2);
   padding: 0 var(--space-3);
   font-size: 0.9375rem;
   color: var(--text-secondary);
-}
-
-.club-hero__dot {
-  width: 0.5rem;
-  height: 0.5rem;
-  flex: none;
-  border-radius: 50%;
-}
-
-.club-hero__status--active .club-hero__dot {
-  background: var(--green);
-}
-
-.club-hero__status--pending .club-hero__dot {
-  background: var(--orange);
-}
-
-.club-hero__status--suspended .club-hero__dot {
-  background: var(--text-tertiary);
 }
 
 /* На узком экране фото уходит наверх */
@@ -283,7 +426,7 @@
   margin-right: calc(var(--space-3) * -1);
 }
 
-/* Действие в шапке: белым по синему, зона нажатия 44px */
+/* Действие в шапке: цветом действия, зона нажатия 44px */
 .card-header__action {
   display: inline-flex;
   align-items: center;
@@ -292,7 +435,7 @@
   border: none;
   border-radius: var(--radius-control);
   background: none;
-  color: var(--text-on-accent);
+  color: var(--accent);
   font: inherit;
   font-size: 0.9375rem;
   letter-spacing: var(--tracking-caption);
@@ -303,7 +446,7 @@
     transform var(--duration-press) var(--ease-out);
 }
 
-/* Подсветки-подложки нет: на синем она читалась как вторая кнопка.
+/* Подсветки-подложки нет — текстовое действие, как в тулбарах iOS.
    Отклик несёт прозрачность, фокус — она же, без кольца-тени (§4.5) */
 .card-header__action:hover,
 .card-header__action:focus-visible {

@@ -24,8 +24,10 @@
   mask-image: linear-gradient(to bottom, transparent, black var(--space-8));
 }
 
-/* Пузырь — уменьшенная копия пузыря из чата */
+/* Пузырь — уменьшенная копия пузыря из чата. Новый поднимается снизу, как в самом
+   чате: лента прижата к низу, и приход читается движением оттуда */
 .chat-card__msg {
+  animation: chat-card-msg-in var(--duration-fast) var(--ease-out) backwards;
   display: flex;
   flex-direction: column;
   align-self: flex-start;
@@ -52,6 +54,13 @@
   text-overflow: ellipsis;
 }
 
+@keyframes chat-card-msg-in {
+  from {
+    opacity: 0;
+    transform: translateY(0.375rem);
+  }
+}
+
 /* Длинная реплика — двумя строками: в миниатюре важнее видеть, что пишут много */
 .chat-card__text {
   display: -webkit-box;
@@ -63,24 +72,7 @@
   overflow-wrap: anywhere;
 }
 
-/* Переход в чат — полосой под лентой, отделённой волоском; надпись по центру */
-.chat-card__more {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: var(--space-1);
-  flex: none;
-  padding: var(--space-3) var(--space-4);
-  border-top: 1px solid var(--separator);
-  font-size: 0.875rem;
-  font-weight: 500;
-  color: var(--accent);
-}
-
-.chat-card__more svg {
-  width: 0.875rem;
-  height: 0.875rem;
-}
+/* Полоса «Открыть чат» — общая .card-more (ClubPage.css) */
 
 .chat-card__empty {
   margin: auto;

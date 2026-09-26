@@ -25,6 +25,10 @@
   cursor: pointer;
 }
 
+.member.invite__option:hover {
+  background: var(--fill);
+}
+
 .member.invite__option:active {
   background: var(--fill-hover);
 }

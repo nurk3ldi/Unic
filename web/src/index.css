@@ -34,6 +34,9 @@
   --red-soft: rgba(255, 59, 48, 0.1);
   --orange: #ff9500;
   --green: #34c759;
+  /* Зелёный как подложка и как текст на ней (#34C759 белым фоном читается слабо) */
+  --green-soft: rgba(52, 199, 89, 0.14);
+  --green-strong: #1f7a3d;
 
   /* Материал: полупрозрачный слой, контент течёт под ним */
   --material: rgba(255, 255, 255, 0.72);
@@ -315,6 +318,27 @@ a:hover {
    рядом с полужирным текстом */
 .row-menu__item svg * {
   stroke-width: 44;
+}
+
+/* Уход тем же путём, что и приход (§4.3): обратно в кнопку, чуть быстрее */
+.row-menu--leaving {
+  pointer-events: none;
+  animation: row-menu-out 150ms var(--ease-out) both;
+}
+
+@keyframes row-menu-out {
+  to {
+    opacity: 0;
+    transform: scale(0.96);
+  }
+}
+
+/* Содержимое, пришедшее после загрузки, проявляется, а не выскакивает.
+   Только прозрачность: место под ним уже занято, двигать нечего */
+@keyframes content-in {
+  from {
+    opacity: 0;
+  }
 }
 
 @keyframes row-menu-in {
