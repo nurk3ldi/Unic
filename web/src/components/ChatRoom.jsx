@@ -1,4 +1,4 @@
-import { Fragment, useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import {
   IoAdd,
   IoArrowUp,
@@ -190,6 +190,19 @@ export default function ChatRoom({ clubId }) {
 
   if (photo) shownPhoto.current = photo;
 
+  // Лента по дням: у каждого дня своя секция с датой наверху
+  const days = [];
+  for (const message of messages) {
+    const current = days.at(-1);
+    if (current && sameDay(current.at, message.createdAt)) current.messages.push(message);
+    else
+      days.push({
+        key: new Date(message.createdAt).toDateString(),
+        at: message.createdAt,
+        messages: [message],
+      });
+  }
+
   /** Снимок сжимается в браузере и ждёт в поле ввода: к нему можно дописать подпись. */
   async function pickPhoto(event) {
     const file = event.target.files?.[0];
@@ -244,187 +257,190 @@ export default function ChatRoom({ clubId }) {
         ) : messages.length === 0 ? (
           <p className="chat__empty">Здесь пока пусто. Напишите первым.</p>
         ) : (
-          messages.map((message, index) => {
-            const own = message.authorId === user?.id;
-            // Новый день начинается с разделителя: иначе вчерашнее и сегодняшнее сливаются
-            const previous = messages[index - 1];
-            const newDay = !previous || !sameDay(previous.createdAt, message.createdAt);
+          days.map((day) => (
+            /* День — своя секция: липкая дата держится, пока листают её день,
+               а следующая выталкивает её, а не ложится сверху */
+            <section className="chat__day-group" key={day.key}>
+              <time className="chat__day" dateTime={day.at}>
+                {dayLabel(day.at)}
+              </time>
 
-            // У чужой реплики есть шапка — кнопка встаёт в её конец, как в мессенджерах.
-            // У своей шапки нет, и кнопка висит в углу пузыря
-            const more = (
-              /* Полоса раскрывается по ширине и отодвигает соседа —
-                 в покое кнопка не занимает места (тот же приём, что у «Отмены») */
-              <span className="reveal-x msg__more-slot">
-                <span className="reveal-x__clip">
-                  <button
-                    className="msg__more"
-                    type="button"
-                    aria-label="Действия с сообщением"
-                    aria-expanded={openMenu === message.id}
-                    onClick={(event) => {
-                      event.stopPropagation(); // иначе тот же клик сразу закроет меню
-                      setOpenMenu((current) => (current === message.id ? null : message.id));
-                    }}
-                  >
-                    <IoChevronDown aria-hidden="true" />
-                  </button>
-                </span>
-              </span>
-            );
+              {day.messages.map((message) => {
+                const own = message.authorId === user?.id;
 
-            // Меню растёт из своей кнопки (§4.3): у чужой реплики кнопка в шапке пузыря,
-            // у своей — снаружи, слева от него; меню встаёт туда же, где кнопка
-            const menu = openMenu === message.id && (
-              <div className="row-menu row-menu--msg" role="menu">
-                {message.text && (
-                  <button
-                    className="row-menu__item"
-                    type="button"
-                    role="menuitem"
-                    onClick={(event) => {
-                      event.stopPropagation();
-                      copy(message);
-                    }}
-                  >
-                    <IoCopyOutline aria-hidden="true" />
-                    {copied ? 'Скопировано' : 'Копировать'}
-                  </button>
-                )}
-
-                <button
-                  className="row-menu__item"
-                  type="button"
-                  role="menuitem"
-                  onClick={() => {
-                    setReplying(message);
-                    setOpenMenu(null);
-                    inputRef.current?.focus();
-                  }}
-                >
-                  <IoArrowUndoOutline aria-hidden="true" />
-                  Ответить
-                </button>
-
-                {(own || MANAGE_ROLES.includes(user?.role)) && (
-                  <button
-                    className="row-menu__item row-menu__item--danger"
-                    type="button"
-                    role="menuitem"
-                    onClick={() => removeMessage(message)}
-                  >
-                    <IoTrashOutline aria-hidden="true" />
-                    Удалить
-                  </button>
-                )}
-              </div>
-            );
-
-            return (
-              <Fragment key={message.id}>
-                {newDay && (
-                  <time className="chat__day" dateTime={message.createdAt}>
-                    {dayLabel(message.createdAt)}
-                  </time>
-                )}
-
-                <div className={`msg${own ? ' msg--own' : ''}`} id={`msg-${message.id}`}>
-                  {!own && (
-                    <span className="msg__avatar" aria-hidden="true">
-                      {initial(message.author)}
+                // У чужой реплики есть шапка — кнопка встаёт в её конец, как в мессенджерах.
+                // У своей шапки нет, и кнопка висит в углу пузыря
+                const more = (
+                  /* Полоса раскрывается по ширине и отодвигает соседа —
+                     в покое кнопка не занимает места (тот же приём, что у «Отмены») */
+                  <span className="reveal-x msg__more-slot">
+                    <span className="reveal-x__clip">
+                      <button
+                        className="msg__more"
+                        type="button"
+                        aria-label="Действия с сообщением"
+                        aria-expanded={openMenu === message.id}
+                        onClick={(event) => {
+                          event.stopPropagation(); // иначе тот же клик сразу закроет меню
+                          setOpenMenu((current) => (current === message.id ? null : message.id));
+                        }}
+                      >
+                        <IoChevronDown aria-hidden="true" />
+                      </button>
                     </span>
-                  )}
+                  </span>
+                );
 
-                  <div className={`msg__bubble${message.photo ? ' msg__bubble--photo' : ''}`}>
-                    {!own && menu}
+                // Меню растёт из своей кнопки (§4.3): у чужой реплики кнопка в шапке пузыря,
+                // у своей — снаружи, слева от него; меню встаёт туда же, где кнопка
+                const menu = openMenu === message.id && (
+                  <div className="row-menu row-menu--msg" role="menu">
+                    {message.text && (
+                      <button
+                        className="row-menu__item"
+                        type="button"
+                        role="menuitem"
+                        onClick={(event) => {
+                          event.stopPropagation();
+                          copy(message);
+                        }}
+                      >
+                        <IoCopyOutline aria-hidden="true" />
+                        {copied ? 'Скопировано' : 'Копировать'}
+                      </button>
+                    )}
 
+                    <button
+                      className="row-menu__item"
+                      type="button"
+                      role="menuitem"
+                      onClick={() => {
+                        setReplying(message);
+                        setOpenMenu(null);
+                        inputRef.current?.focus();
+                      }}
+                    >
+                      <IoArrowUndoOutline aria-hidden="true" />
+                      Ответить
+                    </button>
+
+                    {(own || MANAGE_ROLES.includes(user?.role)) && (
+                      <button
+                        className="row-menu__item row-menu__item--danger"
+                        type="button"
+                        role="menuitem"
+                        onClick={() => removeMessage(message)}
+                      >
+                        <IoTrashOutline aria-hidden="true" />
+                        Удалить
+                      </button>
+                    )}
+                  </div>
+                );
+
+                return (
+                  <div
+                    className={`msg${own ? ' msg--own' : ''}`}
+                    id={`msg-${message.id}`}
+                    key={message.id}
+                  >
                     {!own && (
-                      /* Ник называет человека, номер рядом — по нему его находят */
-                      <span className="msg__head">
-                        <span
-                          className="msg__author"
-                          style={{ color: authorColor(message.authorId) }}
-                        >
-                          {message.username ? `@${message.username}` : shortName(message.author)}
-                        </span>
-
-                        {message.phone && (
-                          <span className="msg__phone">{formatPhone(message.phone)}</span>
-                        )}
-
-                        {more}
+                      <span className="msg__avatar" aria-hidden="true">
+                        {initial(message.author)}
                       </span>
                     )}
 
-                    {/* Время плывёт вправо и садится в конец последней строки —
-                        короткая реплика не занимает из-за него вторую */}
-                    {message.replyTo && (
-                      /* Цитата ведёт к оригиналу: разговор не теряет нить */
-                      <button
-                        className="msg__quote"
-                        type="button"
-                        /* Цвет ставится на всю цитату: полоса слева берёт его из currentColor */
-                        style={{ color: own ? undefined : authorColor(message.replyTo.authorId) }}
-                        onClick={() =>
-                          document
-                            .getElementById(`msg-${message.replyTo.id}`)
-                            ?.scrollIntoView({ block: 'center', behavior: 'smooth' })
-                        }
-                      >
-                        <span className="msg__quote-author">
-                          {message.replyTo.username
-                            ? `@${message.replyTo.username}`
-                            : shortName(message.replyTo.author)}
-                        </span>
-                        <span className="msg__quote-text">
-                          {message.replyTo.text || 'Фото'}
-                        </span>
-                      </button>
-                    )}
+                    <div className={`msg__bubble${message.photo ? ' msg__bubble--photo' : ''}`}>
+                      {!own && menu}
 
-                    {message.photo && (
-                      /* Место под снимок известно заранее — лента не прыгает, пока он грузится.
-                         Целиком он открывается тут же, в окне поверх страницы */
-                      <button
-                        className="msg__photo"
-                        type="button"
-                        aria-label="Открыть фото"
-                        style={{ aspectRatio: `${message.photo.width} / ${message.photo.height}` }}
-                        onClick={() => setViewing(message.photo)}
-                      >
-                        <img src={message.photo.url} alt="" loading="lazy" />
+                      {!own && (
+                        /* Ник называет человека, номер рядом — по нему его находят */
+                        <span className="msg__head">
+                          <span
+                            className="msg__author"
+                            style={{ color: authorColor(message.authorId) }}
+                          >
+                            {message.username ? `@${message.username}` : shortName(message.author)}
+                          </span>
 
-                        {/* Без подписи времени негде сесть — оно ложится на сам снимок */}
-                        {!message.text && (
-                          <time className="msg__photo-time" dateTime={message.createdAt}>
+                          {message.phone && (
+                            <span className="msg__phone">{formatPhone(message.phone)}</span>
+                          )}
+
+                          {more}
+                        </span>
+                      )}
+
+                      {/* Время плывёт вправо и садится в конец последней строки —
+                          короткая реплика не занимает из-за него вторую */}
+                      {message.replyTo && (
+                        /* Цитата ведёт к оригиналу: разговор не теряет нить */
+                        <button
+                          className="msg__quote"
+                          type="button"
+                          /* Цвет ставится на всю цитату: полоса слева берёт его из currentColor */
+                          style={{ color: own ? undefined : authorColor(message.replyTo.authorId) }}
+                          onClick={() =>
+                            document
+                              .getElementById(`msg-${message.replyTo.id}`)
+                              ?.scrollIntoView({ block: 'center', behavior: 'smooth' })
+                          }
+                        >
+                          <span className="msg__quote-author">
+                            {message.replyTo.username
+                              ? `@${message.replyTo.username}`
+                              : shortName(message.replyTo.author)}
+                          </span>
+                          <span className="msg__quote-text">
+                            {message.replyTo.text || 'Фото'}
+                          </span>
+                        </button>
+                      )}
+
+                      {message.photo && (
+                        /* Место под снимок известно заранее — лента не прыгает, пока он грузится.
+                           Целиком он открывается тут же, в окне поверх страницы */
+                        <button
+                          className="msg__photo"
+                          type="button"
+                          aria-label="Открыть фото"
+                          style={{ aspectRatio: `${message.photo.width} / ${message.photo.height}` }}
+                          onClick={() => setViewing(message.photo)}
+                        >
+                          <img src={message.photo.url} alt="" loading="lazy" />
+
+                          {/* Без подписи времени негде сесть — оно ложится на сам снимок */}
+                          {!message.text && (
+                            <time className="msg__photo-time" dateTime={message.createdAt}>
+                              {messageTime.format(new Date(message.createdAt))}
+                            </time>
+                          )}
+                        </button>
+                      )}
+
+                      {message.text && (
+                        <p className="msg__text">
+                          {withLinks(message.text)}
+                          <time className="msg__time" dateTime={message.createdAt}>
                             {messageTime.format(new Date(message.createdAt))}
                           </time>
-                        )}
-                      </button>
-                    )}
+                        </p>
+                      )}
+                    </div>
 
-                    {message.text && (
-                      <p className="msg__text">
-                        {withLinks(message.text)}
-                        <time className="msg__time" dateTime={message.createdAt}>
-                          {messageTime.format(new Date(message.createdAt))}
-                        </time>
-                      </p>
+                    {/* У своей реплики шапки нет, а внутри пузыря кнопке мешает время —
+                        поэтому она встаёт рядом, со свободной стороны, и меню вместе с ней */}
+                    {own && (
+                      <span className="msg__more-box">
+                        {more}
+                        {menu}
+                      </span>
                     )}
                   </div>
-
-                  {/* У своей реплики шапки нет, а внутри пузыря кнопке мешает время —
-                      поэтому она встаёт рядом, со свободной стороны, и меню вместе с ней */}
-                  {own && (
-                    <span className="msg__more-box">
-                      {more}
-                      {menu}
-                    </span>
-                  )}
-                </div>
-              </Fragment>
-            );
-          })
+                );
+              })}
+            </section>
+          ))
         )}
       </div>
 
