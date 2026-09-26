@@ -250,7 +250,8 @@ export default function ChatRoom({ clubId }) {
   }
 
   return (
-    <>
+    // Обёртка несёт обои: они тянутся и под лентой, и под полем ввода
+    <div className="chat">
       <div className="chat__list" ref={listRef} onScroll={trackBottom}>
         {loading ? (
           <p className="chat__empty">Загружаем…</p>
@@ -574,6 +575,6 @@ export default function ChatRoom({ clubId }) {
           </button>
         </form>
       </div>
-    </>
+    </div>
   );
 }

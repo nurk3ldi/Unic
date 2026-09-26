@@ -1,8 +1,18 @@
-/* Читают её с конца, поэтому прокручивается только лента.
-   Фон — светлая подложка с еле заметным узором: он отделяет переписку от
-   остальных экранов и даёт пузырям, на чём лежать. Цвет узора задан альфой
-   от чёрного прямо в картинке (переменные внутрь data URL не попадают),
-   поэтому он остаётся верным на любой светлой подложке */
+/* Весь разговор лежит на обоях — и лента, и поле ввода: без белой полосы
+   внизу поле не отрезано от переписки, а парит над ней, как в мессенджерах.
+   Обои — design/unic_chat_background.png (WebP без потерь). Их фон белый,
+   а чужой пузырь тоже белый — слились бы. multiply с серой подложкой делает
+   белое серым (#F5F5F7), а рисунок оставляет как есть */
+.chat {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  background: var(--bg-secondary) url('../assets/chat-background.webp') center / cover;
+  background-blend-mode: multiply;
+}
+
+/* Читают её с конца, поэтому прокручивается только лента */
 .chat__list {
   display: flex;
   flex-direction: column;
@@ -14,11 +24,6 @@
      а фон под ними — во всю ширину. % в полях — от ширины самой панели */
   padding: var(--space-5) max(var(--space-5), calc((100% - var(--chat-column)) / 2))
     var(--space-4);
-  /* Обои — design/unic_chat_background.png (WebP без потерь).
-     Их фон белый, а чужой пузырь тоже белый — слились бы. multiply с серой
-     подложкой делает белое серым (#F5F5F7), а рисунок оставляет как есть */
-  background: var(--bg-secondary) url('../assets/chat-background.webp') center / cover;
-  background-blend-mode: multiply;
 }
 
 .chat__empty {
@@ -452,16 +457,15 @@
   margin: var(--space-3) max(var(--space-4), calc((100% - var(--chat-column)) / 2))
     var(--space-4);
   border-radius: var(--radius-pill);
-  background: var(--fill);
+  /* Плотная и с мягкой тенью: полупрозрачная пропускала бы узор обоев,
+     а тень отделяет поле от переписки, по которой оно парит */
+  background: var(--surface);
+  box-shadow: var(--shadow-card);
   transition:
     background-color var(--duration-fast) var(--ease-out),
     border-radius var(--duration-fast) var(--ease-out);
 }
 
-/* Фокус показывает сама карточка — рамка и кольцо не нужны (§4.5) */
-.chat__box:focus-within {
-  background: var(--fill-hover);
-}
 
 /* С ответом или абзацем внутри карточка перестаёт быть капсулой: в неё легли
    несколько строк, круглые торцы для них не годятся */
