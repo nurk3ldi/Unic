@@ -53,6 +53,7 @@ export function chatStamp(iso) {
  * оповещение): текст, а без текста — что в нём лежит.
  */
 export function messageLabel(message) {
+  if (message.deleted) return 'Сообщение удалено';
   if (message.text) return message.text;
   if (message.photo || message.file?.kind === 'image') return 'Фото';
   if (message.file?.kind === 'video') return 'Видео';

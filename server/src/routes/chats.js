@@ -20,7 +20,7 @@ router.get('/', requireAuth, async (req, res) => {
 
   const { rows } = await query(
     `select c.id, c.name, c.photo_url, m.id as last_id, m.author_id, m.body, m.has_photo,
-            m.file_kind, m.file_name, m.created_at, u.full_name,
+            m.file_kind, m.file_name, m.deleted, m.created_at, u.full_name,
             exists (
               select 1 from chat_mutes mu where mu.club_id = c.id and mu.user_id = $1
             ) as muted
@@ -28,7 +28,7 @@ router.get('/', requireAuth, async (req, res) => {
        -- lateral: последнее сообщение каждого клуба одним проходом
        left join lateral (
          select cm.id, cm.body, cm.photo is not null as has_photo, cm.created_at, cm.author_id,
-                f.kind as file_kind, f.name as file_name
+                f.kind as file_kind, f.name as file_name, cm.deleted_at is not null as deleted
            from club_messages cm
            left join chat_files f on f.id = cm.file_id
           where cm.club_id = c.id
@@ -61,6 +61,7 @@ router.get('/', requireAuth, async (req, res) => {
             text: row.body,
             photo: row.has_photo,
             file: row.file_kind ? { kind: row.file_kind, name: row.file_name } : null,
+            deleted: row.deleted,
             author: row.full_name ?? 'Удалённый участник',
             createdAt: row.created_at,
           }

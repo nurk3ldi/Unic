@@ -162,3 +162,11 @@ create unique index if not exists club_messages_file_idx on club_messages (file_
 alter table chat_files drop constraint if exists chat_files_kind_check;
 alter table chat_files add constraint chat_files_kind_check
   check (kind in ('video', 'document', 'image'));
+
+-- Удалённое сообщение не исчезает: на его месте в ленте остаётся «Сообщение удалено»
+-- и кто удалил. Текст и вложение стираются, остаётся только сам факт.
+-- deleted_as — в какой роли удалили в тот момент (роль потом может смениться)
+alter table club_messages add column if not exists deleted_at timestamptz;
+alter table club_messages add column if not exists deleted_by uuid references users (id) on delete set null;
+alter table club_messages add column if not exists deleted_as text
+  check (deleted_as in ('author', 'lead', 'university', 'admin'));

@@ -428,6 +428,20 @@ router.delete(
   },
 );
 
+/**
+ * В какой роли человек может убрать чужое сообщение в этом клубе: 'admin',
+ * 'university' или 'lead' (лидер именно этого клуба). Иначе — null.
+ */
+async function moderatorRole(clubId, user) {
+  if (user.role === 'admin' || user.role === 'university') return user.role;
+  const { rows } = await query(
+    `select 1 from club_members
+      where club_id = $1 and user_id = $2 and role = 'lead' and status = 'active'`,
+    [clubId, user.id],
+  );
+  return rows[0] ? 'lead' : null;
+}
+
 /** Состоит ли человек в клубе. Те, кто клубом управляет, проходят и без состава. */
 async function canReadChat(clubId, user) {
   if (canManage(user)) return true;
@@ -444,6 +458,15 @@ const publicMessage = (row) => ({
   id: row.id,
   text: row.body,
   authorId: row.author_id,
+  // Удалено: содержимого нет, есть кто и в какой роли. Имя — на случай, если
+  // удалил не автор: «удалено лидером клуба · Нұркелді А.»
+  deleted: row.deleted_at
+    ? {
+        at: row.deleted_at,
+        as: row.deleted_as,
+        by: row.deleted_by_name ?? null,
+      }
+    : null,
   // Автора могли удалить: переписка остаётся, имя заменяется
   author: row.full_name ?? 'Удалённый участник',
   username: row.username ?? null,
@@ -476,6 +499,7 @@ const publicMessage = (row) => ({
         text: row.reply_body,
         photo: row.reply_has_photo,
         file: row.reply_file_kind ? { kind: row.reply_file_kind, name: row.reply_file_name } : null,
+        deleted: row.reply_deleted,
         authorId: row.reply_author_id,
         author: row.reply_full_name ?? 'Удалённый участник',
         username: row.reply_username ?? null,
@@ -492,13 +516,16 @@ const MESSAGE_FIELDS = `m.id, m.club_id, m.body, m.author_id, m.created_at,
           ru.full_name as reply_full_name, ru.username as reply_username,
           f.id as file_id, f.kind as file_kind, f.name as file_name, f.size as file_size,
           f.width as file_width, f.height as file_height, f.duration as file_duration,
-          rf.kind as reply_file_kind, rf.name as reply_file_name`;
+          rf.kind as reply_file_kind, rf.name as reply_file_name,
+          m.deleted_at, m.deleted_as, du.full_name as deleted_by_name,
+          r.deleted_at is not null as reply_deleted`;
 
 const MESSAGE_JOINS = `left join users u on u.id = m.author_id
        left join club_messages r on r.id = m.reply_to
        left join users ru on ru.id = r.author_id
        left join chat_files f on f.id = m.file_id
-       left join chat_files rf on rf.id = r.file_id`;
+       left join chat_files rf on rf.id = r.file_id
+       left join users du on du.id = m.deleted_by`;
 
 /**
  * Лента чата: последние сообщения, в порядке чтения — сверху старые.
@@ -525,7 +552,11 @@ router.get('/:id/messages', requireAuth, async (req, res) => {
     [req.params.id, limit],
   );
 
-  res.json({ messages: rows.reverse().map(publicMessage) });
+  res.json({
+    messages: rows.reverse().map(publicMessage),
+    // Убирать чужие сообщения: университет, админ и лидер этого клуба
+    canModerate: Boolean(await moderatorRole(req.params.id, req.user)),
+  });
 });
 
 router.post('/:id/messages', requireAuth, async (req, res) => {
@@ -869,7 +900,8 @@ router.put('/:id/notifications', requireAuth, async (req, res) => {
 });
 
 /**
- * Удаление сообщения: своё — автору, любое — тому, кто управляет клубом.
+ * Удаление сообщения: своё — автору, любое — университету, админу и лидеру клуба.
+ * Удалённое остаётся в ленте строкой «Сообщение удалено» — с тем, кто удалил.
  * Правка не предусмотрена: исправленная реплика в чужой памяти уже прочитана,
  * а след «изменено» — отдельная история, которой пока нет.
  */
@@ -882,20 +914,41 @@ router.delete('/:id/messages/:messageId', requireAuth, async (req, res) => {
     return res.status(403).json({ error: 'Чат доступен только участникам клуба' });
   }
 
-  const { rows } = await query(
-    `delete from club_messages
-      where id = $1 and club_id = $2 and ($3 or author_id = $4)
-      returning id, file_id`,
-    [messageId, id, canManage(req.user), req.user.id],
+  const { rows: found } = await query(
+    `select author_id, file_id from club_messages
+      where id = $1 and club_id = $2 and deleted_at is null`,
+    [messageId, id],
   );
-  if (!rows[0]) return res.status(404).json({ error: 'Сообщение не найдено' });
+  if (!found[0]) return res.status(404).json({ error: 'Сообщение не найдено' });
 
-  // Вложение живёт только ради своего сообщения — уходит вместе с ним
-  if (rows[0].file_id) {
-    await query('delete from chat_files where id = $1', [rows[0].file_id]);
-    await removeFile(rows[0].file_id);
+  // Своё удаляет автор; чужое — университет, админ и лидер клуба. В какой роли
+  // удалили, запоминаем сейчас: роль потом может смениться, а след — нет
+  const own = found[0].author_id === req.user.id;
+  const as = own ? 'author' : await moderatorRole(id, req.user);
+  if (!as) return res.status(404).json({ error: 'Сообщение не найдено' });
+
+  // Сообщение не исчезает — на его месте остаётся «удалено». Текст, снимок,
+  // вложение и цитата стираются: остаётся только факт и кто
+  await query(
+    `update club_messages
+        set body = '', photo = null, photo_width = null, photo_height = null,
+            file_id = null, reply_to = null,
+            deleted_at = now(), deleted_by = $2, deleted_as = $3
+      where id = $1`,
+    [messageId, req.user.id, as],
+  );
+
+  // Вложение жило только ради своего сообщения — уходит с диска
+  if (found[0].file_id) {
+    await query('delete from chat_files where id = $1', [found[0].file_id]);
+    await removeFile(found[0].file_id);
   }
-  res.json({ ok: true });
+
+  const { rows } = await query(
+    `select ${MESSAGE_FIELDS} from club_messages m ${MESSAGE_JOINS} where m.id = $1`,
+    [messageId],
+  );
+  res.json({ message: publicMessage(rows[0]) });
 });
 
 const TITLE_LIMIT = 120;

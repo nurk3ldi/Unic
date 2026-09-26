@@ -457,6 +457,39 @@
   opacity: 0.8;
 }
 
+/* Удалённое — тихая строка на месте сообщения: без заливки своего цвета
+   (своё тоже не синее — содержимого больше нет), серым, со знаком ⊘ */
+.msg__bubble.msg__bubble--deleted {
+  background: var(--surface);
+  color: var(--text-tertiary);
+  opacity: 0.9;
+}
+
+.msg__deleted {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: 0.875rem;
+  line-height: 1.35;
+}
+
+.msg__deleted svg {
+  flex: none;
+  width: 1rem;
+  height: 1rem;
+}
+
+.msg__deleted-author {
+  font-weight: 600;
+}
+
+/* Время — в конце строки, тем же серым */
+.msg__bubble--deleted .msg__time {
+  flex: none;
+  margin: 0 0 0 var(--space-2);
+  color: var(--text-tertiary);
+}
+
 /* Документ — карточкой в пузыре: значок, имя, «PDF · 1,2 МБ». Нажатие скачивает */
 .msg__bubble--file {
   min-width: 15rem;

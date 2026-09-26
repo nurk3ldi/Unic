@@ -3,6 +3,7 @@ import {
   IoAdd,
   IoArrowUp,
   IoArrowUndoOutline,
+  IoBanOutline,
   IoChevronDown,
   IoClose,
   IoCopyOutline,
@@ -39,8 +40,25 @@ import { chatPhoto } from '../photo.js';
 import PhotoViewer from './PhotoViewer.jsx';
 import './ChatRoom.css';
 
-// Чужое сообщение убирают те же роли, что управляют клубом
-const MANAGE_ROLES = ['university', 'admin'];
+// Кто убрал сообщение — словом, в той роли, в какой убирал
+const DELETED_AS = {
+  lead: 'лидером клуба',
+  university: 'университетом',
+  admin: 'администратором',
+};
+
+/**
+ * Что написать на месте удалённого. Убрал сам автор — просто «удалено»;
+ * убрал модератор — кто именно: так видно, что это не автор передумал.
+ * У университета имя — название, его не сокращаем.
+ */
+function deletedText(deleted, own) {
+  if (deleted.as === 'author') return own ? 'Вы удалили сообщение' : 'Сообщение удалено';
+  const who = deleted.by
+    ? ` · ${deleted.as === 'university' ? deleted.by : shortName(deleted.by)}`
+    : '';
+  return `Сообщение удалено ${DELETED_AS[deleted.as]}${who}`;
+}
 
 // Что предлагает системное окно выбора: снимки и видео — одним пунктом, документы — другим
 const MEDIA_ACCEPT = `image/*,${[...IMAGE_EXTENSIONS, ...VIDEO_EXTENSIONS]
@@ -204,6 +222,8 @@ export default function ChatRoom({ clubId }) {
   const shownAttachment = useRef(null);
 
   const [messages, setMessages] = useState([]);
+  // Можно ли убирать чужие сообщения: университет, админ, лидер этого клуба (решает сервер)
+  const [canModerate, setCanModerate] = useState(false);
   const [attaching, setAttaching] = useState(false);
   const [openMenu, setOpenMenu] = useState(null); // id сообщения
   const [menuUp, setMenuUp] = useState(false); // снизу нет места — меню раскрывается вверх
@@ -227,9 +247,10 @@ export default function ChatRoom({ clubId }) {
     async function load() {
       if (document.hidden) return;
       try {
-        const { messages } = await api.clubMessages(clubId);
+        const { messages, canModerate } = await api.clubMessages(clubId);
         if (alive) {
           setMessages(messages);
+          setCanModerate(Boolean(canModerate));
           setError('');
         }
       } catch (failure) {
@@ -294,8 +315,10 @@ export default function ChatRoom({ clubId }) {
   async function removeMessage(message) {
     setOpenMenu(null);
     try {
-      await api.deleteClubMessage(clubId, message.id);
-      setMessages((was) => was.filter((item) => item.id !== message.id));
+      // Сообщение не исчезает — становится строкой «удалено» на том же месте
+      const { message: gone } = await api.deleteClubMessage(clubId, message.id);
+      setMessages((was) => was.map((item) => (item.id === gone.id ? gone : item)));
+      if (replying?.id === gone.id) setReplying(null);
     } catch (failure) {
       setError(failure.message);
     }
@@ -491,6 +514,43 @@ export default function ChatRoom({ clubId }) {
               {day.messages.map((message) => {
                 const own = message.authorId === user?.id;
 
+                // Удалённое — тихой строкой на своём месте: разговор не рвётся,
+                // и видно, кто убрал. Меню у неё нет — делать с ней нечего
+                if (message.deleted) {
+                  return (
+                    <div
+                      className={`msg${own ? ' msg--own' : ''}`}
+                      id={`msg-${message.id}`}
+                      key={message.id}
+                    >
+                      {!own && (
+                        <span className="msg__avatar" aria-hidden="true">
+                          {initial(message.author)}
+                        </span>
+                      )}
+                      <div className="msg__bubble msg__bubble--deleted">
+                        <p className="msg__deleted">
+                          <IoBanOutline aria-hidden="true" />
+                          <span>
+                            {!own && (
+                              <span
+                                className="msg__deleted-author"
+                                style={{ color: authorColor(message.authorId) }}
+                              >
+                                {shortName(message.author)}:{' '}
+                              </span>
+                            )}
+                            {deletedText(message.deleted, own)}
+                          </span>
+                          <time className="msg__time" dateTime={message.createdAt}>
+                            {messageTime.format(new Date(message.createdAt))}
+                          </time>
+                        </p>
+                      </div>
+                    </div>
+                  );
+                }
+
                 // У чужой реплики есть шапка — кнопка встаёт в её конец, как в мессенджерах.
                 // У своей шапки нет, и кнопка висит в углу пузыря
                 const more = (
@@ -572,7 +632,7 @@ export default function ChatRoom({ clubId }) {
                       Ответить
                     </button>
 
-                    {(own || MANAGE_ROLES.includes(user?.role)) && (
+                    {(own || canModerate) && (
                       <button
                         className="row-menu__item row-menu__item--danger"
                         type="button"
