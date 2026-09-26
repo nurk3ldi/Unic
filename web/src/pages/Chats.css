@@ -14,7 +14,8 @@
 }
 
 .chats--info {
-  grid-template-columns: minmax(16rem, 22rem) 1fr 22rem;
+  /* Сведения шире списка: в них состав с никами и сетка снимков */
+  grid-template-columns: minmax(16rem, 22rem) 1fr 26rem;
 }
 
 .chats--info .chats__info {
@@ -55,8 +56,8 @@
 /* Тот же тонкий ✕, что в просмотре фото: штрих иконки по умолчанию, без утолщения.
    Поле крупнее знака — штрих IoClose занимает меньше половины своего поля */
 .chats__info .card-header__action svg {
-  width: 2rem;
-  height: 2rem;
+  width: 1.5rem;
+  height: 1.5rem;
 }
 
 .chats__info-body {
