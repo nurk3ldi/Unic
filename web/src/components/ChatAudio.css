@@ -56,6 +56,7 @@
 
 /* Волна: столбики разной высоты, пройденные — во всю силу, остальные — прозрачнее */
 .audio__wave {
+  position: relative;
   display: flex;
   align-items: center;
   gap: 2px;
@@ -64,7 +65,7 @@
   cursor: pointer;
 }
 
-.audio__wave span {
+.audio__bar {
   flex: 1;
   min-width: 2px;
   max-width: 3px;
@@ -75,8 +76,20 @@
   transition: opacity var(--duration-fast) var(--ease-out);
 }
 
-.audio__wave span.is-played {
+.audio__bar.is-played {
   opacity: 1;
+}
+
+/* Ручка на волне — где сейчас играет; поверх столбиков, центром на месте */
+.audio__knob {
+  position: absolute;
+  top: 50%;
+  width: 0.75rem;
+  height: 0.75rem;
+  border-radius: 50%;
+  background: currentColor;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
 }
 
 .audio__name {
@@ -130,4 +143,71 @@
 
 .msg--own .audio__meta {
   color: var(--on-accent-secondary);
+}
+
+/* ── Голосовое: как в WhatsApp ─────────────────────────── */
+.audio--voice {
+  min-width: 17rem;
+}
+
+/* Аватар того, кто говорит: снимок или буква его цвета, микрофон в углу */
+.audio__avatar {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 3rem;
+  height: 3rem;
+  flex: none;
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--author) 16%, var(--surface));
+  color: var(--author);
+  font-size: 1.125rem;
+  font-weight: 600;
+}
+
+.audio__avatar img {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+/* На своём синем пузыре буква — белым по полупрозрачному */
+.msg--own .audio__avatar {
+  background: var(--on-accent-fill);
+  color: var(--text-on-accent);
+}
+
+.audio__avatar-mic {
+  position: absolute;
+  right: -0.25rem;
+  bottom: -0.125rem;
+  width: 1.125rem;
+  height: 1.125rem;
+  color: var(--accent);
+}
+
+.msg--own .audio__avatar-mic {
+  color: var(--text-on-accent);
+}
+
+/* ▶ без подложки — просто знак, как в WhatsApp; зона нажатия остаётся 44px */
+.audio--voice .audio__play {
+  width: 2.25rem;
+  background: none;
+}
+
+.audio--voice .audio__play svg {
+  width: 1.5rem;
+  height: 1.5rem;
+  color: var(--text-secondary);
+}
+
+.msg--own .audio--voice .audio__play svg {
+  color: var(--text-on-accent);
+}
+
+/* Под волной: слева длительность, справа время (время само уходит вправо) */
+.audio--voice .audio__meta {
+  padding-left: 0.125rem;
 }

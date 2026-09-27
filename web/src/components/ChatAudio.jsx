@@ -1,6 +1,7 @@
 import { useRef, useState } from 'react';
-import { IoPause, IoPlay } from 'react-icons/io5';
+import { IoMic, IoPause, IoPlay } from 'react-icons/io5';
 import { extensionOf, formatDuration, formatSize } from '../chat.js';
+import { authorColor, initial } from '../people.js';
 import './ChatAudio.css';
 
 // Играет что-то одно: запустили новое — остальные встают на паузу, как в мессенджерах
@@ -28,12 +29,15 @@ function toBars(waveform) {
 }
 
 /**
- * Аудио в ленте. Голосовое — как в Telegram: круглая ▶, столбики «волны»,
- * пройденная часть закрашена, по столбикам можно перемотать. Аудиофайл —
- * ▶, имя и тонкая полоса хода. Не открылось в этом браузере — показываем
- * `fallback` (карточку «не открывается, скачайте»).
+ * Аудио в ленте. Голосовое — как в WhatsApp: слева аватар того, кто говорил, с
+ * меткой микрофона в углу; ▶ без подложки; «волна» с круглой ручкой на месте,
+ * где сейчас играет (пройденное закрашено, по волне можно перемотать); под ней
+ * слева длительность, справа время. Аудиофайл — ▶ в круге, имя и полоса хода.
+ * Не открылось в этом браузере — показываем `fallback` («не открывается, скачайте»).
+ *
+ * `author` — { id, name, photo? }: чей голос. Нет автора (раздел «Медиа») — без аватара.
  */
-export default function ChatAudio({ file, time, fallback }) {
+export default function ChatAudio({ file, time, fallback, author }) {
   const audioRef = useRef(null);
   const [failed, setFailed] = useState(false);
   const [playing, setPlaying] = useState(false);
@@ -84,6 +88,18 @@ export default function ChatAudio({ file, time, fallback }) {
         onError={() => setFailed(true)}
       />
 
+      {voice && author && (
+        /* Кто говорит — сразу видно, не читая шапку; микрофон отличает голос от файла */
+        <span className="audio__avatar" style={{ '--author': authorColor(author.id) }}>
+          {author.photo ? (
+            <img src={author.photo} alt="" />
+          ) : (
+            <span aria-hidden="true">{initial(author.name)}</span>
+          )}
+          <IoMic className="audio__avatar-mic" aria-hidden="true" />
+        </span>
+      )}
+
       <button
         className="audio__play"
         type="button"
@@ -103,10 +119,12 @@ export default function ChatAudio({ file, time, fallback }) {
             {toBars(file.waveform).map((height, index) => (
               <span
                 key={index}
-                className={index / BARS < progress ? 'is-played' : undefined}
+                className={`audio__bar${index / BARS < progress ? ' is-played' : ''}`}
                 style={{ '--h': height }}
               />
             ))}
+            {/* Ручка — там, где сейчас играет; едет вместе с временем */}
+            <span className="audio__knob" style={{ left: `${progress * 100}%` }} aria-hidden="true" />
           </button>
         ) : (
           <>

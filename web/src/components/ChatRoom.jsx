@@ -868,7 +868,12 @@ export default function ChatRoom({ clubId }) {
         key={message.id}
       >
         {!own && (
-          <span className="msg__avatar" aria-hidden="true">
+          // У голосового аватар уже внутри пузыря (с микрофоном) — внешний не дублируем,
+          // но место держим: иначе пузырь выпал бы из общего ряда
+          <span
+            className={`msg__avatar${message.file?.kind === 'voice' ? ' msg__avatar--hidden' : ''}`}
+            aria-hidden="true"
+          >
             {initial(message.author)}
           </span>
         )}
@@ -983,6 +988,12 @@ export default function ChatRoom({ clubId }) {
           {(message.file?.kind === 'audio' || message.file?.kind === 'voice') && (
             <ChatAudio
               file={message.file}
+              // Чей голос: у своего — свой снимок профиля, у чужого — буква его цвета
+              author={{
+                id: message.authorId,
+                name: message.author,
+                photo: own ? user?.photo : null,
+              }}
               fallback={<Unplayable file={message.file} what="Аудио" />}
               time={
                 !message.text && (

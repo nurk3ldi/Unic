@@ -184,6 +184,10 @@
   flex-direction: row-reverse;
 }
 
+.msg__avatar.msg__avatar--hidden {
+  visibility: hidden;
+}
+
 .msg__avatar {
   display: grid;
   place-items: center;
