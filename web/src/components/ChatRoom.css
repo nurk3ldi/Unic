@@ -4,6 +4,7 @@
    а чужой пузырь тоже белый — слились бы. multiply с серой подложкой делает
    белое серым (#F5F5F7), а рисунок оставляет как есть */
 .chat {
+  position: relative; /* под слой перетаскивания */
   display: flex;
   flex-direction: column;
   flex: 1;
@@ -19,6 +20,65 @@
   flex-direction: column;
   flex: 1;
   min-height: 0;
+}
+
+/* ── Перетаскивание файла ─────────────────────────────── */
+/* Слой поверх всего чата: белый материал, в центре — карточка с пунктирной
+   рамкой цвета бренда. Приходит и уходит растворением; клики не ловит — бросок
+   ловит сама обёртка чата */
+.chat__drop {
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+  display: grid;
+  place-items: center;
+  padding: var(--space-6);
+  background: var(--material);
+  -webkit-backdrop-filter: var(--material-blur);
+  backdrop-filter: var(--material-blur);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity var(--duration-fast) var(--ease-out);
+}
+
+.chat__drop--shown {
+  opacity: 1;
+}
+
+.chat__drop-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-2);
+  width: min(28rem, 100%);
+  padding: var(--space-8) var(--space-6);
+  border: 2px dashed var(--accent);
+  border-radius: var(--radius-card);
+  color: var(--accent);
+  text-align: center;
+  transform: scale(0.97);
+  transition: transform var(--duration-fast) var(--ease-out);
+}
+
+/* Карточка чуть подаётся навстречу — как будто принимает файл */
+.chat__drop--shown .chat__drop-card {
+  transform: none;
+}
+
+.chat__drop-card svg {
+  width: 2.5rem;
+  height: 2.5rem;
+}
+
+.chat__drop-title {
+  font-size: 1.0625rem;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.chat__drop-hint {
+  font-size: 0.875rem;
+  color: var(--text-secondary);
 }
 
 /* Читают её с конца, поэтому прокручивается только лента */

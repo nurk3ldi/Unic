@@ -15,6 +15,7 @@ import {
   IoImagesOutline,
   IoMicOutline,
   IoMusicalNotesOutline,
+  IoCloudUploadOutline,
   IoTrashOutline,
   IoVideocamOutline,
 } from 'react-icons/io5';
@@ -541,11 +542,7 @@ export default function ChatRoom({ clubId }) {
    * «Фото и видео»: снимок сжимается в браузере, видео уходит как есть. И то и
    * другое ждёт в поле ввода — к нему можно дописать подпись.
    */
-  async function pickMedia(event) {
-    const file = event.target.files?.[0];
-    event.target.value = ''; // тот же файл можно выбрать снова
-    if (!file) return;
-
+  async function pickMedia(file) {
     const ext = extensionOf(file.name);
     if (VIDEO_EXTENSIONS.includes(ext)) return pickVideo(file);
 
@@ -584,11 +581,7 @@ export default function ChatRoom({ clubId }) {
   }
 
   /** «Документ»: файл ждёт в поле ввода как есть, с именем и размером. */
-  function pickDocument(event) {
-    const file = event.target.files?.[0];
-    event.target.value = '';
-    if (!file) return;
-
+  function pickDocument(file) {
     if (!DOCUMENT_EXTENSIONS.includes(extensionOf(file.name))) {
       return setError('Такой файл отправить нельзя: подойдут PDF, Word, Excel, PowerPoint, TXT, ZIP');
     }
@@ -601,11 +594,7 @@ export default function ChatRoom({ clubId }) {
   }
 
   /** «Аудио»: файл ждёт в поле ввода, как документ; длительность браузер читает сам. */
-  async function pickAudio(event) {
-    const file = event.target.files?.[0];
-    event.target.value = '';
-    if (!file) return;
-
+  async function pickAudio(file) {
     if (!AUDIO_EXTENSIONS.includes(extensionOf(file.name))) {
       return setError('Такой файл отправить нельзя: подойдут MP3, M4A, AAC, WAV, OGG, FLAC');
     }
@@ -619,6 +608,80 @@ export default function ChatRoom({ clubId }) {
     setError('');
     inputRef.current?.focus();
   }
+
+  /** Из системного окна выбора: взять файл и очистить поле — тот же файл можно выбрать снова. */
+  const fromInput = (take) => (event) => {
+    const file = event.target.files?.[0];
+    event.target.value = '';
+    if (file) take(file);
+  };
+
+  /**
+   * Файл, пришедший не из меню «+», а перетаскиванием или вставкой (Ctrl+V):
+   * куда он пойдёт, решает тип — как если бы его выбрали нужным пунктом меню.
+   */
+  function takeFile(file) {
+    const ext = extensionOf(file.name);
+    if (VIDEO_EXTENSIONS.includes(ext)) return pickVideo(file);
+    if (AUDIO_EXTENSIONS.includes(ext)) return pickAudio(file);
+    if (DOCUMENT_EXTENSIONS.includes(ext)) return pickDocument(file);
+    // Снимок из буфера (скриншот) приходит без расширения, но с типом image/*
+    if (file.type.startsWith('image/') || IMAGE_EXTENSIONS.includes(ext)) return pickMedia(file);
+    setError('Такой файл отправить нельзя');
+  }
+
+  /** Несколько файлов — берём первый: в сообщении одно вложение. */
+  function takeFiles(files) {
+    if (!files.length || recorder.recording) return;
+    takeFile(files[0]);
+    if (files.length > 1) setError('Прикреплён первый файл — отправляйте их по одному');
+  }
+
+  // ── Перетаскивание ──
+  // Счётчик, а не флаг: dragenter/dragleave приходят и от вложенных элементов,
+  // и зона гасла бы, едва курсор переходит с пузыря на пузырь
+  const [dragging, setDragging] = useState(false);
+  const dragDepth = useRef(0);
+  const carriesFiles = (event) => event.dataTransfer?.types?.includes('Files');
+
+  const dropZone = {
+    onDragEnter(event) {
+      if (!carriesFiles(event)) return;
+      event.preventDefault();
+      dragDepth.current += 1;
+      setDragging(true);
+    },
+    onDragOver(event) {
+      // Без preventDefault браузер не разрешит бросить сюда и откроет файл сам
+      if (carriesFiles(event)) event.preventDefault();
+    },
+    onDragLeave(event) {
+      if (!carriesFiles(event)) return;
+      dragDepth.current = Math.max(0, dragDepth.current - 1);
+      if (!dragDepth.current) setDragging(false);
+    },
+    onDrop(event) {
+      if (!carriesFiles(event)) return;
+      event.preventDefault();
+      dragDepth.current = 0;
+      setDragging(false);
+      takeFiles([...event.dataTransfer.files]);
+    },
+  };
+
+  // ── Вставка (Ctrl+V) ──
+  // Слушаем документ, а не поле: скриншот вставляют, не целясь в поле ввода.
+  // Текст вставляется как обычно — перехватываем, только когда в буфере файл
+  useEffect(() => {
+    function onPaste(event) {
+      const files = [...(event.clipboardData?.files ?? [])];
+      if (!files.length) return;
+      event.preventDefault();
+      takeFiles(files);
+    }
+    document.addEventListener('paste', onPaste);
+    return () => document.removeEventListener('paste', onPaste);
+  });
 
   // ── Голосовое ──
   // Пустое поле — вместо «отправить» микрофон; появилось что отправлять — снова «отправить»
@@ -1050,7 +1113,16 @@ export default function ChatRoom({ clubId }) {
 
   return (
     // Обёртка несёт обои: они тянутся и под лентой, и под полем ввода
-    <div className="chat">
+    <div className="chat" {...dropZone}>
+      {/* Тащат файл — весь чат становится зоной: отпустить можно куда угодно */}
+      <div className={`chat__drop${dragging ? ' chat__drop--shown' : ''}`} aria-hidden="true">
+        <span className="chat__drop-card">
+          <IoCloudUploadOutline />
+          <span className="chat__drop-title">Отпустите, чтобы прикрепить</span>
+          <span className="chat__drop-hint">Фото, видео, аудио или документ</span>
+        </span>
+      </div>
+
       {/* Лента с кнопкой ↓ поверх: кнопка держится у нижнего края ленты */}
       <div className="chat__feed">
       <div className="chat__list" ref={listRef} onScroll={trackBottom}>
@@ -1225,15 +1297,27 @@ export default function ChatRoom({ clubId }) {
 
         <form className="chat__composer" onSubmit={send}>
           {/* Системный выбор файла: своё окно выбора платформа уже умеет */}
-          <input ref={fileRef} type="file" accept={MEDIA_ACCEPT} hidden onChange={pickMedia} />
+          <input
+            ref={fileRef}
+            type="file"
+            accept={MEDIA_ACCEPT}
+            hidden
+            onChange={fromInput(pickMedia)}
+          />
           <input
             ref={documentRef}
             type="file"
             accept={DOCUMENT_ACCEPT}
             hidden
-            onChange={pickDocument}
+            onChange={fromInput(pickDocument)}
           />
-          <input ref={audioRef} type="file" accept={AUDIO_ACCEPT} hidden onChange={pickAudio} />
+          <input
+            ref={audioRef}
+            type="file"
+            accept={AUDIO_ACCEPT}
+            hidden
+            onChange={fromInput(pickAudio)}
+          />
 
           {/* Идёт запись: вместо вложений — «выбросить», вместо поля — время и уровень */}
           {recorder.recording ? (
