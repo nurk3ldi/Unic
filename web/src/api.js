@@ -62,7 +62,12 @@ export const api = {
     request(`/clubs/${id}/events`, { method: 'POST', body: payload }),
   deleteClubEvent: (id, eventId) =>
     request(`/clubs/${id}/events/${eventId}`, { method: 'DELETE' }),
-  clubMessages: (id) => request(`/clubs/${id}/messages`),
+  // before — id самого старого из показанных: следующая страница истории
+  clubMessages: (id, before) =>
+    request(`/clubs/${id}/messages${before ? `?before=${before}` : ''}`),
+  markChatRead: (id, messageId) =>
+    request(`/clubs/${id}/read`, { method: 'PUT', body: { messageId } }),
+  chatsUnread: () => request('/chats/unread'),
   sendClubMessage: (id, payload) =>
     request(`/clubs/${id}/messages`, { method: 'POST', body: payload }),
   deleteClubMessage: (id, messageId) =>

@@ -1,9 +1,10 @@
-import { useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { Fragment, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import {
   IoAdd,
   IoArrowUp,
   IoArrowUndoOutline,
   IoBanOutline,
+  IoArrowDown,
   IoChevronDown,
   IoClose,
   IoCopyOutline,
@@ -222,6 +223,15 @@ export default function ChatRoom({ clubId }) {
   const shownAttachment = useRef(null);
 
   const [messages, setMessages] = useState([]);
+  const [hasMore, setHasMore] = useState(false); // раньше показанного есть ещё история
+  const [loadingOlder, setLoadingOlder] = useState(false);
+  // До какого момента был прочитан чат, когда его открыли: по нему — черта «Новые».
+  // Берётся один раз: пока чат открыт, черта не ползёт вслед за чтением
+  const [readMark, setReadMark] = useState(null);
+  const [showDown, setShowDown] = useState(false); // ушли читать историю — видна ↓
+  // До какого сообщения человек видел конец ленты (время). Всё чужое новее —
+  // «ниже, не прочитано»: это число и стоит на кнопке ↓, как в Telegram
+  const [seenAt, setSeenAt] = useState(null);
   // Можно ли убирать чужие сообщения: университет, админ, лидер этого клуба (решает сервер)
   const [canModerate, setCanModerate] = useState(false);
   const [attaching, setAttaching] = useState(false);
@@ -242,15 +252,34 @@ export default function ChatRoom({ clubId }) {
 
   useEffect(() => {
     let alive = true;
+    let first = true;
     setLoading(true);
 
     async function load() {
       if (document.hidden) return;
       try {
-        const { messages, canModerate } = await api.clubMessages(clubId);
+        const data = await api.clubMessages(clubId);
         if (alive) {
-          setMessages(messages);
-          setCanModerate(Boolean(canModerate));
+          // Опрос приносит последние 50. Историю, подгруженную выше, не выбрасываем:
+          // оставляем всё, что старше самого старого из пришедших
+          setMessages((was) => {
+            const oldest = data.messages[0];
+            if (!oldest) return data.messages;
+            const older = was.filter(
+              (item) => new Date(item.createdAt) < new Date(oldest.createdAt),
+            );
+            return [...older, ...data.messages];
+          });
+          setCanModerate(Boolean(data.canModerate));
+          // Первый ответ говорит, есть ли история раньше и до какого места прочитано
+          // Updater выполняется позже этой строки — «первый ли ответ» фиксируем сейчас,
+          // иначе к его запуску first уже false и история считалась бы исчерпанной
+          if (first) {
+            setHasMore(data.hasMore);
+            setReadMark(data.lastReadAt);
+            setSeenAt(data.lastReadAt);
+          }
+          first = false;
           setError('');
         }
       } catch (failure) {
@@ -350,17 +379,116 @@ export default function ChatRoom({ clubId }) {
   // сообщение, и только если человек не ушёл читать выше
   const atBottom = useRef(true);
   const lastId = messages.at(-1)?.id;
+  const unreadLineRef = useRef(null);
+  const firstScroll = useRef(true);
+  const markedId = useRef(null); // до какого сообщения уже отмечено «прочитано»
+  const olderFix = useRef(null); // высота ленты до подгрузки истории — чтобы не прыгнуть
+
+  // Первое непрочитанное — чужое, не удалённое, новее отметки на момент открытия
+  const firstUnreadId = useMemo(() => {
+    if (!readMark) return null;
+    const since = new Date(readMark);
+    return (
+      messages.find(
+        (item) =>
+          item.authorId !== user?.id && !item.deleted && new Date(item.createdAt) > since,
+      )?.id ?? null
+    );
+  }, [messages, readMark, user?.id]);
+
+  /** Отметить прочитанным всё до последнего — только когда конец и правда виден. */
+  function markRead() {
+    const last = messages.at(-1);
+    if (!last || !atBottom.current || document.hidden || markedId.current === last.id) return;
+    markedId.current = last.id;
+    setSeenAt(last.createdAt);
+    api.markChatRead(clubId, last.id).catch(() => {
+      markedId.current = null; // не вышло — попробуем при следующем случае
+    });
+  }
 
   useEffect(() => {
     const list = listRef.current;
-    if (list && atBottom.current) list.scrollTop = list.scrollHeight;
+    if (!list || !lastId) return;
+
+    // Открыли чат с непрочитанным — встаём на черту «Новые сообщения», а не в конец
+    if (firstScroll.current) {
+      firstScroll.current = false;
+      if (unreadLineRef.current) {
+        unreadLineRef.current.scrollIntoView({ block: 'start' });
+        atBottom.current = list.scrollHeight - list.scrollTop - list.clientHeight < 48;
+        setShowDown(!atBottom.current);
+        if (!atBottom.current) return;
+      }
+    }
+
+    if (atBottom.current) {
+      list.scrollTop = list.scrollHeight;
+      markRead();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [lastId]);
+
+  // Сколько чужого ниже непрочитано: новее того, что человек видел у конца
+  const newBelow = useMemo(() => {
+    if (!seenAt) return 0;
+    const since = new Date(seenAt);
+    return messages.filter(
+      (item) => item.authorId !== user?.id && !item.deleted && new Date(item.createdAt) > since,
+    ).length;
+  }, [messages, seenAt, user?.id]);
+
+  // Подгрузили историю сверху — возвращаем взгляд на то же место: лента выросла
+  // вверх ровно на высоту пришедшего
+  useLayoutEffect(() => {
+    const list = listRef.current;
+    if (!list || !olderFix.current) return;
+    list.scrollTop = list.scrollHeight - olderFix.current.height + olderFix.current.top;
+    olderFix.current = null;
+  }, [messages]);
+
+  /** Следующая страница истории — когда доскроллили почти до верха. */
+  async function loadOlder() {
+    if (loadingOlder || !hasMore || !messages.length) return;
+    const list = listRef.current;
+    setLoadingOlder(true);
+    try {
+      const data = await api.clubMessages(clubId, messages[0].id);
+      olderFix.current = { height: list.scrollHeight, top: list.scrollTop };
+      setMessages((was) => {
+        const known = new Set(was.map((item) => item.id));
+        return [...data.messages.filter((item) => !known.has(item.id)), ...was];
+      });
+      setHasMore(data.hasMore);
+    } catch (failure) {
+      setError(failure.message);
+    } finally {
+      setLoadingOlder(false);
+    }
+  }
 
   function trackBottom(event) {
     const list = event.currentTarget;
     // Запас в полстроки: «почти у конца» — тоже у конца
     atBottom.current = list.scrollHeight - list.scrollTop - list.clientHeight < 48;
+    setShowDown(!atBottom.current);
+    if (atBottom.current) markRead();
+    // Почти у верха — подтягиваем историю заранее, до того как упрутся
+    if (list.scrollTop < 300) loadOlder();
   }
+
+  /** ↓ — к концу переписки, плавно: видно, что проехали, а не перескочили. */
+  function toBottom() {
+    const list = listRef.current;
+    list?.scrollTo({ top: list.scrollHeight, behavior: 'smooth' });
+  }
+
+  // Вкладку вернули — если конец виден, прочитанное отмечаем сразу
+  useEffect(() => {
+    const onVisible = () => !document.hidden && markRead();
+    document.addEventListener('visibilitychange', onVisible);
+    return () => document.removeEventListener('visibilitychange', onVisible);
+  });
 
   if (photo) shownPhoto.current = photo;
   if (attachment) shownAttachment.current = attachment;
@@ -479,6 +607,7 @@ export default function ChatRoom({ clubId }) {
       // Своё сообщение показываем сразу, не дожидаясь следующего опроса,
       // и к нему ведём всегда — даже если перед этим читали историю
       atBottom.current = true;
+      setShowDown(false);
       setMessages((was) => [...was, message]);
       setText('');
       setReplying(null);
@@ -494,10 +623,311 @@ export default function ChatRoom({ clubId }) {
     }
   }
 
+  /** Одна реплика ленты: пузырь, её шапка, меню. Удалённая — тихой строкой. */
+  function renderMessage(message) {
+    const own = message.authorId === user?.id;
+
+    // Удалённое — тихой строкой на своём месте: разговор не рвётся,
+    // и видно, кто убрал. Меню у неё нет — делать с ней нечего
+    if (message.deleted) {
+      return (
+        <div
+          className={`msg${own ? ' msg--own' : ''}`}
+          id={`msg-${message.id}`}
+          key={message.id}
+        >
+          {!own && (
+            <span className="msg__avatar" aria-hidden="true">
+              {initial(message.author)}
+            </span>
+          )}
+          <div className="msg__bubble msg__bubble--deleted">
+            <p className="msg__deleted">
+              <IoBanOutline aria-hidden="true" />
+              <span>
+                {!own && (
+                  <span
+                    className="msg__deleted-author"
+                    style={{ color: authorColor(message.authorId) }}
+                  >
+                    {shortName(message.author)}:{' '}
+                  </span>
+                )}
+                {deletedText(message.deleted, own)}
+              </span>
+              <time className="msg__time" dateTime={message.createdAt}>
+                {messageTime.format(new Date(message.createdAt))}
+              </time>
+            </p>
+          </div>
+        </div>
+      );
+    }
+
+    // У чужой реплики есть шапка — кнопка встаёт в её конец, как в мессенджерах.
+    // У своей шапки нет, и кнопка висит в углу пузыря
+    const more = (
+      /* Полоса раскрывается по ширине и отодвигает соседа —
+         в покое кнопка не занимает места (тот же приём, что у «Отмены») */
+      <span className="reveal-x msg__more-slot">
+        <span className="reveal-x__clip">
+          <button
+            className="msg__more"
+            type="button"
+            aria-label="Действия с сообщением"
+            aria-expanded={openMenu === message.id}
+            onClick={(event) => {
+              event.stopPropagation(); // иначе тот же клик сразу закроет меню
+
+              // Меряем в момент открытия: сколько ленты осталось под кнопкой
+              const rem = parseFloat(getComputedStyle(document.documentElement).fontSize);
+              const below =
+                listRef.current.getBoundingClientRect().bottom -
+                event.currentTarget.getBoundingClientRect().bottom;
+              setMenuUp(below < MENU_ROOM_REM * rem);
+
+              setOpenMenu((current) => (current === message.id ? null : message.id));
+            }}
+          >
+            <IoChevronDown aria-hidden="true" />
+          </button>
+        </span>
+      </span>
+    );
+
+    // Меню растёт из своей кнопки (§4.3): у чужой реплики кнопка в шапке пузыря,
+    // у своей — снаружи, слева от него; меню встаёт туда же, где кнопка
+    const menu = openMenu === message.id && (
+      <div
+        className={`row-menu row-menu--msg${menuUp ? ' row-menu--above' : ''}`}
+        role="menu"
+      >
+        {message.text && (
+          <button
+            className="row-menu__item"
+            type="button"
+            role="menuitem"
+            onClick={(event) => {
+              event.stopPropagation();
+              copy(message);
+            }}
+          >
+            <IoCopyOutline aria-hidden="true" />
+            {copied ? 'Скопировано' : 'Копировать'}
+          </button>
+        )}
+
+        {message.file && (
+          /* У видео и документа — «Скачать», как было в системном «⋮» плеера */
+          <a
+            className="row-menu__item"
+            role="menuitem"
+            href={message.file.url}
+            download={message.file.name}
+            onClick={() => setOpenMenu(null)}
+          >
+            <IoDownloadOutline aria-hidden="true" />
+            Скачать
+          </a>
+        )}
+
+        <button
+          className="row-menu__item"
+          type="button"
+          role="menuitem"
+          onClick={() => {
+            setReplying(message);
+            setOpenMenu(null);
+            inputRef.current?.focus();
+          }}
+        >
+          <IoArrowUndoOutline aria-hidden="true" />
+          Ответить
+        </button>
+
+        {(own || canModerate) && (
+          <button
+            className="row-menu__item row-menu__item--danger"
+            type="button"
+            role="menuitem"
+            onClick={() => removeMessage(message)}
+          >
+            <IoTrashOutline aria-hidden="true" />
+            Удалить
+          </button>
+        )}
+      </div>
+    );
+
+    return (
+      <div
+        className={`msg${own ? ' msg--own' : ''}`}
+        id={`msg-${message.id}`}
+        key={message.id}
+      >
+        {!own && (
+          <span className="msg__avatar" aria-hidden="true">
+            {initial(message.author)}
+          </span>
+        )}
+
+        <div
+          className={`msg__bubble${
+            message.photo || message.file?.kind === 'video' || message.file?.kind === 'image'
+              ? ' msg__bubble--photo'
+              : ''
+          }${message.file?.kind === 'document' ? ' msg__bubble--file' : ''}`}
+        >
+          {!own && menu}
+
+          {!own && (
+            /* Ник называет человека, номер рядом — по нему его находят */
+            <span className="msg__head">
+              <span
+                className="msg__author"
+                style={{ color: authorColor(message.authorId) }}
+              >
+                {message.username ? `@${message.username}` : shortName(message.author)}
+              </span>
+
+              {message.phone && (
+                <span className="msg__phone">{formatPhone(message.phone)}</span>
+              )}
+
+              {more}
+            </span>
+          )}
+
+          {/* Время плывёт вправо и садится в конец последней строки —
+              короткая реплика не занимает из-за него вторую */}
+          {message.replyTo && (
+            /* Цитата ведёт к оригиналу: разговор не теряет нить */
+            <button
+              className="msg__quote"
+              type="button"
+              /* Цвет ставится на всю цитату: полоса слева берёт его из currentColor */
+              style={{ color: own ? undefined : authorColor(message.replyTo.authorId) }}
+              onClick={() =>
+                document
+                  .getElementById(`msg-${message.replyTo.id}`)
+                  ?.scrollIntoView({ block: 'center', behavior: 'smooth' })
+              }
+            >
+              <span className="msg__quote-author">
+                {message.replyTo.username
+                  ? `@${message.replyTo.username}`
+                  : shortName(message.replyTo.author)}
+              </span>
+              <span className="msg__quote-text">{messageLabel(message.replyTo)}</span>
+            </button>
+          )}
+
+          {message.photo && (
+            /* Место под снимок известно заранее — лента не прыгает, пока он грузится.
+               Целиком он открывается тут же, в окне поверх страницы */
+            <button
+              className="msg__photo"
+              type="button"
+              aria-label="Открыть фото"
+              style={{ aspectRatio: `${message.photo.width} / ${message.photo.height}` }}
+              onClick={() => setViewing(message.photo)}
+            >
+              <img src={message.photo.url} alt="" loading="lazy" />
+
+              {/* Без подписи времени негде сесть — оно ложится на сам снимок */}
+              {!message.text && (
+                <time className="msg__photo-time" dateTime={message.createdAt}>
+                  {messageTime.format(new Date(message.createdAt))}
+                </time>
+              )}
+            </button>
+          )}
+
+          {message.file?.kind === 'video' && (
+            <ChatVideo
+              file={message.file}
+              onOpen={setViewing}
+              time={
+                // Внизу у видео свои кнопки — время садится в верхний угол
+                !message.text && (
+                  <time className="msg__photo-time" dateTime={message.createdAt}>
+                    {messageTime.format(new Date(message.createdAt))}
+                  </time>
+                )
+              }
+            />
+          )}
+
+          {message.file?.kind === 'image' && (
+            <ChatImage
+              file={message.file}
+              onOpen={setViewing}
+              time={
+                !message.text && (
+                  <time className="msg__photo-time" dateTime={message.createdAt}>
+                    {messageTime.format(new Date(message.createdAt))}
+                  </time>
+                )
+              }
+            />
+          )}
+
+          {message.file?.kind === 'document' && (
+            /* Документ — карточкой: что это, сколько весит; нажатие скачивает */
+            <a className="msg__file" href={message.file.url} download={message.file.name}>
+              <span className="msg__file-icon" aria-hidden="true">
+                <IoDocumentTextOutline />
+              </span>
+              <span className="msg__file-body">
+                <span className="msg__file-name">{message.file.name}</span>
+                <span className="msg__file-meta">
+                  {extensionOf(message.file.name).toUpperCase()} ·{' '}
+                  {formatSize(message.file.size)}
+                  {!message.text && (
+                    <time className="msg__file-time" dateTime={message.createdAt}>
+                      {messageTime.format(new Date(message.createdAt))}
+                    </time>
+                  )}
+                </span>
+              </span>
+            </a>
+          )}
+
+          {message.text && (
+            <p className="msg__text">
+              {withLinks(message.text)}
+              <time className="msg__time" dateTime={message.createdAt}>
+                {messageTime.format(new Date(message.createdAt))}
+              </time>
+            </p>
+          )}
+        </div>
+
+        {/* У своей реплики шапки нет, а внутри пузыря кнопке мешает время —
+            поэтому она встаёт рядом, со свободной стороны, и меню вместе с ней */}
+        {own && (
+          <span className="msg__more-box">
+            {more}
+            {menu}
+          </span>
+        )}
+      </div>
+    );
+  }
+
   return (
     // Обёртка несёт обои: они тянутся и под лентой, и под полем ввода
     <div className="chat">
+      {/* Лента с кнопкой ↓ поверх: кнопка держится у нижнего края ленты */}
+      <div className="chat__feed">
       <div className="chat__list" ref={listRef} onScroll={trackBottom}>
+        {/* Сверху — либо подгрузка истории, либо честное «дальше ничего нет» */}
+        {!loading && messages.length > 0 && (
+          <p className="chat__history">
+            {loadingOlder ? 'Загружаем историю…' : hasMore ? '' : 'Начало переписки'}
+          </p>
+        )}
+
         {loading ? (
           <p className="chat__empty">Загружаем…</p>
         ) : messages.length === 0 ? (
@@ -511,299 +941,34 @@ export default function ChatRoom({ clubId }) {
                 {dayLabel(day.at)}
               </time>
 
-              {day.messages.map((message) => {
-                const own = message.authorId === user?.id;
-
-                // Удалённое — тихой строкой на своём месте: разговор не рвётся,
-                // и видно, кто убрал. Меню у неё нет — делать с ней нечего
-                if (message.deleted) {
-                  return (
-                    <div
-                      className={`msg${own ? ' msg--own' : ''}`}
-                      id={`msg-${message.id}`}
-                      key={message.id}
-                    >
-                      {!own && (
-                        <span className="msg__avatar" aria-hidden="true">
-                          {initial(message.author)}
-                        </span>
-                      )}
-                      <div className="msg__bubble msg__bubble--deleted">
-                        <p className="msg__deleted">
-                          <IoBanOutline aria-hidden="true" />
-                          <span>
-                            {!own && (
-                              <span
-                                className="msg__deleted-author"
-                                style={{ color: authorColor(message.authorId) }}
-                              >
-                                {shortName(message.author)}:{' '}
-                              </span>
-                            )}
-                            {deletedText(message.deleted, own)}
-                          </span>
-                          <time className="msg__time" dateTime={message.createdAt}>
-                            {messageTime.format(new Date(message.createdAt))}
-                          </time>
-                        </p>
-                      </div>
+              {day.messages.map((message) => (
+                <Fragment key={message.id}>
+                  {/* Черта «Новые сообщения» — перед первым непрочитанным: с неё
+                      и продолжают читать. Стоит, пока открыт этот чат */}
+                  {message.id === firstUnreadId && (
+                    <div className="chat__unread-line" ref={unreadLineRef}>
+                      <span>Новые сообщения</span>
                     </div>
-                  );
-                }
-
-                // У чужой реплики есть шапка — кнопка встаёт в её конец, как в мессенджерах.
-                // У своей шапки нет, и кнопка висит в углу пузыря
-                const more = (
-                  /* Полоса раскрывается по ширине и отодвигает соседа —
-                     в покое кнопка не занимает места (тот же приём, что у «Отмены») */
-                  <span className="reveal-x msg__more-slot">
-                    <span className="reveal-x__clip">
-                      <button
-                        className="msg__more"
-                        type="button"
-                        aria-label="Действия с сообщением"
-                        aria-expanded={openMenu === message.id}
-                        onClick={(event) => {
-                          event.stopPropagation(); // иначе тот же клик сразу закроет меню
-
-                          // Меряем в момент открытия: сколько ленты осталось под кнопкой
-                          const rem = parseFloat(getComputedStyle(document.documentElement).fontSize);
-                          const below =
-                            listRef.current.getBoundingClientRect().bottom -
-                            event.currentTarget.getBoundingClientRect().bottom;
-                          setMenuUp(below < MENU_ROOM_REM * rem);
-
-                          setOpenMenu((current) => (current === message.id ? null : message.id));
-                        }}
-                      >
-                        <IoChevronDown aria-hidden="true" />
-                      </button>
-                    </span>
-                  </span>
-                );
-
-                // Меню растёт из своей кнопки (§4.3): у чужой реплики кнопка в шапке пузыря,
-                // у своей — снаружи, слева от него; меню встаёт туда же, где кнопка
-                const menu = openMenu === message.id && (
-                  <div
-                    className={`row-menu row-menu--msg${menuUp ? ' row-menu--above' : ''}`}
-                    role="menu"
-                  >
-                    {message.text && (
-                      <button
-                        className="row-menu__item"
-                        type="button"
-                        role="menuitem"
-                        onClick={(event) => {
-                          event.stopPropagation();
-                          copy(message);
-                        }}
-                      >
-                        <IoCopyOutline aria-hidden="true" />
-                        {copied ? 'Скопировано' : 'Копировать'}
-                      </button>
-                    )}
-
-                    {message.file && (
-                      /* У видео и документа — «Скачать», как было в системном «⋮» плеера */
-                      <a
-                        className="row-menu__item"
-                        role="menuitem"
-                        href={message.file.url}
-                        download={message.file.name}
-                        onClick={() => setOpenMenu(null)}
-                      >
-                        <IoDownloadOutline aria-hidden="true" />
-                        Скачать
-                      </a>
-                    )}
-
-                    <button
-                      className="row-menu__item"
-                      type="button"
-                      role="menuitem"
-                      onClick={() => {
-                        setReplying(message);
-                        setOpenMenu(null);
-                        inputRef.current?.focus();
-                      }}
-                    >
-                      <IoArrowUndoOutline aria-hidden="true" />
-                      Ответить
-                    </button>
-
-                    {(own || canModerate) && (
-                      <button
-                        className="row-menu__item row-menu__item--danger"
-                        type="button"
-                        role="menuitem"
-                        onClick={() => removeMessage(message)}
-                      >
-                        <IoTrashOutline aria-hidden="true" />
-                        Удалить
-                      </button>
-                    )}
-                  </div>
-                );
-
-                return (
-                  <div
-                    className={`msg${own ? ' msg--own' : ''}`}
-                    id={`msg-${message.id}`}
-                    key={message.id}
-                  >
-                    {!own && (
-                      <span className="msg__avatar" aria-hidden="true">
-                        {initial(message.author)}
-                      </span>
-                    )}
-
-                    <div
-                      className={`msg__bubble${
-                        message.photo || message.file?.kind === 'video' || message.file?.kind === 'image'
-                          ? ' msg__bubble--photo'
-                          : ''
-                      }${message.file?.kind === 'document' ? ' msg__bubble--file' : ''}`}
-                    >
-                      {!own && menu}
-
-                      {!own && (
-                        /* Ник называет человека, номер рядом — по нему его находят */
-                        <span className="msg__head">
-                          <span
-                            className="msg__author"
-                            style={{ color: authorColor(message.authorId) }}
-                          >
-                            {message.username ? `@${message.username}` : shortName(message.author)}
-                          </span>
-
-                          {message.phone && (
-                            <span className="msg__phone">{formatPhone(message.phone)}</span>
-                          )}
-
-                          {more}
-                        </span>
-                      )}
-
-                      {/* Время плывёт вправо и садится в конец последней строки —
-                          короткая реплика не занимает из-за него вторую */}
-                      {message.replyTo && (
-                        /* Цитата ведёт к оригиналу: разговор не теряет нить */
-                        <button
-                          className="msg__quote"
-                          type="button"
-                          /* Цвет ставится на всю цитату: полоса слева берёт его из currentColor */
-                          style={{ color: own ? undefined : authorColor(message.replyTo.authorId) }}
-                          onClick={() =>
-                            document
-                              .getElementById(`msg-${message.replyTo.id}`)
-                              ?.scrollIntoView({ block: 'center', behavior: 'smooth' })
-                          }
-                        >
-                          <span className="msg__quote-author">
-                            {message.replyTo.username
-                              ? `@${message.replyTo.username}`
-                              : shortName(message.replyTo.author)}
-                          </span>
-                          <span className="msg__quote-text">{messageLabel(message.replyTo)}</span>
-                        </button>
-                      )}
-
-                      {message.photo && (
-                        /* Место под снимок известно заранее — лента не прыгает, пока он грузится.
-                           Целиком он открывается тут же, в окне поверх страницы */
-                        <button
-                          className="msg__photo"
-                          type="button"
-                          aria-label="Открыть фото"
-                          style={{ aspectRatio: `${message.photo.width} / ${message.photo.height}` }}
-                          onClick={() => setViewing(message.photo)}
-                        >
-                          <img src={message.photo.url} alt="" loading="lazy" />
-
-                          {/* Без подписи времени негде сесть — оно ложится на сам снимок */}
-                          {!message.text && (
-                            <time className="msg__photo-time" dateTime={message.createdAt}>
-                              {messageTime.format(new Date(message.createdAt))}
-                            </time>
-                          )}
-                        </button>
-                      )}
-
-                      {message.file?.kind === 'video' && (
-                        <ChatVideo
-                          file={message.file}
-                          onOpen={setViewing}
-                          time={
-                            // Внизу у видео свои кнопки — время садится в верхний угол
-                            !message.text && (
-                              <time className="msg__photo-time" dateTime={message.createdAt}>
-                                {messageTime.format(new Date(message.createdAt))}
-                              </time>
-                            )
-                          }
-                        />
-                      )}
-
-                      {message.file?.kind === 'image' && (
-                        <ChatImage
-                          file={message.file}
-                          onOpen={setViewing}
-                          time={
-                            !message.text && (
-                              <time className="msg__photo-time" dateTime={message.createdAt}>
-                                {messageTime.format(new Date(message.createdAt))}
-                              </time>
-                            )
-                          }
-                        />
-                      )}
-
-                      {message.file?.kind === 'document' && (
-                        /* Документ — карточкой: что это, сколько весит; нажатие скачивает */
-                        <a className="msg__file" href={message.file.url} download={message.file.name}>
-                          <span className="msg__file-icon" aria-hidden="true">
-                            <IoDocumentTextOutline />
-                          </span>
-                          <span className="msg__file-body">
-                            <span className="msg__file-name">{message.file.name}</span>
-                            <span className="msg__file-meta">
-                              {extensionOf(message.file.name).toUpperCase()} ·{' '}
-                              {formatSize(message.file.size)}
-                              {!message.text && (
-                                <time className="msg__file-time" dateTime={message.createdAt}>
-                                  {messageTime.format(new Date(message.createdAt))}
-                                </time>
-                              )}
-                            </span>
-                          </span>
-                        </a>
-                      )}
-
-                      {message.text && (
-                        <p className="msg__text">
-                          {withLinks(message.text)}
-                          <time className="msg__time" dateTime={message.createdAt}>
-                            {messageTime.format(new Date(message.createdAt))}
-                          </time>
-                        </p>
-                      )}
-                    </div>
-
-                    {/* У своей реплики шапки нет, а внутри пузыря кнопке мешает время —
-                        поэтому она встаёт рядом, со свободной стороны, и меню вместе с ней */}
-                    {own && (
-                      <span className="msg__more-box">
-                        {more}
-                        {menu}
-                      </span>
-                    )}
-                  </div>
-                );
-              })}
+                  )}
+                  {renderMessage(message)}
+                </Fragment>
+              ))}
             </section>
           ))
         )}
+      </div>
+
+        {/* ↓ — только когда ушли читать выше. Число — сколько пришло за это время */}
+        <button
+          className={`chat__down${showDown ? ' chat__down--shown' : ''}`}
+          type="button"
+          aria-label={newBelow ? `К новым сообщениям: ${newBelow}` : 'К последним сообщениям'}
+          tabIndex={showDown ? undefined : -1}
+          onClick={toBottom}
+        >
+          <IoArrowDown aria-hidden="true" />
+          {newBelow > 0 && <span className="chat__down-badge">{newBelow}</span>}
+        </button>
       </div>
 
       {error && (

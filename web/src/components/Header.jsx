@@ -1,4 +1,6 @@
-import { NavLink } from 'react-router-dom';
+import { useEffect, useState } from 'react';
+import { NavLink, useLocation } from 'react-router-dom';
+import { api } from '../api.js';
 import { IoPersonCircleOutline } from 'react-icons/io5';
 import { useAuth } from '../AuthContext.jsx';
 import logo from '../assets/logo.png';
@@ -8,6 +10,8 @@ import './Header.css';
 /** Верхняя панель: полупрозрачный слой во всю ширину, контент течёт под ним. */
 export default function Header() {
   const { user } = useAuth();
+  const location = useLocation();
+  const unread = useUnread(location.pathname);
 
   return (
     <header className="header">
@@ -26,6 +30,12 @@ export default function Header() {
 
           <NavLink className="header__link" to="/chats" viewTransition>
             Чаты
+            {/* Сколько непрочитанного во всех чатах — чтобы знать, что там ждут */}
+            {unread > 0 && (
+              <span className="header__badge" aria-label={`Непрочитанных: ${unread}`}>
+                {unread > 99 ? '99+' : unread}
+              </span>
+            )}
           </NavLink>
 
           <NavLink className="header__link" to="/events" viewTransition>
@@ -50,4 +60,37 @@ export default function Header() {
       </div>
     </header>
   );
+}
+
+// Как часто шапка спрашивает число непрочитанного: чаще списка чатов не нужно
+const UNREAD_POLL_MS = 10_000;
+
+/**
+ * Сколько непрочитанного во всех чатах. Спрашивает отдельную лёгкую ручку
+ * (одно число, без списка), раз в 10 секунд, при переходе между экранами и
+ * когда вкладку вернули. Скрытая вкладка сервер не будит.
+ */
+function useUnread(pathname) {
+  const [total, setTotal] = useState(0);
+
+  useEffect(() => {
+    let alive = true;
+    const load = () =>
+      !document.hidden &&
+      api
+        .chatsUnread()
+        .then(({ total }) => alive && setTotal(total))
+        .catch(() => {});
+
+    load();
+    const timer = setInterval(load, UNREAD_POLL_MS);
+    document.addEventListener('visibilitychange', load);
+    return () => {
+      alive = false;
+      clearInterval(timer);
+      document.removeEventListener('visibilitychange', load);
+    };
+  }, [pathname]);
+
+  return total;
 }

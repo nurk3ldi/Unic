@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { pool, query } from '../db.js';
 import { requireAuth, requireRole } from '../middleware/auth.js';
+import { readSince } from '../reads.js';
 import {
   TooLarge,
   classify,
@@ -542,18 +543,35 @@ router.get('/:id/messages', requireAuth, async (req, res) => {
 
   const limit = Math.min(Number(req.query.limit) || MESSAGE_PAGE, MESSAGE_PAGE);
 
+  // before — id самого старого из уже показанных: следующая страница — то, что раньше него
+  const before = req.query.before ? String(req.query.before) : null;
+  if (before && !UUID_RE.test(before)) {
+    return res.status(400).json({ error: 'Некорректная ссылка на сообщение' });
+  }
+
   const { rows } = await query(
     `select ${MESSAGE_FIELDS}
        from club_messages m
        ${MESSAGE_JOINS}
       where m.club_id = $1
+        and ($3::uuid is null
+             or m.created_at < (select created_at from club_messages where id = $3))
       order by m.created_at desc
       limit $2`,
-    [req.params.id, limit],
+    [req.params.id, limit, before],
   );
+
+  // До какого момента прочитано — по нему лента ставит черту «Новые сообщения»
+  const { rows: read } = await query(`select ${readSince('$1', '$2')} as at`, [
+    req.user.id,
+    req.params.id,
+  ]);
 
   res.json({
     messages: rows.reverse().map(publicMessage),
+    // Полная страница — значит, раньше может быть ещё
+    hasMore: rows.length === limit,
+    lastReadAt: read[0]?.at ?? null,
     // Убирать чужие сообщения: университет, админ и лидер этого клуба
     canModerate: Boolean(await moderatorRole(req.params.id, req.user)),
   });
@@ -870,6 +888,38 @@ router.get('/:id/media', requireAuth, async (req, res) => {
       })),
     ),
   });
+});
+
+/**
+ * Отметка «прочитано до»: лента ставит её, когда человек видит конец переписки.
+ * Приходит id последнего показанного сообщения (не «сейчас»): то, что пришло в эту
+ * же секунду, но ещё не показано, не должно стать прочитанным. Время берём из базы —
+ * в JSON оно с миллисекундами, а в базе с микросекундами, и последнее сообщение
+ * навсегда осталось бы «новее» отметки. Назад отметка не двигается.
+ */
+router.put('/:id/read', requireAuth, async (req, res) => {
+  const { id } = req.params;
+  if (!(await findClub(id))) return res.status(404).json({ error: 'Клуб не найден' });
+  if (!(await canReadChat(id, req.user))) {
+    return res.status(403).json({ error: 'Чат доступен только участникам клуба' });
+  }
+
+  const messageId = String(req.body?.messageId ?? '');
+  if (!UUID_RE.test(messageId)) {
+    return res.status(400).json({ error: 'Некорректная ссылка на сообщение' });
+  }
+
+  const { rows } = await query(
+    `insert into chat_reads (user_id, club_id, read_at)
+     select $1, $2, m.created_at from club_messages m where m.id = $3 and m.club_id = $2
+     on conflict (user_id, club_id)
+       do update set read_at = greatest(chat_reads.read_at, excluded.read_at)
+     returning read_at`,
+    [req.user.id, id, messageId],
+  );
+  if (!rows[0]) return res.status(404).json({ error: 'Сообщение не найдено' });
+
+  res.json({ ok: true });
 });
 
 /**

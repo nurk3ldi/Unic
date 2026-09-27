@@ -170,3 +170,12 @@ alter table club_messages add column if not exists deleted_at timestamptz;
 alter table club_messages add column if not exists deleted_by uuid references users (id) on delete set null;
 alter table club_messages add column if not exists deleted_as text
   check (deleted_as in ('author', 'lead', 'university', 'admin'));
+
+-- До какого момента человек прочитал чат клуба. Одна отметка на чат: всё,
+-- что новее, — непрочитанное (счётчики в списке чатов и в шапке)
+create table if not exists chat_reads (
+  user_id uuid not null references users (id) on delete cascade,
+  club_id uuid not null references clubs (id) on delete cascade,
+  read_at timestamptz not null default now(),
+  primary key (user_id, club_id)
+);

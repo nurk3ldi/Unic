@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { query } from '../db.js';
 import { requireAuth } from '../middleware/auth.js';
+import { unreadCount } from '../reads.js';
 
 const router = Router();
 
@@ -21,6 +22,7 @@ router.get('/', requireAuth, async (req, res) => {
   const { rows } = await query(
     `select c.id, c.name, c.photo_url, m.id as last_id, m.author_id, m.body, m.has_photo,
             m.file_kind, m.file_name, m.deleted, m.created_at, u.full_name,
+            ${unreadCount('$1', 'c.id')} as unread,
             exists (
               select 1 from chat_mutes mu where mu.club_id = c.id and mu.user_id = $1
             ) as muted
@@ -52,6 +54,8 @@ router.get('/', requireAuth, async (req, res) => {
       photo: row.photo_url,
       // Уведомления выключены — по ним молчит и системное оповещение
       muted: row.muted,
+      // Сколько чужих сообщений новее отметки «прочитано»
+      unread: row.unread,
       // Фото без подписи — тоже сообщение: проверяем время, а не текст.
       // id и автор нужны оповещениям: новое ли это и не своё ли
       last: row.created_at
@@ -68,6 +72,25 @@ router.get('/', requireAuth, async (req, res) => {
         : null,
     })),
   });
+});
+
+/**
+ * Сколько непрочитанного во всех чатах человека — для числа у «Чатов» в шапке.
+ * Те же чаты, что в списке (право читать), тот же счёт — только одной цифрой,
+ * чтобы шапка не тянула весь список с последними сообщениями.
+ */
+router.get('/unread', requireAuth, async (req, res) => {
+  const all = MANAGE_ROLES.includes(req.user.role);
+  const { rows } = await query(
+    `select coalesce(sum(${unreadCount('$1', 'c.id')}), 0)::int as total
+       from clubs c
+      where $2 or exists (
+        select 1 from club_members cm
+         where cm.club_id = c.id and cm.user_id = $1 and cm.status = 'active'
+      )`,
+    [req.user.id, all],
+  );
+  res.json({ total: rows[0].total });
 });
 
 export default router;

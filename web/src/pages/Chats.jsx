@@ -222,9 +222,17 @@ export default function Chats() {
             </p>
           ) : (
             <ul className="chats__list">
-              {visible.map((chat) => (
+              {visible.map((chat) => {
+                // Открытый чат читают прямо сейчас — его счётчик не показываем,
+                // не дожидаясь, пока отметка «прочитано» дойдёт до сервера
+                const unread = chat.id === id ? 0 : chat.unread;
+                return (
                 <li key={chat.id}>
-                  <NavLink className="chat-row" to={`/chats/${chat.id}`} viewTransition>
+                  <NavLink
+                    className={`chat-row${unread ? ' chat-row--unread' : ''}`}
+                    to={`/chats/${chat.id}`}
+                    viewTransition
+                  >
                     <span className="chat-row__photo">
                       {chat.photo ? (
                         <img className="chat-row__image" src={chat.photo} alt="" />
@@ -249,14 +257,23 @@ export default function Chats() {
                       </span>
                     </span>
 
-                    {chat.last && (
-                      <time className="chat-row__time" dateTime={chat.last.createdAt}>
-                        {chatStamp(chat.last.createdAt)}
-                      </time>
-                    )}
+                    {/* Справа — когда и сколько непрочитанного, как в «Сообщениях» */}
+                    <span className="chat-row__side">
+                      {chat.last && (
+                        <time className="chat-row__time" dateTime={chat.last.createdAt}>
+                          {chatStamp(chat.last.createdAt)}
+                        </time>
+                      )}
+                      {unread > 0 && (
+                        <span className="chat-row__badge" aria-label={`Непрочитанных: ${unread}`}>
+                          {unread > 99 ? '99+' : unread}
+                        </span>
+                      )}
+                    </span>
                   </NavLink>
                 </li>
-              ))}
+                );
+              })}
 
               {visible.length === 0 && (
                 <li>

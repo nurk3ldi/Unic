@@ -603,10 +603,42 @@
 }
 
 .chat-row__time {
-  flex: none;
-  align-self: flex-start;
   font-size: 0.75rem;
   color: var(--text-tertiary);
+}
+
+/* Время сверху, счётчик под ним — справа от строки */
+.chat-row__side {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: var(--space-1);
+  flex: none;
+  align-self: stretch;
+}
+
+/* Сколько непрочитанного — капсулой цвета бренда */
+.chat-row__badge {
+  min-width: 1.25rem;
+  height: 1.25rem;
+  padding: 0 0.375rem;
+  border-radius: var(--radius-pill);
+  background: var(--accent);
+  color: var(--text-on-accent);
+  font-size: 0.75rem;
+  font-weight: 600;
+  line-height: 1.25rem;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Есть непрочитанное — последняя реплика темнее, время цветом бренда */
+.chat-row--unread .chat-row__last {
+  color: var(--text);
+}
+
+.chat-row--unread .chat-row__time {
+  color: var(--accent);
 }
 
 /* На узком экране панели не помещаются рядом: видно что-то одно */

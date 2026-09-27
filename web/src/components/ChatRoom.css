@@ -12,6 +12,15 @@
   background-blend-mode: multiply;
 }
 
+/* Лента и кнопка ↓ над ней: кнопка держится у нижнего края ленты, над полем ввода */
+.chat__feed {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+}
+
 /* Читают её с конца, поэтому прокручивается только лента */
 .chat__list {
   display: flex;
@@ -24,6 +33,103 @@
      а фон под ними — во всю ширину. % в полях — от ширины самой панели */
   padding: var(--space-5) max(var(--space-5), calc((100% - var(--chat-column)) / 2))
     var(--space-4);
+}
+
+/* Верх ленты: «Загружаем историю…» или «Начало переписки» — тихо, по центру.
+   Место держит всегда, даже пустая: иначе появление надписи сдвигало бы ленту
+   ровно в тот момент, когда подгруженная история встаёт над читаемым */
+.chat__history {
+  align-self: center;
+  min-height: 1.25rem;
+  font-size: 0.75rem;
+  line-height: 1.25rem;
+  color: var(--text-tertiary);
+}
+
+/* Черта «Новые сообщения»: тонкая линия цвета бренда и надпись на ней */
+.chat__unread-line {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  margin: var(--space-1) 0;
+  color: var(--accent);
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: var(--tracking-caption);
+  /* Черта не прячется под липкой датой — встаёт ниже неё (дата ~28px + её отступ) */
+  scroll-margin-top: 4.5rem;
+}
+
+.chat__unread-line::before,
+.chat__unread-line::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--accent);
+  opacity: 0.35;
+}
+
+.chat__unread-line span {
+  padding: 0.125rem var(--space-3);
+  border-radius: var(--radius-pill);
+  background: var(--surface);
+}
+
+/* ↓ — круглая кнопка из белого материала в правом нижнем углу ленты.
+   В покое её нет: приходит снизу и растворением, когда ушли читать выше */
+.chat__down {
+  position: absolute;
+  right: max(var(--space-5), calc((100% - var(--chat-column)) / 2));
+  bottom: var(--space-3);
+  display: grid;
+  place-items: center;
+  width: 2.75rem;
+  height: 2.75rem;
+  border-radius: 50%;
+  background: var(--surface);
+  box-shadow: var(--shadow-card);
+  color: var(--text-secondary);
+  font-size: 1.25rem;
+  opacity: 0;
+  transform: translateY(0.5rem) scale(0.9);
+  pointer-events: none;
+  transition:
+    opacity var(--duration-fast) var(--ease-out),
+    transform var(--duration-fast) var(--ease-out);
+}
+
+.chat__down--shown {
+  opacity: 1;
+  transform: none;
+  pointer-events: auto;
+}
+
+.chat__down:hover {
+  color: var(--text);
+}
+
+/* Отклик на нажатии */
+.chat__down--shown:active {
+  transform: scale(0.92);
+}
+
+/* Сколько пришло, пока читали выше — меткой цвета бренда над кнопкой */
+.chat__down-badge {
+  position: absolute;
+  top: -0.375rem;
+  left: 50%;
+  min-width: 1.25rem;
+  height: 1.25rem;
+  padding: 0 0.3125rem;
+  border-radius: var(--radius-pill);
+  background: var(--accent);
+  color: var(--text-on-accent);
+  font-size: 0.6875rem;
+  font-weight: 600;
+  line-height: 1.25rem;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+  transform: translateX(-50%);
 }
 
 .chat__empty {
