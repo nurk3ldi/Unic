@@ -509,6 +509,8 @@ const publicMessage = (row) => ({
   author: row.full_name ?? 'Удалённый участник',
   username: row.username ?? null,
   phone: row.phone ?? null,
+  // Снимок автора — ссылкой: байты в ленте повторялись бы в каждом опросе
+  authorPhoto: row.author_has_photo ? `/api/users/${row.author_id}/photo` : null,
   createdAt: row.created_at,
   // В ленте только адрес снимка: сами байты шли бы в каждом опросе заново
   photo: row.has_photo
@@ -549,7 +551,7 @@ const publicMessage = (row) => ({
 // Цитата берётся тем же запросом: лента и так читается целиком
 const MESSAGE_FIELDS = `m.id, m.club_id, m.body, m.author_id, m.created_at,
           m.photo is not null as has_photo, m.photo_width, m.photo_height,
-          u.full_name, u.username, u.phone,
+          u.full_name, u.username, u.phone, u.photo is not null as author_has_photo,
           r.id as reply_id, r.body as reply_body, r.author_id as reply_author_id,
           r.photo is not null as reply_has_photo,
           ru.full_name as reply_full_name, ru.username as reply_username,

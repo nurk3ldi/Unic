@@ -262,6 +262,26 @@ function withRich(text, mentionClass) {
 }
 
 /**
+ * Кружок автора у реплики: снимок, если он есть, иначе буква его цвета.
+ * Снимок приходит ссылкой (`/api/users/:id/photo`) — браузер берёт его один раз
+ * и держит в кэше, а не тянет байты с каждым опросом.
+ *
+ * `voice` — у голосового аватар уже внутри пузыря (с микрофоном): внешний
+ * прячем, но место держим, иначе пузырь выпал бы из общего ряда.
+ */
+function Avatar({ message, voice = false }) {
+  return (
+    <span className={`msg__avatar${voice ? ' msg__avatar--hidden' : ''}`} aria-hidden="true">
+      {message.authorPhoto ? (
+        <img src={message.authorPhoto} alt="" />
+      ) : (
+        initial(message.author)
+      )}
+    </span>
+  );
+}
+
+/**
  * Разговор одного клуба: лента и поле ввода.
  *
  * **Новое приходит опросом, а не сокетом.** Пять секунд для клубной переписки
@@ -975,11 +995,7 @@ export default function ChatRoom({ clubId, members = [] }) {
           id={`msg-${message.id}`}
           key={message.id}
         >
-          {!own && (
-            <span className="msg__avatar" aria-hidden="true">
-              {initial(message.author)}
-            </span>
-          )}
+          {!own && <Avatar message={message} />}
           <div className="msg__bubble msg__bubble--deleted">
             <p className="msg__deleted">
               <IoBanOutline aria-hidden="true" />
@@ -1150,12 +1166,7 @@ export default function ChatRoom({ clubId, members = [] }) {
         {!own && (
           // У голосового аватар уже внутри пузыря (с микрофоном) — внешний не дублируем,
           // но место держим: иначе пузырь выпал бы из общего ряда
-          <span
-            className={`msg__avatar${message.file?.kind === 'voice' ? ' msg__avatar--hidden' : ''}`}
-            aria-hidden="true"
-          >
-            {initial(message.author)}
-          </span>
+          <Avatar message={message} voice={message.file?.kind === 'voice'} />
         )}
 
         <div
@@ -1272,7 +1283,7 @@ export default function ChatRoom({ clubId, members = [] }) {
               author={{
                 id: message.authorId,
                 name: message.author,
-                photo: own ? user?.photo : null,
+                photo: message.authorPhoto,
               }}
               fallback={<Unplayable file={message.file} what="Аудио" />}
               time={
