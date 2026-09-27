@@ -72,6 +72,9 @@ export const api = {
     request(`/clubs/${id}/messages`, { method: 'POST', body: payload }),
   deleteClubMessage: (id, messageId) =>
     request(`/clubs/${id}/messages/${messageId}`, { method: 'DELETE' }),
+  // emoji: null — убрать свою реакцию
+  reactToMessage: (id, messageId, emoji) =>
+    request(`/clubs/${id}/messages/${messageId}/reaction`, { method: 'PUT', body: { emoji } }),
 
   /**
    * Вложение чата — сам файл телом запроса. Здесь XMLHttpRequest, а не fetch:

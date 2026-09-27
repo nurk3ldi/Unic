@@ -158,10 +158,9 @@ alter table club_messages add column if not exists file_id uuid references chat_
 -- Один файл — одно сообщение: дважды приложить тот же нельзя
 create unique index if not exists club_messages_file_idx on club_messages (file_id) where file_id is not null;
 
--- Снимки Apple (HEIC/HEIF) оригиналом — третий вид вложения
-alter table chat_files drop constraint if exists chat_files_kind_check;
-alter table chat_files add constraint chat_files_kind_check
-  check (kind in ('video', 'document', 'image'));
+-- Снимки Apple (HEIC/HEIF) оригиналом — третий вид вложения. Полный список видов
+-- задаётся ниже, в разделе «Аудио»: промежуточное правило с тремя видами ломало
+-- повторный прогон схемы, когда в базе уже есть аудио
 
 -- Удалённое сообщение не исчезает: на его месте в ленте остаётся «Сообщение удалено»
 -- и кто удалил. Текст и вложение стираются, остаётся только сам факт.
@@ -186,3 +185,12 @@ alter table chat_files drop constraint if exists chat_files_kind_check;
 alter table chat_files add constraint chat_files_kind_check
   check (kind in ('video', 'document', 'image', 'audio', 'voice'));
 alter table chat_files add column if not exists waveform smallint[];
+
+-- Реакции на сообщения. Одна на человека (как в WhatsApp): другая заменяет прежнюю
+create table if not exists message_reactions (
+  message_id uuid not null references club_messages (id) on delete cascade,
+  user_id    uuid not null references users (id) on delete cascade,
+  emoji      text not null,
+  created_at timestamptz not null default now(),
+  primary key (message_id, user_id)
+);

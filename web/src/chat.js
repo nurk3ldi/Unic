@@ -31,6 +31,36 @@ export function dayLabel(iso) {
 }
 
 /**
+ * Реакции — тот же набор, что принимает сервер (и в том же порядке он их
+ * отдаёт). Один человек — одна реакция на сообщение.
+ */
+export const REACTIONS = ['👍', '❤️', '😂', '😮', '😢', '🙏'];
+
+/**
+ * Реакции после того, как человек сменил свою: `from` убирается, `to` ставится
+ * (null — ничего). Для мгновенного отклика, пока сервер не ответил.
+ */
+export function swapReaction(reactions, name, from, to) {
+  let list = reactions
+    .map((item) =>
+      item.emoji === from
+        ? { ...item, count: item.count - 1, mine: false, names: item.names.filter((who) => who !== name) }
+        : item,
+    )
+    .filter((item) => item.count > 0);
+  if (to) {
+    list = list.some((item) => item.emoji === to)
+      ? list.map((item) =>
+          item.emoji === to
+            ? { ...item, count: item.count + 1, mine: true, names: [...item.names, name] }
+            : item,
+        )
+      : [...list, { emoji: to, count: 1, mine: true, names: [name] }];
+  }
+  return list.sort((a, b) => REACTIONS.indexOf(a.emoji) - REACTIONS.indexOf(b.emoji));
+}
+
+/**
  * Ссылка в тексте: до пробела, без хвостовой пунктуации предложения.
  * Тот же шаблон собирает раздел «Медиа» на сервере — что подсвечено, то и собрано.
  */

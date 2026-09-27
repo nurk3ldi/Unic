@@ -30,6 +30,7 @@ import {
   IMAGE_LIMIT,
   LINK_RE,
   POLL_MS,
+  REACTIONS,
   VIDEO_EXTENSIONS,
   VIDEO_LIMIT,
   dayLabel,
@@ -39,6 +40,7 @@ import {
   messageLabel,
   messageTime,
   sameDay,
+  swapReaction,
 } from '../chat.js';
 import { authorColor, formatPhone, initial, shortName } from '../people.js';
 import { chatPhoto } from '../photo.js';
@@ -209,7 +211,7 @@ function ChatImage({ file, time, onOpen }) {
 
 // Сколько места нужно меню сообщения под кнопкой (три строки по 44px и поля), в rem:
 // меньше — и оно раскрывается вверх, иначе край ленты его обрежет
-const MENU_ROOM_REM = 11;
+const MENU_ROOM_REM = 14;
 
 /** Текст с живыми ссылками: адрес открывается в новой вкладке, разговор остаётся. */
 function withLinks(text) {
@@ -364,6 +366,30 @@ export default function ChatRoom({ clubId }) {
     } catch {
       setError('Не удалось скопировать');
       setOpenMenu(null);
+    }
+  }
+
+  /**
+   * Своя реакция: та же — снимается, другая — заменяет прежнюю. Лента меняется
+   * сразу, ответ сервера потом ставит точное состояние (и чужие реакции тоже).
+   */
+  async function react(message, emoji) {
+    setOpenMenu(null);
+    const reactions = message.reactions ?? [];
+    const mine = reactions.find((item) => item.mine)?.emoji ?? null;
+    const next = mine === emoji ? null : emoji;
+    const put = (list) =>
+      setMessages((was) =>
+        was.map((item) => (item.id === message.id ? { ...item, reactions: list } : item)),
+      );
+
+    put(swapReaction(reactions, user?.fullName, mine, next));
+    try {
+      const data = await api.reactToMessage(clubId, message.id, next);
+      put(data.reactions);
+    } catch (failure) {
+      put(reactions);
+      setError(failure.message);
     }
   }
 
@@ -867,6 +893,29 @@ export default function ChatRoom({ clubId }) {
         className={`row-menu row-menu--msg${menuUp ? ' row-menu--above' : ''}`}
         role="menu"
       >
+        {/* Реакции — первым рядом: самое частое, что делают с чужой репликой */}
+        <div className="row-menu__reactions">
+          {REACTIONS.map((emoji) => {
+            const chosen = message.reactions?.some((item) => item.mine && item.emoji === emoji);
+            return (
+              <button
+                key={emoji}
+                className={`row-menu__reaction${chosen ? ' row-menu__reaction--chosen' : ''}`}
+                type="button"
+                role="menuitem"
+                aria-label={chosen ? `Убрать реакцию ${emoji}` : `Реакция ${emoji}`}
+                aria-pressed={chosen}
+                onClick={(event) => {
+                  event.stopPropagation();
+                  react(message, emoji);
+                }}
+              >
+                {emoji}
+              </button>
+            );
+          })}
+        </div>
+
         {message.text && (
           <button
             className="row-menu__item"
@@ -924,9 +973,11 @@ export default function ChatRoom({ clubId }) {
       </div>
     );
 
+    const reactions = message.reactions ?? [];
+
     return (
       <div
-        className={`msg${own ? ' msg--own' : ''}`}
+        className={`msg${own ? ' msg--own' : ''}${reactions.length ? ' msg--reacted' : ''}`}
         id={`msg-${message.id}`}
         key={message.id}
       >
@@ -1096,6 +1147,27 @@ export default function ChatRoom({ clubId }) {
                 {messageTime.format(new Date(message.createdAt))}
               </time>
             </p>
+          )}
+
+          {reactions.length > 0 && (
+            /* Капсулы садятся на нижний край пузыря, как в мессенджерах. Нажатие
+               ставит или снимает ту же реакцию; кто поставил — в подсказке */
+            <div className="msg__reactions">
+              {reactions.map((item) => (
+                <button
+                  key={item.emoji}
+                  className={`msg__reaction${item.mine ? ' msg__reaction--mine' : ''}`}
+                  type="button"
+                  title={item.names.join(', ')}
+                  aria-label={`${item.emoji} ${item.count}: ${item.names.join(', ')}`}
+                  aria-pressed={item.mine}
+                  onClick={() => react(message, item.emoji)}
+                >
+                  <span aria-hidden="true">{item.emoji}</span>
+                  {item.count > 1 && <span className="msg__reaction-count">{item.count}</span>}
+                </button>
+              ))}
+            </div>
           )}
         </div>
 

@@ -455,8 +455,45 @@ async function canReadChat(clubId, user) {
   return Boolean(rows[0]);
 }
 
+/**
+ * Реакции — короткий набор, как в WhatsApp. Список закрытый: реакция — не
+ * произвольный текст, а выбор из того, что показывает меню.
+ */
+const REACTIONS = ['👍', '❤️', '😂', '😮', '😢', '🙏'];
+
+/**
+ * Реакции к сообщениям — одним запросом на всю пачку: какие, сколько, кто
+ * (имена — для подсказки) и есть ли среди них своя. Порядок — как в наборе.
+ */
+async function withReactions(messages, userId) {
+  if (!messages.length) return messages;
+  const { rows } = await query(
+    `select r.message_id, r.emoji, count(*)::int as count,
+            bool_or(r.user_id = $2) as mine,
+            array_agg(coalesce(u.full_name, 'Удалённый участник') order by r.created_at) as names
+       from message_reactions r
+       left join users u on u.id = r.user_id
+      where r.message_id = any($1::uuid[])
+      group by r.message_id, r.emoji`,
+    [messages.map((message) => message.id), userId],
+  );
+  const byMessage = new Map();
+  for (const row of rows) {
+    const list = byMessage.get(row.message_id) ?? [];
+    list.push({ emoji: row.emoji, count: row.count, mine: row.mine, names: row.names });
+    byMessage.set(row.message_id, list);
+  }
+  const order = (emoji) => REACTIONS.indexOf(emoji);
+  return messages.map((message) => ({
+    ...message,
+    reactions: (byMessage.get(message.id) ?? []).sort((a, b) => order(a.emoji) - order(b.emoji)),
+  }));
+}
+
 const publicMessage = (row) => ({
   id: row.id,
+  // Реакции добавляет withReactions — у свежего сообщения их ещё нет
+  reactions: [],
   text: row.body,
   authorId: row.author_id,
   // Удалено: содержимого нет, есть кто и в какой роли. Имя — на случай, если
@@ -570,7 +607,7 @@ router.get('/:id/messages', requireAuth, async (req, res) => {
   ]);
 
   res.json({
-    messages: rows.reverse().map(publicMessage),
+    messages: await withReactions(rows.reverse().map(publicMessage), req.user.id),
     // Полная страница — значит, раньше может быть ещё
     hasMore: rows.length === limit,
     lastReadAt: read[0]?.at ?? null,
@@ -977,6 +1014,44 @@ router.put('/:id/notifications', requireAuth, async (req, res) => {
 });
 
 /**
+ * Своя реакция на сообщение: `{emoji}` — поставить или заменить, `{emoji: null}` —
+ * убрать. Удалённому сообщению реакция не ставится. Ответ — все реакции сообщения,
+ * чтобы лента сразу нарисовала их такими, какими их видит сервер.
+ */
+router.put('/:id/messages/:messageId/reaction', requireAuth, async (req, res) => {
+  const { id, messageId } = req.params;
+  if (!UUID_RE.test(messageId) || !(await findClub(id))) {
+    return res.status(404).json({ error: 'Сообщение не найдено' });
+  }
+  if (!(await canReadChat(id, req.user))) {
+    return res.status(403).json({ error: 'Чат доступен только участникам клуба' });
+  }
+
+  const emoji = req.body?.emoji ?? null;
+  if (emoji !== null && !REACTIONS.includes(emoji)) {
+    return res.status(400).json({ error: 'Такой реакции нет' });
+  }
+
+  const { rows: found } = await query(
+    'select 1 from club_messages where id = $1 and club_id = $2 and deleted_at is null',
+    [messageId, id],
+  );
+  if (!found[0]) return res.status(404).json({ error: 'Сообщение не найдено' });
+
+  await query(
+    emoji === null
+      ? 'delete from message_reactions where message_id = $1 and user_id = $2'
+      : `insert into message_reactions (message_id, user_id, emoji) values ($1, $2, $3)
+         on conflict (message_id, user_id)
+           do update set emoji = excluded.emoji, created_at = now()`,
+    emoji === null ? [messageId, req.user.id] : [messageId, req.user.id, emoji],
+  );
+
+  const [message] = await withReactions([{ id: messageId }], req.user.id);
+  res.json({ reactions: message.reactions });
+});
+
+/**
  * Удаление сообщения: своё — автору, любое — университету, админу и лидеру клуба.
  * Удалённое остаётся в ленте строкой «Сообщение удалено» — с тем, кто удалил.
  * Правка не предусмотрена: исправленная реплика в чужой памяти уже прочитана,
@@ -1014,6 +1089,9 @@ router.delete('/:id/messages/:messageId', requireAuth, async (req, res) => {
       where id = $1`,
     [messageId, req.user.id, as],
   );
+
+  // Реакции на удалённое не нужны: реагировать больше не на что
+  await query('delete from message_reactions where message_id = $1', [messageId]);
 
   // Вложение жило только ради своего сообщения — уходит с диска
   if (found[0].file_id) {
