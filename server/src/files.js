@@ -21,6 +21,7 @@ export const filePath = (id) => join(UPLOAD_DIR, id);
 export const VIDEO_LIMIT = 100 * 1024 * 1024;
 export const DOCUMENT_LIMIT = 25 * 1024 * 1024;
 export const IMAGE_LIMIT = 25 * 1024 * 1024;
+export const AUDIO_LIMIT = 25 * 1024 * 1024;
 
 // Тип решает сервер — по расширению из белого списка, а не по заголовку
 // браузера. Отдаём файл с этим же типом: чужого «text/html» не бывает
@@ -39,6 +40,19 @@ const VIDEO_TYPES = {
 const IMAGE_TYPES = {
   heic: 'image/heic',
   heif: 'image/heif',
+};
+
+// Аудио. weba — голосовое из Chrome (WebM с Opus), m4a — из Safari
+const AUDIO_TYPES = {
+  mp3: 'audio/mpeg',
+  m4a: 'audio/mp4',
+  aac: 'audio/aac',
+  wav: 'audio/wav',
+  ogg: 'audio/ogg',
+  oga: 'audio/ogg',
+  opus: 'audio/ogg',
+  weba: 'audio/webm',
+  flac: 'audio/flac',
 };
 
 const DOCUMENT_TYPES = {
@@ -64,9 +78,15 @@ const DOCUMENT_TYPES = {
   key: 'application/vnd.apple.keynote',
 };
 
-/** Что это за файл: вид, тип для отдачи и предел размера. Неизвестное — null. */
-export function classify(name) {
+/**
+ * Что это за файл: вид, тип для отдачи и предел размера. Неизвестное — null.
+ * `voice` — аудио записано прямо в чате: это голосовое, а не файл.
+ */
+export function classify(name, { voice = false } = {}) {
   const ext = name.includes('.') ? name.split('.').pop().toLowerCase() : '';
+  if (AUDIO_TYPES[ext]) {
+    return { kind: voice ? 'voice' : 'audio', mime: AUDIO_TYPES[ext], limit: AUDIO_LIMIT };
+  }
   if (VIDEO_TYPES[ext]) return { kind: 'video', mime: VIDEO_TYPES[ext], limit: VIDEO_LIMIT };
   if (IMAGE_TYPES[ext]) return { kind: 'image', mime: IMAGE_TYPES[ext], limit: IMAGE_LIMIT };
   if (DOCUMENT_TYPES[ext]) {

@@ -57,6 +57,7 @@ export function messageLabel(message) {
   if (message.text) return message.text;
   if (message.photo || message.file?.kind === 'image') return 'Фото';
   if (message.file?.kind === 'video') return 'Видео';
+  if (message.file?.kind === 'voice') return 'Голосовое сообщение';
   if (message.file) return message.file.name;
   return '';
 }
@@ -86,6 +87,9 @@ export const DOCUMENT_EXTENSIONS = [
   // iWork от Apple — только скачать: ни один браузер их не открывает
   'pages', 'numbers', 'key',
 ];
+// Аудиофайлы — тот же список, что на сервере. Голосовое пишется прямо в чате (voice.js)
+export const AUDIO_EXTENSIONS = ['mp3', 'm4a', 'aac', 'wav', 'ogg', 'oga', 'opus', 'flac'];
+export const AUDIO_LIMIT = 25 * 1024 * 1024;
 // Снимки Apple: Safari их читает и сам переведёт в JPEG; остальные отправят оригиналом
 export const IMAGE_EXTENSIONS = ['heic', 'heif'];
 export const VIDEO_LIMIT = 100 * 1024 * 1024;

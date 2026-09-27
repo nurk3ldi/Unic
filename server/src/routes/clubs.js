@@ -491,6 +491,7 @@ const publicMessage = (row) => ({
         width: row.file_width,
         height: row.file_height,
         duration: row.file_duration,
+        waveform: row.file_waveform,
       }
     : null,
   // Процитированное могли удалить — тогда ссылка есть, а показывать нечего
@@ -517,6 +518,7 @@ const MESSAGE_FIELDS = `m.id, m.club_id, m.body, m.author_id, m.created_at,
           ru.full_name as reply_full_name, ru.username as reply_username,
           f.id as file_id, f.kind as file_kind, f.name as file_name, f.size as file_size,
           f.width as file_width, f.height as file_height, f.duration as file_duration,
+          f.waveform as file_waveform,
           rf.kind as reply_file_kind, rf.name as reply_file_name,
           m.deleted_at, m.deleted_as, du.full_name as deleted_by_name,
           r.deleted_at is not null as reply_deleted`;
@@ -677,6 +679,20 @@ router.get('/:id/messages/:messageId/photo', requireAuth, async (req, res) => {
     .send(Buffer.from(photo.slice(photo.indexOf(',') + 1), 'base64'));
 });
 
+/**
+ * «Волна» голосового: до 64 чисел 0…31 через запятую. Что-то не то — просто без
+ * неё (лента нарисует ровные столбики), запись от этого не ломается.
+ */
+function readWaveform(raw) {
+  if (!raw) return null;
+  const values = String(raw).split(',').map(Number);
+  const valid =
+    values.length > 0 &&
+    values.length <= 64 &&
+    values.every((value) => Number.isInteger(value) && value >= 0 && value <= 31);
+  return valid ? values : null;
+}
+
 /** Размер кадра и длительность видео: присылает браузер, прочитав файл до отправки. */
 const videoNumber = (value, max) => {
   const number = Number(value);
@@ -707,7 +723,7 @@ router.post('/:id/files', requireAuth, async (req, res) => {
   }
   if (!name) return res.status(400).json({ error: 'Не указано имя файла' });
 
-  const type = classify(name);
+  const type = classify(name, { voice: req.get('X-Voice') === '1' });
   if (!type) {
     return rejectAfterBody(req, () =>
       res.status(400).json({ error: 'Такой файл отправить нельзя' }),
@@ -717,6 +733,8 @@ router.post('/:id/files', requireAuth, async (req, res) => {
     video: 'Видео больше 100 МБ',
     image: 'Фото больше 25 МБ',
     document: 'Документ больше 25 МБ',
+    audio: 'Аудио больше 25 МБ',
+    voice: 'Голосовое слишком длинное',
   }[type.kind];
 
   // Размер сверяем до записи: на диск не ляжет то, что всё равно отвергнем
@@ -741,9 +759,11 @@ router.post('/:id/files', requireAuth, async (req, res) => {
   }
 
   const video = type.kind === 'video';
+  const sound = type.kind === 'audio' || type.kind === 'voice';
   await query(
-    `insert into chat_files (id, club_id, uploader_id, kind, name, mime, size, width, height, duration)
-     values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)`,
+    `insert into chat_files
+       (id, club_id, uploader_id, kind, name, mime, size, width, height, duration, waveform)
+     values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)`,
     [
       id,
       req.params.id,
@@ -754,7 +774,12 @@ router.post('/:id/files', requireAuth, async (req, res) => {
       size,
       video ? videoNumber(req.get('X-Video-Width'), 8192) : null,
       video ? videoNumber(req.get('X-Video-Height'), 8192) : null,
-      video ? videoNumber(req.get('X-Video-Duration'), 86400) : null,
+      video
+        ? videoNumber(req.get('X-Video-Duration'), 86400)
+        : sound
+          ? videoNumber(req.get('X-Audio-Duration'), 86400)
+          : null,
+      type.kind === 'voice' ? readWaveform(req.get('X-Voice-Waveform')) : null,
     ],
   );
 
@@ -844,7 +869,7 @@ router.get('/:id/media', requireAuth, async (req, res) => {
 
   const { rows: files } = await query(
     `select m.id as message_id, m.created_at, f.id, f.kind, f.name, f.size,
-            f.width, f.height, f.duration, u.full_name
+            f.width, f.height, f.duration, f.waveform, u.full_name
        from club_messages m
        join chat_files f on f.id = m.file_id
        left join users u on u.id = m.author_id
@@ -863,6 +888,7 @@ router.get('/:id/media', requireAuth, async (req, res) => {
     width: row.width,
     height: row.height,
     duration: row.duration,
+    waveform: row.waveform,
     author: row.full_name ?? 'Удалённый участник',
     createdAt: row.created_at,
   });
@@ -870,6 +896,7 @@ router.get('/:id/media', requireAuth, async (req, res) => {
   res.json({
     // Снимки Apple оригиналом — в той же сетке, что и обычные фото (см. photos ниже)
     images: files.filter((row) => row.kind === 'image').map(fileOf),
+    audios: files.filter((row) => row.kind === 'audio' || row.kind === 'voice').map(fileOf),
     videos: files.filter((row) => row.kind === 'video').map(fileOf),
     documents: files.filter((row) => row.kind === 'document').map(fileOf),
     photos: photos.map((row) => ({

@@ -24,6 +24,7 @@ import {
 } from '../chat.js';
 import { membersLabel } from '../club.js';
 import { initial, shortName } from '../people.js';
+import ChatAudio from '../components/ChatAudio.jsx';
 import ChatRoom from '../components/ChatRoom.jsx';
 import PhotoViewer from '../components/PhotoViewer.jsx';
 import SearchField from '../components/SearchField.jsx';
@@ -117,7 +118,8 @@ export default function Chats() {
       .clubMedia(id)
       .then((data) => alive && setMedia(data))
       .catch(() =>
-        alive && setMedia({ photos: [], images: [], videos: [], documents: [], links: [] }),
+        alive &&
+        setMedia({ photos: [], images: [], videos: [], audios: [], documents: [], links: [] }),
       );
 
     return () => {
@@ -129,7 +131,11 @@ export default function Chats() {
   // Снимки Apple оригиналом — в той же сетке, что обычные фото
   const allPhotos = media ? [...media.photos, ...(media.images ?? [])] : [];
   const mediaCount = media
-    ? allPhotos.length + media.videos.length + media.documents.length + media.links.length
+    ? allPhotos.length +
+      media.videos.length +
+      (media.audios?.length ?? 0) +
+      media.documents.length +
+      media.links.length
     : 0;
 
   // Уведомления по умолчанию включены: сервер хранит только выключенные
@@ -355,7 +361,7 @@ export default function Chats() {
                   <p className="chats__info-empty">Загружаем…</p>
                 ) : mediaCount === 0 ? (
                   <p className="chats__info-empty">
-                    Здесь появятся фото, видео, документы и ссылки из чата
+                    Здесь появятся фото, видео, аудио, документы и ссылки из чата
                   </p>
                 ) : (
                   <>
@@ -405,6 +411,23 @@ export default function Chats() {
                                 {video.duration ? formatDuration(video.duration) : ''}
                               </span>
                             </MediaTile>
+                          ))}
+                        </div>
+                      </section>
+                    )}
+
+                    {media.audios?.length > 0 && (
+                      <section className="chats__links">
+                        <h3 className="side-title">Аудио · {media.audios.length}</h3>
+                        {/* Слушают прямо здесь — тот же проигрыватель, что в ленте */}
+                        <div className="group chats__audios">
+                          {media.audios.map((audio) => (
+                            <div className="group__row chats__audio" key={audio.id}>
+                              <ChatAudio file={audio} />
+                              <span className="chats__link-meta">
+                                {shortName(audio.author)} · {chatStamp(audio.createdAt)}
+                              </span>
+                            </div>
                           ))}
                         </div>
                       </section>

@@ -13,6 +13,7 @@ import {
   IoImageOutline,
   IoPlay,
   IoImagesOutline,
+  IoMicOutline,
   IoMusicalNotesOutline,
   IoTrashOutline,
   IoVideocamOutline,
@@ -23,6 +24,8 @@ import {
   DOCUMENT_EXTENSIONS,
   DOCUMENT_LIMIT,
   IMAGE_EXTENSIONS,
+  AUDIO_EXTENSIONS,
+  AUDIO_LIMIT,
   IMAGE_LIMIT,
   LINK_RE,
   POLL_MS,
@@ -38,6 +41,8 @@ import {
 } from '../chat.js';
 import { authorColor, formatPhone, initial, shortName } from '../people.js';
 import { chatPhoto } from '../photo.js';
+import { canRecord, useVoiceRecorder } from '../voice.js';
+import ChatAudio from './ChatAudio.jsx';
 import PhotoViewer from './PhotoViewer.jsx';
 import './ChatRoom.css';
 
@@ -66,6 +71,19 @@ const MEDIA_ACCEPT = `image/*,${[...IMAGE_EXTENSIONS, ...VIDEO_EXTENSIONS]
   .map((ext) => `.${ext}`)
   .join(',')}`;
 const DOCUMENT_ACCEPT = DOCUMENT_EXTENSIONS.map((ext) => `.${ext}`).join(',');
+const AUDIO_ACCEPT = AUDIO_EXTENSIONS.map((ext) => `.${ext}`).join(',');
+
+/** Длительность аудиофайла — браузер читает её до отправки. Не прочиталась — без неё. */
+function readAudio(url) {
+  return new Promise((resolve) => {
+    const audio = document.createElement('audio');
+    audio.preload = 'metadata';
+    audio.onloadedmetadata = () =>
+      resolve(Number.isFinite(audio.duration) ? { duration: audio.duration } : {});
+    audio.onerror = () => resolve({});
+    audio.src = url;
+  });
+}
 
 /**
  * Размер кадра и длительность видео — браузер читает их из самого файла до
@@ -92,7 +110,13 @@ function Unplayable({ file, what }) {
   return (
     <div className="msg__unplayable">
       <span className="msg__file-icon" aria-hidden="true">
-        {what === 'Видео' ? <IoVideocamOutline /> : <IoImageOutline />}
+        {what === 'Видео' ? (
+          <IoVideocamOutline />
+        ) : what === 'Аудио' ? (
+          <IoMusicalNotesOutline />
+        ) : (
+          <IoImageOutline />
+        )}
       </span>
       <span className="msg__file-body">
         <span className="msg__file-name">{what} не открывается в этом браузере</span>
@@ -217,6 +241,7 @@ export default function ChatRoom({ clubId }) {
   const inputRef = useRef(null);
   const fileRef = useRef(null);
   const documentRef = useRef(null);
+  const audioRef = useRef(null);
   // Превью держит последнее вложение, пока полоса сворачивается, — иначе
   // оно исчезло бы раньше, чем закрылось место под него
   const shownPhoto = useRef(null);
@@ -575,6 +600,83 @@ export default function ChatRoom({ clubId }) {
     inputRef.current?.focus();
   }
 
+  /** «Аудио»: файл ждёт в поле ввода, как документ; длительность браузер читает сам. */
+  async function pickAudio(event) {
+    const file = event.target.files?.[0];
+    event.target.value = '';
+    if (!file) return;
+
+    if (!AUDIO_EXTENSIONS.includes(extensionOf(file.name))) {
+      return setError('Такой файл отправить нельзя: подойдут MP3, M4A, AAC, WAV, OGG, FLAC');
+    }
+    if (file.size > AUDIO_LIMIT) return setError('Аудио больше 25 МБ');
+
+    const url = URL.createObjectURL(file);
+    const meta = await readAudio(url);
+    URL.revokeObjectURL(url);
+    setAttachment({ kind: 'audio', file, name: file.name, size: file.size, ...meta });
+    setPhoto(null);
+    setError('');
+    inputRef.current?.focus();
+  }
+
+  // ── Голосовое ──
+  // Пустое поле — вместо «отправить» микрофон; появилось что отправлять — снова «отправить»
+  const recorder = useVoiceRecorder({ onLimit: () => sendVoice() });
+  const hasContent = Boolean(text.trim() || photo || attachment);
+
+  async function startVoice() {
+    setError('');
+    try {
+      await recorder.start();
+    } catch (failure) {
+      setError(
+        failure?.name === 'NotAllowedError'
+          ? 'Нет доступа к микрофону — разрешите его в браузере'
+          : 'Микрофон не найден или занят',
+      );
+    }
+  }
+
+  /** Закончить запись и сразу отправить — как «отправить» у текста. */
+  async function sendVoice() {
+    if (sending) return;
+    const voice = await recorder.finish();
+    // Случайное касание — не сообщение: меньше секунды не отправляем
+    if (!voice || voice.duration < 1) return;
+
+    setSending(true);
+    try {
+      const { file } = await api.uploadChatFile(clubId, voice.file, {
+        voice: true,
+        duration: voice.duration,
+        waveform: voice.waveform,
+      });
+      const { message } = await api.sendClubMessage(clubId, {
+        text: '',
+        replyTo: replying?.id ?? null,
+        fileId: file.id,
+      });
+      atBottom.current = true;
+      setShowDown(false);
+      setMessages((was) => [...was, message]);
+      setReplying(null);
+      setError('');
+    } catch (failure) {
+      setError(failure.message);
+    } finally {
+      setSending(false);
+    }
+  }
+
+  // Esc во время записи — отмена, как у любого начатого действия
+  useEffect(() => {
+    if (!recorder.recording) return undefined;
+    const onKey = (event) => event.key === 'Escape' && recorder.cancel();
+    document.addEventListener('keydown', onKey);
+    return () => document.removeEventListener('keydown', onKey);
+  });
+
   async function send(event) {
     event.preventDefault();
 
@@ -776,7 +878,13 @@ export default function ChatRoom({ clubId }) {
             message.photo || message.file?.kind === 'video' || message.file?.kind === 'image'
               ? ' msg__bubble--photo'
               : ''
-          }${message.file?.kind === 'document' ? ' msg__bubble--file' : ''}`}
+          }${
+            message.file?.kind === 'document' ||
+            message.file?.kind === 'audio' ||
+            message.file?.kind === 'voice'
+              ? ' msg__bubble--file'
+              : ''
+          }`}
         >
           {!own && menu}
 
@@ -865,6 +973,20 @@ export default function ChatRoom({ clubId }) {
               time={
                 !message.text && (
                   <time className="msg__photo-time" dateTime={message.createdAt}>
+                    {messageTime.format(new Date(message.createdAt))}
+                  </time>
+                )
+              }
+            />
+          )}
+
+          {(message.file?.kind === 'audio' || message.file?.kind === 'voice') && (
+            <ChatAudio
+              file={message.file}
+              fallback={<Unplayable file={message.file} what="Аудио" />}
+              time={
+                !message.text && (
+                  <time className="msg__file-time" dateTime={message.createdAt}>
                     {messageTime.format(new Date(message.createdAt))}
                   </time>
                 )
@@ -1044,6 +1166,8 @@ export default function ChatRoom({ clubId }) {
                   <span className="chat__photo-preview chat__file-icon" aria-hidden="true">
                     {shownAttachment.current.kind === 'image' ? (
                       <IoImageOutline />
+                    ) : shownAttachment.current.kind === 'audio' ? (
+                      <IoMusicalNotesOutline />
                     ) : (
                       <IoDocumentTextOutline />
                     )}
@@ -1098,8 +1222,37 @@ export default function ChatRoom({ clubId }) {
             hidden
             onChange={pickDocument}
           />
+          <input ref={audioRef} type="file" accept={AUDIO_ACCEPT} hidden onChange={pickAudio} />
 
-          {/* Меню вложений: фото, видео и документы; аудио — позже */}
+          {/* Идёт запись: вместо вложений — «выбросить», вместо поля — время и уровень */}
+          {recorder.recording ? (
+            <>
+              <button
+                className="chat__attach chat__rec-cancel"
+                type="button"
+                aria-label="Отменить запись"
+                disabled={sending}
+                onClick={recorder.cancel}
+              >
+                <IoTrashOutline aria-hidden="true" />
+              </button>
+
+              <div className="chat__recording" role="status" aria-live="off">
+                <span className="chat__rec-dot" aria-hidden="true" />
+                <span className="chat__rec-time">{formatDuration(recorder.elapsed)}</span>
+                {/* Живые столбики: громкость последних секунд, новое — справа */}
+                <span className="chat__rec-bars" aria-hidden="true">
+                  {recorder.levels.map((level, index) => (
+                    // Корень — та же шкала, что у волны в ленте: тихое не пропадает
+                    <span key={index} style={{ '--h': Math.min(1, Math.sqrt(level) * 1.6) }} />
+                  ))}
+                </span>
+                <span className="chat__rec-hint">{sending ? 'Отправляем…' : 'Esc — отмена'}</span>
+              </div>
+            </>
+          ) : (
+            <>
+          {/* Меню вложений: фото и видео, документы, аудио */}
           <div className="chat__attach-box">
             <button
               className="chat__attach"
@@ -1134,7 +1287,12 @@ export default function ChatRoom({ clubId }) {
                   <IoImagesOutline aria-hidden="true" />
                   Фото и видео
                 </button>
-                <button className="row-menu__item" type="button" role="menuitem">
+                <button
+                  className="row-menu__item"
+                  type="button"
+                  role="menuitem"
+                  onClick={() => audioRef.current?.click()}
+                >
                   <IoMusicalNotesOutline aria-hidden="true" />
                   Аудио
                 </button>
@@ -1156,15 +1314,42 @@ export default function ChatRoom({ clubId }) {
             onChange={(event) => setText(event.target.value)}
             onKeyDown={sendOnEnter}
           />
+            </>
+          )}
 
-          <button
-            className="chat__send"
-            type="submit"
-            disabled={(!text.trim() && !photo && !attachment) || sending}
-            aria-label="Отправить"
-          >
-            <IoArrowUp aria-hidden="true" />
-          </button>
+          {/* Одна кнопка на месте «отправить»: есть что отправить — стрелка; пусто —
+              микрофон; идёт запись — стрелка, которая отправляет голосовое.
+              Значок меняется с коротким масштабом (ключ), а не перескоком */}
+          {recorder.recording ? (
+            <button
+              className="chat__send"
+              type="button"
+              aria-label="Отправить голосовое"
+              disabled={sending}
+              onClick={sendVoice}
+            >
+              <IoArrowUp aria-hidden="true" key="send-voice" />
+            </button>
+          ) : hasContent || !canRecord ? (
+            <button
+              className="chat__send"
+              type="submit"
+              disabled={!hasContent || sending}
+              aria-label="Отправить"
+            >
+              <IoArrowUp aria-hidden="true" key="send" />
+            </button>
+          ) : (
+            <button
+              className="chat__send chat__send--mic"
+              type="button"
+              aria-label="Записать голосовое"
+              disabled={sending}
+              onClick={startVoice}
+            >
+              <IoMicOutline aria-hidden="true" key="mic" />
+            </button>
+          )}
         </form>
       </div>
     </div>

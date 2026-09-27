@@ -179,3 +179,10 @@ create table if not exists chat_reads (
   read_at timestamptz not null default now(),
   primary key (user_id, club_id)
 );
+
+-- Аудио: файл (mp3 и т. п.) и голосовое, записанное прямо в чате. Голосовому
+-- ещё хранится «волна» — громкость по долям записи (0…31), по ней рисуются столбики
+alter table chat_files drop constraint if exists chat_files_kind_check;
+alter table chat_files add constraint chat_files_kind_check
+  check (kind in ('video', 'document', 'image', 'audio', 'voice'));
+alter table chat_files add column if not exists waveform smallint[];

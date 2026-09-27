@@ -375,6 +375,18 @@
   text-decoration: none;
 }
 
+/* Аудио в «Медиа»: проигрыватель, под ним — кто и когда */
+.group__row.chats__audio {
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0;
+  padding-block: var(--space-2);
+}
+
+.chats__audio .audio {
+  min-width: 0;
+}
+
 /* Имя документа — основным цветом: это название, а не адрес */
 .chats__doc-name {
   white-space: nowrap;

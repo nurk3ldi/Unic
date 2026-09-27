@@ -979,6 +979,99 @@ video.chat__photo-preview {
   transform: scale(0.94);
 }
 
+/* Значок в кнопке сменился (стрелка ↔ микрофон) — проявляется, а не перескакивает */
+.chat__send svg {
+  animation: chat-send-swap var(--duration-fast) var(--ease-out);
+}
+
+@keyframes chat-send-swap {
+  from {
+    opacity: 0;
+    transform: scale(0.6);
+  }
+}
+
+/* Микрофон — та же кнопка, но тише: пустому полю не нужна яркая заливка */
+.chat__send.chat__send--mic {
+  background: var(--fill);
+  color: var(--text-secondary);
+}
+
+.chat__send.chat__send--mic:hover {
+  color: var(--text);
+}
+
+/* ── Запись голосового ─────────────────────────────────── */
+/* На месте поля: мигающая красная точка, время, живые столбики громкости */
+.chat__recording {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  flex: 1;
+  min-width: 0;
+  min-height: 2.5rem;
+}
+
+.chat__rec-dot {
+  width: 0.625rem;
+  height: 0.625rem;
+  flex: none;
+  border-radius: 50%;
+  background: var(--red);
+  animation: chat-rec-pulse 1.2s ease-in-out infinite;
+}
+
+@keyframes chat-rec-pulse {
+  50% {
+    opacity: 0.3;
+  }
+}
+
+.chat__rec-time {
+  flex: none;
+  min-width: 2.5rem;
+  font-size: 0.9375rem;
+  font-variant-numeric: tabular-nums;
+  color: var(--text);
+}
+
+/* Столбики: последние секунды, новое приходит справа */
+.chat__rec-bars {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 2px;
+  flex: 1;
+  min-width: 0;
+  height: 1.5rem;
+  overflow: hidden;
+}
+
+.chat__rec-bars span {
+  width: 3px;
+  flex: none;
+  height: max(3px, calc(var(--h) * 100%));
+  border-radius: var(--radius-pill);
+  background: var(--accent);
+}
+
+.chat__rec-hint {
+  flex: none;
+  font-size: 0.75rem;
+  color: var(--text-tertiary);
+}
+
+/* «Выбросить запись» — красным: это отмена того, что уже записано */
+.chat__attach.chat__rec-cancel {
+  color: var(--red);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .chat__rec-dot {
+    animation: none;
+  }
+}
+
 /* Пустому полю отправлять нечего — кнопка гаснет внутри той же карточки */
 .chat__send:disabled {
   background: none;

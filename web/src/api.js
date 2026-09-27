@@ -87,7 +87,14 @@ export const api = {
       xhr.setRequestHeader('X-File-Name', encodeURIComponent(file.name));
       if (meta.width) xhr.setRequestHeader('X-Video-Width', String(meta.width));
       if (meta.height) xhr.setRequestHeader('X-Video-Height', String(meta.height));
-      if (meta.duration) xhr.setRequestHeader('X-Video-Duration', String(meta.duration));
+      if (meta.duration) {
+        // Длительность — и видео, и аудио: сервер берёт ту, что относится к виду файла
+        xhr.setRequestHeader('X-Video-Duration', String(meta.duration));
+        xhr.setRequestHeader('X-Audio-Duration', String(meta.duration));
+      }
+      // Голосовое, записанное в чате, и его «волна» для столбиков в ленте
+      if (meta.voice) xhr.setRequestHeader('X-Voice', '1');
+      if (meta.waveform?.length) xhr.setRequestHeader('X-Voice-Waveform', meta.waveform.join(','));
 
       xhr.upload.onprogress = (event) =>
         event.lengthComputable && onProgress?.(event.loaded / event.total);

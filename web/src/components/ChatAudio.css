@@ -1,0 +1,133 @@
+/* ── Аудио в ленте ─────────────────────────────────────── */
+/* ▶ слева, справа — волна (голосовое) или имя с полосой (файл), под ними время.
+   Цвет несёт currentColor: у чужого пузыря — бренд, у своего синего — белый */
+.audio {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  min-width: 15rem;
+  padding: var(--space-1) 0;
+  color: var(--accent);
+}
+
+.msg--own .audio {
+  color: var(--text-on-accent);
+}
+
+/* Круглая ▶: заливка — цветом строки, значок — фоном пузыря */
+.audio__play {
+  display: grid;
+  place-items: center;
+  width: 2.75rem;
+  height: 2.75rem;
+  flex: none;
+  border-radius: 50%;
+  background: currentColor;
+  transition: transform var(--duration-press) var(--ease-out);
+}
+
+.audio__play svg {
+  width: 1.25rem;
+  height: 1.25rem;
+  color: var(--surface);
+}
+
+.msg--own .audio__play svg {
+  color: var(--accent);
+}
+
+/* ▶ визуально смещена влево — возвращаем в центр круга (у паузы смещения нет) */
+.audio__play .audio__play-icon {
+  margin-left: 0.125rem;
+}
+
+/* Отклик наступает на нажатии, а не на отпускании */
+.audio__play:active {
+  transform: scale(0.92);
+}
+
+.audio__body {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  flex: 1;
+  min-width: 0;
+}
+
+/* Волна: столбики разной высоты, пройденные — во всю силу, остальные — прозрачнее */
+.audio__wave {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  height: 1.75rem;
+  padding: 0;
+  cursor: pointer;
+}
+
+.audio__wave span {
+  flex: 1;
+  min-width: 2px;
+  max-width: 3px;
+  height: max(3px, calc(var(--h) / 31 * 100%));
+  border-radius: var(--radius-pill);
+  background: currentColor;
+  opacity: 0.35;
+  transition: opacity var(--duration-fast) var(--ease-out);
+}
+
+.audio__wave span.is-played {
+  opacity: 1;
+}
+
+.audio__name {
+  font-size: 0.9375rem;
+  font-weight: 500;
+  color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.msg--own .audio__name {
+  color: var(--text-on-accent);
+}
+
+/* Полоса хода файла: дорожка прозрачным цветом строки, пройденное — сплошным.
+   Растёт transform'ом — раскладка не пересчитывается */
+.audio__track {
+  position: relative;
+  display: block;
+  height: 0.25rem;
+  padding: 0;
+  border-radius: var(--radius-pill);
+  overflow: hidden;
+  cursor: pointer;
+}
+
+.audio__track::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: currentColor;
+  opacity: 0.25;
+}
+
+.audio__track span {
+  position: absolute;
+  inset: 0;
+  background: currentColor;
+  transform-origin: left;
+}
+
+/* Время (и формат с размером у файла) — мелко, вторым цветом */
+.audio__meta {
+  display: flex;
+  gap: var(--space-1);
+  font-size: 0.75rem;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-secondary);
+}
+
+.msg--own .audio__meta {
+  color: var(--on-accent-secondary);
+}
