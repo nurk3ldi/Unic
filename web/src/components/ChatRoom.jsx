@@ -30,6 +30,7 @@ import {
   AUDIO_LIMIT,
   IMAGE_LIMIT,
   LINK_RE,
+  MENTION_RE,
   POLL_MS,
   REACTIONS,
   VIDEO_EXTENSIONS,
@@ -216,17 +217,48 @@ function ChatImage({ file, time, onOpen }) {
 const MENU_ROOM_REM = 14;
 
 /** Текст с живыми ссылками: адрес открывается в новой вкладке, разговор остаётся. */
-function withLinks(text) {
-  // split с группой кладёт найденное на нечётные места
-  return text.split(new RegExp(`(${LINK_RE.source})`, 'g')).map((part, index) =>
-    index % 2 ? (
-      <a key={index} className="msg__link" href={part} target="_blank" rel="noreferrer">
-        {part}
-      </a>
-    ) : (
-      part
-    ),
-  );
+/**
+ * Пока набирают ник: `@` и то, что успели написать, у самого курсора.
+ * В набранном допустимы любые буквы, хотя ник — только латиница: у нас ищут
+ * и по имени, а имена здесь казахские («@нұр» находит Нұркелді). Подставится
+ * всё равно ник.
+ */
+const TYPING_MENTION = /(?:^|[^a-z0-9_@.])@([\p{L}0-9_]{0,20})$/iu;
+
+/**
+ * Текст реплики: ссылки открываются, `@ник` подсвечен. Оба разбора — одним
+ * проходом по строке: вложенные split'ы путали бы порядок кусков.
+ *
+ * `mentionClass` решает, упоминание ли это: набор букв после `@`, за которым
+ * в клубе никого нет, остаётся обычным текстом — подсветка обещает человека.
+ */
+function withRich(text, mentionClass) {
+  const rich = new RegExp(`(${LINK_RE.source})|${MENTION_RE.source}`, 'gi');
+  const parts = [];
+  let from = 0;
+
+  for (const found of text.matchAll(rich)) {
+    const [whole, link, nick] = found;
+    const style = link ? null : mentionClass(nick);
+    if (!link && !style) continue;
+
+    if (found.index > from) parts.push(text.slice(from, found.index));
+    parts.push(
+      link ? (
+        <a key={parts.length} className="msg__link" href={whole} target="_blank" rel="noreferrer">
+          {whole}
+        </a>
+      ) : (
+        <span key={parts.length} className={style}>
+          {whole}
+        </span>
+      ),
+    );
+    from = found.index + whole.length;
+  }
+
+  parts.push(text.slice(from));
+  return parts;
 }
 
 /**
@@ -239,7 +271,7 @@ function withLinks(text) {
  *
  * Лента всегда прокручена к последнему сообщению — читают её с конца.
  */
-export default function ChatRoom({ clubId }) {
+export default function ChatRoom({ clubId, members = [] }) {
   const { user } = useAuth();
 
   const listRef = useRef(null);
@@ -269,6 +301,11 @@ export default function ChatRoom({ clubId }) {
   const [menuUp, setMenuUp] = useState(false); // снизу нет места — меню раскрывается вверх
   // Все эмодзи: { id сообщения, anchor — где стояла кнопка «+» }
   const [picker, setPicker] = useState(null);
+  // Набирают `@ник`: { query — что успели написать, from — где стоит сама «@» }
+  const [mention, setMention] = useState(null);
+  const [mentionAt, setMentionAt] = useState(0); // какая строка списка выбрана
+  const caret = useRef(null); // куда вернуть курсор после подстановки ника
+  const dismissed = useRef(null); // «@», список которого закрыли сами
   const [replying, setReplying] = useState(null); // сообщение, на которое отвечаем
   const [photo, setPhoto] = useState(null); // { dataUrl, width, height } — снимок к отправке
   // Видео или документ к отправке: { kind, file, name, size, preview?, width?, height?, duration? }
@@ -358,6 +395,92 @@ export default function ChatRoom({ clubId }) {
     };
   }, [openMenu]);
 
+  // Кого этот `@ник` называет: свой ник — true, участник клуба — false,
+  // никого — undefined. Своего держим отдельно: упоминание себя видно и тому,
+  // кто состава не видит, — например университету, читающему чужой клуб
+  const nicks = useMemo(() => {
+    const known = new Map();
+    for (const member of members) {
+      if (member.username) known.set(member.username.toLowerCase(), false);
+    }
+    if (user?.username) known.set(user.username.toLowerCase(), true);
+    return known;
+  }, [members, user]);
+
+  const mentionClass = (nick) => {
+    const me = nicks.get(nick.toLowerCase());
+    if (me === undefined) return null;
+    return me ? 'msg__mention msg__mention--me' : 'msg__mention';
+  };
+
+  // Кого предложить под набранным `@…`: по нику или по имени. Себя не зовут
+  const suggestions = useMemo(() => {
+    if (!mention) return [];
+    const query = mention.query.toLowerCase();
+    return members
+      .filter(
+        (member) =>
+          member.username &&
+          member.id !== user?.id &&
+          (!query ||
+            member.username.includes(query) ||
+            member.name.toLowerCase().includes(query)),
+      )
+      .slice(0, 6);
+  }, [mention, members, user]);
+
+  // Пустой список не перехватывает ни Enter, ни стрелки
+  const picking = suggestions.length > 0;
+  const at = Math.min(mentionAt, suggestions.length - 1);
+
+  /**
+   * Идёт ли набор ника у курсора — считаем по самому полю, а не по событию.
+   *
+   * Закрытый список сам не возвращается: `onSelect` приходит и на нажатие
+   * клавиши, причём поле в этот миг ещё со старым текстом, — без памяти об
+   * отказе список воскресал бы сразу после Esc и после выбора. Отказ забывается,
+   * как только набор ника кончился: тогда следующий `@` снова откроет список.
+   */
+  function watchMention(field) {
+    const cursor = field.selectionStart;
+    const found =
+      cursor === field.selectionEnd ? TYPING_MENTION.exec(field.value.slice(0, cursor)) : null;
+
+    if (!found) {
+      dismissed.current = null;
+      setMention(null);
+      return;
+    }
+
+    const from = cursor - found[1].length - 1;
+    if (dismissed.current === from) return;
+    setMention({ query: found[1], from });
+    setMentionAt(0);
+  }
+
+  /** Убрать список, не подставляя ник: этот `@` человек закрыл сам. */
+  function closeMention() {
+    dismissed.current = mention.from;
+    setMention(null);
+  }
+
+  /** Подставить ник вместо набранного `@…` и продолжить строку. */
+  function pickMention(member) {
+    const to = mention.from + 1 + mention.query.length;
+    // Пробел после ника: следом пишут слова, а не продолжение имени
+    caret.current = mention.from + member.username.length + 2;
+    setText(`${text.slice(0, mention.from)}@${member.username} ${text.slice(to)}`);
+    closeMention();
+    inputRef.current?.focus();
+  }
+
+  // Курсор после подстановки — до отрисовки, иначе он на кадр уедет в конец строки
+  useLayoutEffect(() => {
+    if (caret.current === null) return;
+    inputRef.current?.setSelectionRange(caret.current, caret.current);
+    caret.current = null;
+  }, [text]);
+
   /** Копирование подтверждает себя в самом меню: тостов в проекте нет. */
   async function copy(message) {
     try {
@@ -423,6 +546,27 @@ export default function ChatRoom({ clubId }) {
 
   /** Enter отправляет, Shift+Enter переносит строку. Пока идёт набор IME, Enter — его. */
   function sendOnEnter(event) {
+    // Пока открыт список ников, он и отвечает за стрелки и Enter: там сейчас
+    // выбирают человека, а не заканчивают реплику
+    if (picking) {
+      if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
+        event.preventDefault();
+        const step = event.key === 'ArrowDown' ? 1 : suggestions.length - 1;
+        setMentionAt((was) => (Math.min(was, suggestions.length - 1) + step) % suggestions.length);
+        return;
+      }
+      if (event.key === 'Enter' || event.key === 'Tab') {
+        event.preventDefault();
+        pickMention(suggestions[at]);
+        return;
+      }
+      if (event.key === 'Escape') {
+        event.preventDefault();
+        closeMention();
+        return;
+      }
+    }
+
     if (event.key === 'Enter' && !event.shiftKey && !event.nativeEvent.isComposing) {
       event.preventDefault();
       event.currentTarget.form.requestSubmit();
@@ -1164,7 +1308,7 @@ export default function ChatRoom({ clubId }) {
 
           {message.text && (
             <p className="msg__text">
-              {withLinks(message.text)}
+              {withRich(message.text, mentionClass)}
               <time className="msg__time" dateTime={message.createdAt}>
                 {messageTime.format(new Date(message.createdAt))}
               </time>
@@ -1507,6 +1651,39 @@ export default function ChatRoom({ clubId }) {
           <label className="visually-hidden" htmlFor="chat-input">
             Сообщение
           </label>
+          {picking && (
+            /* Список растёт вверх из поля — туда же, где потом окажется ник.
+               mousedown гасим: иначе поле теряет фокус раньше, чем дойдёт клик */
+            <div
+              className="chat__mentions"
+              role="listbox"
+              aria-label="Кого упомянуть"
+              onMouseDown={(event) => event.preventDefault()}
+            >
+              {suggestions.map((member, index) => (
+                <button
+                  key={member.id}
+                  className={`chat__mention${index === at ? ' chat__mention--active' : ''}`}
+                  type="button"
+                  role="option"
+                  aria-selected={index === at}
+                  onMouseEnter={() => setMentionAt(index)}
+                  onClick={() => pickMention(member)}
+                >
+                  <span
+                    className="chat__mention-avatar"
+                    style={{ '--author': authorColor(member.id) }}
+                    aria-hidden="true"
+                  >
+                    {initial(member.name)}
+                  </span>
+                  <span className="chat__mention-name">{shortName(member.name)}</span>
+                  <span className="chat__mention-nick">@{member.username}</span>
+                </button>
+              ))}
+            </div>
+          )}
+
           {/* textarea, а не input: абзацы в сообщении — нормальное дело */}
           <textarea
             id="chat-input"
@@ -1515,7 +1692,14 @@ export default function ChatRoom({ clubId }) {
             rows={1}
             placeholder={photo || attachment ? 'Подпись' : 'Сообщение'}
             value={text}
-            onChange={(event) => setText(event.target.value)}
+            onChange={(event) => {
+              setText(event.target.value);
+              watchMention(event.target);
+            }}
+            // Курсор переставили мышью или стрелками — набор ника мог начаться
+            // или кончиться, а onChange об этом не говорит
+            onSelect={(event) => watchMention(event.target)}
+            onBlur={() => setMention(null)}
             onKeyDown={sendOnEnter}
           />
             </>

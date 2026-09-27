@@ -557,6 +557,29 @@
   color: var(--text-on-accent);
 }
 
+/* Упоминание — имя, а не текст: цветом отделяется от реплики */
+.msg__mention {
+  color: var(--accent);
+  font-weight: 500;
+}
+
+/* Назвали тебя — видно, не перечитывая: имя лежит на мягкой подложке */
+.msg__mention.msg__mention--me {
+  padding: 0 0.25rem;
+  margin: 0 -0.0625rem;
+  border-radius: var(--radius-control);
+  background: var(--accent-soft);
+}
+
+/* На своём синем пузыре акцент не читается — берём белый и его подложку */
+.msg--own .msg__mention {
+  color: var(--text-on-accent);
+}
+
+.msg--own .msg__mention.msg__mention--me {
+  background: var(--on-accent-fill);
+}
+
 .msg__time {
   float: right;
   /* Вровень с нижней строкой текста и на расстоянии от неё */
@@ -1017,6 +1040,7 @@ video.chat__photo-preview {
 /* Одна карточка на всё: ответ, поле и отправка живут внутри неё, а не рядом
    друг с другом — так у нижней полосы одна граница, а не три */
 .chat__box {
+  position: relative;
   flex: none;
   /* Та же колонка, что у ленты: поле стоит под пузырями */
   margin: var(--space-3) max(var(--space-4), calc((100% - var(--chat-column)) / 2))
@@ -1051,6 +1075,70 @@ video.chat__photo-preview {
 .chat__attach-box {
   position: relative;
   flex: none;
+}
+
+/* ── Кого упомянуть ─────────────────────────────────────── */
+/* Всплывает над полем: ник появится там же, где сейчас курсор */
+.chat__mentions {
+  position: absolute;
+  bottom: calc(100% + var(--space-2));
+  left: 0;
+  z-index: 2;
+  width: min(20rem, 100%);
+  padding: var(--space-2);
+  border: 1px solid var(--separator);
+  border-radius: var(--radius-card);
+  background: var(--surface);
+  box-shadow: var(--shadow-raised);
+  transform-origin: bottom left;
+  animation: row-menu-in var(--duration-fast) var(--ease-out) both;
+}
+
+.chat__mention {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  width: 100%;
+  /* 44px — минимальная зона нажатия у Apple */
+  min-height: 2.75rem;
+  padding: var(--space-1) var(--space-2);
+  border-radius: var(--radius-control);
+  text-align: left;
+  transition: background-color var(--duration-fast) var(--ease-out);
+}
+
+/* Подсвечена одна строка — та, что встанет по Enter; мышь и стрелки ведут её вместе */
+.chat__mention.chat__mention--active {
+  background: var(--fill);
+}
+
+/* Буква своего цвета — тот же кружок, что у автора в ленте */
+.chat__mention-avatar {
+  display: grid;
+  place-items: center;
+  width: 1.75rem;
+  height: 1.75rem;
+  flex: none;
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--author) 16%, var(--surface));
+  color: var(--author);
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.chat__mention-name {
+  flex: 1;
+  min-width: 0;
+  font-size: 0.875rem;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.chat__mention-nick {
+  flex: none;
+  font-size: 0.8125rem;
+  color: var(--text-secondary);
 }
 
 /* Меню растёт из самой кнопки вверх: §4.3 — привязка к триггеру.

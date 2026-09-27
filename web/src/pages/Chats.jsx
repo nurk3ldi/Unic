@@ -330,8 +330,10 @@ export default function Chats() {
                 </button>
               </div>
 
+              {/* Состав уже загружен для шапки — лента берёт его же: по нему
+                  подсказываются и подсвечиваются упоминания */}
               {/* key: смена разговора начинает ленту заново, а не дописывает чужую */}
-              <ChatRoom key={id} clubId={id} />
+              <ChatRoom key={id} clubId={id} members={members} />
             </>
           ) : (
             <p className="chats__hint">Выберите чат слева</p>

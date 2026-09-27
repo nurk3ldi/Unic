@@ -23,6 +23,9 @@ router.get('/', requireAuth, async (req, res) => {
     `select c.id, c.name, c.photo_url, m.id as last_id, m.author_id, m.body, m.has_photo,
             m.file_kind, m.file_name, m.deleted, m.created_at, u.full_name,
             ${unreadCount('$1', 'c.id')} as unread,
+            -- Тот же разбор, что подсвечивает ленту (MENTION_RE в web/src/chat.js):
+            -- слева не буква, не «@» и не точка, справа граница по латинице
+            m.body ~* ('(^|[^a-z0-9_@.])@' || $3 || '([^a-z0-9_]|$)') as mentioned,
             exists (
               select 1 from chat_mutes mu where mu.club_id = c.id and mu.user_id = $1
             ) as muted
@@ -44,7 +47,7 @@ router.get('/', requireAuth, async (req, res) => {
       )
       -- сверху то, где говорили последним; в пустых чатах — по дате клуба
       order by coalesce(m.created_at, c.created_at) desc`,
-    [req.user.id, all],
+    [req.user.id, all, req.user.username],
   );
 
   res.json({
@@ -66,6 +69,8 @@ router.get('/', requireAuth, async (req, res) => {
             photo: row.has_photo,
             file: row.file_kind ? { kind: row.file_kind, name: row.file_name } : null,
             deleted: row.deleted,
+            // Назвали по нику — оповещение придёт и в выключенном чате
+            mentioned: row.mentioned === true,
             author: row.full_name ?? 'Удалённый участник',
             createdAt: row.created_at,
           }

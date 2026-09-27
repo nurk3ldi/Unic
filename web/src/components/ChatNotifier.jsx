@@ -15,6 +15,9 @@ import { shortName } from '../people.js';
  * Молчит о своём, о выключенных чатах (chat.muted) и о разговоре, который
  * открыт прямо перед глазами. Пока браузер не разрешил уведомления, сервер
  * не спрашивается вовсе.
+ *
+ * Исключение — когда назвали по нику: выключенный чат приглушает разговор,
+ * а не обращение лично к тебе (как в WhatsApp и Telegram).
  */
 export default function ChatNotifier() {
   const { user } = useAuth();
@@ -47,7 +50,7 @@ export default function ChatNotifier() {
           for (const chat of chats) {
             const last = chat.last;
             if (!last || last.id === seen.get(chat.id)) continue;
-            if (last.authorId === user.id || chat.muted) continue;
+            if (last.authorId === user.id || (chat.muted && !last.mentioned)) continue;
             if (!document.hidden && path.current === `/chats/${chat.id}`) continue;
 
             // tag: новое сообщение того же чата заменяет прошлое оповещение, а не копится
