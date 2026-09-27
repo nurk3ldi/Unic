@@ -56,7 +56,8 @@ function Identity() {
     <>
       <div className="profile__hero">
         <span className="profile__avatar" aria-hidden="true">
-          {initial(user.fullName)}
+          {/* Снимок, если поставлен; иначе буква — как в шапке и в составе */}
+          {user.photo ? <img src={user.photo} alt="" /> : initial(user.fullName)}
         </span>
         <h1 className="profile__name">{user.fullName}</h1>
         <p className="profile__nick">@{user.username}</p>

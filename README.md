@@ -26,7 +26,7 @@ DATABASE_URL=postgres://postgres:ВАШ_ПАРОЛЬ@localhost:5432/unic
 | `admin@unic.kz` | Администратор |
 | `university@unic.kz` | Университет |
 | `nurk3ldi@icloud.com` | Руководитель клуба |
-| `ftnurkeldi@gmail.com` | Студент |
+| `unic@unic.kz` | Студент |
 
 ## Правила разработки
 
