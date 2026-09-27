@@ -383,6 +383,16 @@
   background: var(--fill);
 }
 
+/* «+» — не эмодзи, а вход во все: значок вторым цветом */
+.row-menu__reaction--more {
+  color: var(--text-secondary);
+}
+
+.row-menu__reaction--more svg {
+  width: 1.375rem;
+  height: 1.375rem;
+}
+
 /* Отклик на нажатии — эмодзи чуть поддаётся под пальцем */
 .row-menu__reaction:active {
   transform: scale(0.88);

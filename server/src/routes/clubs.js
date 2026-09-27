@@ -456,14 +456,17 @@ async function canReadChat(clubId, user) {
 }
 
 /**
- * Реакции — короткий набор, как в WhatsApp. Список закрытый: реакция — не
- * произвольный текст, а выбор из того, что показывает меню.
+ * Реакция — любой настоящий эмодзи (как на клавиатуре), ровно один и без текста
+ * вокруг. RGI — официальный список Unicode: «буква», два эмодзи подряд или
+ * произвольная строка не пройдут.
  */
-const REACTIONS = ['👍', '❤️', '😂', '😮', '😢', '🙏'];
+const isEmoji = (value) =>
+  typeof value === 'string' && value.length <= 32 && /^\p{RGI_Emoji}$/v.test(value);
 
 /**
  * Реакции к сообщениям — одним запросом на всю пачку: какие, сколько, кто
- * (имена — для подсказки) и есть ли среди них своя. Порядок — как в наборе.
+ * (имена — для подсказки) и есть ли среди них своя. Порядок — по первой
+ * реакции: новый эмодзи встаёт в конец, как и в мгновенном отклике клиента.
  */
 async function withReactions(messages, userId) {
   if (!messages.length) return messages;
@@ -474,7 +477,8 @@ async function withReactions(messages, userId) {
        from message_reactions r
        left join users u on u.id = r.user_id
       where r.message_id = any($1::uuid[])
-      group by r.message_id, r.emoji`,
+      group by r.message_id, r.emoji
+      order by min(r.created_at)`,
     [messages.map((message) => message.id), userId],
   );
   const byMessage = new Map();
@@ -483,11 +487,7 @@ async function withReactions(messages, userId) {
     list.push({ emoji: row.emoji, count: row.count, mine: row.mine, names: row.names });
     byMessage.set(row.message_id, list);
   }
-  const order = (emoji) => REACTIONS.indexOf(emoji);
-  return messages.map((message) => ({
-    ...message,
-    reactions: (byMessage.get(message.id) ?? []).sort((a, b) => order(a.emoji) - order(b.emoji)),
-  }));
+  return messages.map((message) => ({ ...message, reactions: byMessage.get(message.id) ?? [] }));
 }
 
 const publicMessage = (row) => ({
@@ -1028,7 +1028,7 @@ router.put('/:id/messages/:messageId/reaction', requireAuth, async (req, res) =>
   }
 
   const emoji = req.body?.emoji ?? null;
-  if (emoji !== null && !REACTIONS.includes(emoji)) {
+  if (emoji !== null && !isEmoji(emoji)) {
     return res.status(400).json({ error: 'Такой реакции нет' });
   }
 

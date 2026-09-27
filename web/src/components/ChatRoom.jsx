@@ -1,6 +1,7 @@
 import { Fragment, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import {
   IoAdd,
+  IoAddOutline,
   IoArrowUp,
   IoArrowUndoOutline,
   IoBanOutline,
@@ -46,6 +47,7 @@ import { authorColor, formatPhone, initial, shortName } from '../people.js';
 import { chatPhoto } from '../photo.js';
 import { canRecord, useVoiceRecorder } from '../voice.js';
 import ChatAudio from './ChatAudio.jsx';
+import EmojiPicker from './EmojiPicker.jsx';
 import PhotoViewer from './PhotoViewer.jsx';
 import './ChatRoom.css';
 
@@ -265,6 +267,8 @@ export default function ChatRoom({ clubId }) {
   const [attaching, setAttaching] = useState(false);
   const [openMenu, setOpenMenu] = useState(null); // id сообщения
   const [menuUp, setMenuUp] = useState(false); // снизу нет места — меню раскрывается вверх
+  // Все эмодзи: { id сообщения, anchor — где стояла кнопка «+» }
+  const [picker, setPicker] = useState(null);
   const [replying, setReplying] = useState(null); // сообщение, на которое отвечаем
   const [photo, setPhoto] = useState(null); // { dataUrl, width, height } — снимок к отправке
   // Видео или документ к отправке: { kind, file, name, size, preview?, width?, height?, duration? }
@@ -888,12 +892,14 @@ export default function ChatRoom({ clubId }) {
 
     // Меню растёт из своей кнопки (§4.3): у чужой реплики кнопка в шапке пузыря,
     // у своей — снаружи, слева от него; меню встаёт туда же, где кнопка
+    const mine = message.reactions?.find((item) => item.mine)?.emoji;
     const menu = openMenu === message.id && (
       <div
         className={`row-menu row-menu--msg${menuUp ? ' row-menu--above' : ''}`}
         role="menu"
       >
-        {/* Реакции — первым рядом: самое частое, что делают с чужой репликой */}
+        {/* Реакции — первым рядом: самое частое, что делают с чужой репликой.
+            «+» в конце открывает все эмодзи */}
         <div className="row-menu__reactions">
           {REACTIONS.map((emoji) => {
             const chosen = message.reactions?.some((item) => item.mine && item.emoji === emoji);
@@ -914,6 +920,22 @@ export default function ChatRoom({ clubId }) {
               </button>
             );
           })}
+
+          <button
+            className={`row-menu__reaction row-menu__reaction--more${
+              mine && !REACTIONS.includes(mine) ? ' row-menu__reaction--chosen' : ''
+            }`}
+            type="button"
+            role="menuitem"
+            aria-label="Все реакции"
+            onClick={(event) => {
+              event.stopPropagation();
+              setPicker({ id: message.id, anchor: event.currentTarget.getBoundingClientRect() });
+              setOpenMenu(null);
+            }}
+          >
+            <IoAddOutline aria-hidden="true" />
+          </button>
         </div>
 
         {message.text && (
@@ -1255,6 +1277,21 @@ export default function ChatRoom({ clubId }) {
       )}
 
       <PhotoViewer photo={viewing} onClose={() => setViewing(null)} />
+
+      {picker && (
+        <EmojiPicker
+          anchor={picker.anchor}
+          chosen={
+            messages.find((item) => item.id === picker.id)?.reactions?.find((item) => item.mine)?.emoji
+          }
+          onPick={(emoji) => {
+            // Сообщение берём свежее: пока окно открыто, опрос мог принести чужие реакции
+            const message = messages.find((item) => item.id === picker.id);
+            if (message) react(message, emoji);
+          }}
+          onClose={() => setPicker(null)}
+        />
+      )}
 
       {/* Ответ и поле ввода — одна карточка: отвечают тут же, где набирают */}
       <div className={`chat__box${tall ? ' chat__box--tall' : ''}`}>

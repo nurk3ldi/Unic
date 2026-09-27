@@ -31,14 +31,16 @@ export function dayLabel(iso) {
 }
 
 /**
- * Реакции — тот же набор, что принимает сервер (и в том же порядке он их
- * отдаёт). Один человек — одна реакция на сообщение.
+ * Быстрые реакции — первый ряд меню сообщения. Остальные — в окне «+»
+ * (`emoji.js`); сервер принимает любой настоящий эмодзи. Один человек — одна
+ * реакция на сообщение.
  */
 export const REACTIONS = ['👍', '❤️', '😂', '😮', '😢', '🙏'];
 
 /**
  * Реакции после того, как человек сменил свою: `from` убирается, `to` ставится
- * (null — ничего). Для мгновенного отклика, пока сервер не ответил.
+ * (null — ничего), новая — в конец, как её поставит и сервер (порядок — по
+ * первой реакции). Для мгновенного отклика, пока сервер не ответил.
  */
 export function swapReaction(reactions, name, from, to) {
   let list = reactions
@@ -57,7 +59,7 @@ export function swapReaction(reactions, name, from, to) {
         )
       : [...list, { emoji: to, count: 1, mine: true, names: [name] }];
   }
-  return list.sort((a, b) => REACTIONS.indexOf(a.emoji) - REACTIONS.indexOf(b.emoji));
+  return list;
 }
 
 /**

@@ -1,0 +1,136 @@
+/* ── Все эмодзи ────────────────────────────────────────── */
+/* Окно в верхнем слое; место и точку роста (transform-origin) ставит JS —
+   от кнопки «+». Размер совпадает с WIDTH_REM / HEIGHT_REM в компоненте */
+.emoji {
+  position: fixed;
+  inset: auto;
+  width: min(22rem, calc(100vw - 1rem));
+  height: min(24rem, calc(100dvh - 1rem));
+  margin: 0;
+  padding: 0;
+  border: 1px solid var(--separator);
+  border-radius: var(--radius-card);
+  background: var(--surface);
+  color: var(--text);
+  box-shadow: var(--shadow-raised);
+  overflow: hidden;
+  /* Приходит и уходит одним путём: масштаб + растворение */
+  opacity: 0;
+  transform: scale(0.96);
+  transition:
+    opacity var(--duration-fast) var(--ease-out),
+    transform var(--duration-fast) var(--ease-out),
+    overlay var(--duration-fast) allow-discrete,
+    display var(--duration-fast) allow-discrete;
+}
+
+/* flex — только открытому: иначе он перебил бы display: none закрытого popover */
+.emoji:popover-open {
+  display: flex;
+  flex-direction: column;
+  opacity: 1;
+  transform: none;
+}
+
+@starting-style {
+  .emoji:popover-open {
+    opacity: 0;
+    transform: scale(0.96);
+  }
+}
+
+/* Группы: значки в ряд, видимая — в мягком акценте */
+.emoji__tabs {
+  display: flex;
+  justify-content: space-between;
+  padding: var(--space-1) var(--space-2);
+  border-bottom: 1px solid var(--separator);
+}
+
+.emoji__tab {
+  display: grid;
+  place-items: center;
+  width: 2.75rem;
+  height: 2.75rem;
+  border-radius: 50%;
+  color: var(--text-tertiary);
+  transition:
+    color var(--duration-fast) var(--ease-out),
+    background-color var(--duration-fast) var(--ease-out);
+}
+
+.emoji__tab:hover {
+  color: var(--text-secondary);
+}
+
+.emoji__tab[aria-selected='true'] {
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+
+.emoji__tab svg {
+  width: 1.25rem;
+  height: 1.25rem;
+}
+
+/* Лента эмодзи; relative — от неё считаются offsetTop групп */
+.emoji__body {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  padding: 0 var(--space-2) var(--space-2);
+  overflow-y: auto;
+  /* Докрутили до конца — страница под окном не едет */
+  overscroll-behavior: contain;
+}
+
+/* Заголовок группы липнет к верху, пока листается её содержимое */
+.emoji__title {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  padding: var(--space-2) var(--space-2) var(--space-1);
+  background: var(--surface);
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  color: var(--text-secondary);
+}
+
+.emoji__grid {
+  display: grid;
+  grid-template-columns: repeat(8, minmax(0, 1fr));
+}
+
+.emoji__item {
+  display: grid;
+  place-items: center;
+  aspect-ratio: 1;
+  border-radius: var(--radius-control);
+  font-size: 1.5rem;
+  line-height: 1;
+  transition:
+    background-color var(--duration-fast) var(--ease-out),
+    transform var(--duration-press) var(--ease-out);
+}
+
+.emoji__item:hover {
+  background: var(--fill);
+}
+
+/* Отклик на нажатии — эмодзи поддаётся под пальцем */
+.emoji__item:active {
+  transform: scale(0.88);
+}
+
+/* Своя реакция — в мягком акценте: нажать ещё раз значит убрать */
+.emoji__item.emoji__item--chosen {
+  background: var(--accent-soft);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .emoji,
+  .emoji:popover-open {
+    transform: none;
+  }
+}
