@@ -6,6 +6,10 @@ import {
   IoArrowUndoOutline,
   IoBanOutline,
   IoArrowDown,
+  IoCheckmark,
+  IoCheckmarkDone,
+  IoPin,
+  IoPinOutline,
   IoChevronDown,
   IoClose,
   IoCopyOutline,
@@ -48,6 +52,7 @@ import { authorColor, formatPhone, initial, shortName } from '../people.js';
 import { chatPhoto } from '../photo.js';
 import { canRecord, useVoiceRecorder } from '../voice.js';
 import ChatAudio from './ChatAudio.jsx';
+import SearchField from './SearchField.jsx';
 import EmojiPicker from './EmojiPicker.jsx';
 import PhotoViewer from './PhotoViewer.jsx';
 import './ChatRoom.css';
@@ -262,6 +267,30 @@ function withRich(text, mentionClass) {
 }
 
 /**
+ * Время реплики, а у своей — ещё и судьба: ✓ дошло, ✓✓ прочитали **все**
+ * остальные участники (WhatsApp читает их так же). Одна дата на всю ленту —
+ * `readByAll`: своё сообщение не новее её, значит его успели прочитать все.
+ *
+ * Университет и админ в составе не числятся и в счёт не идут — иначе «все»
+ * означало бы «и те, кто просто смотрит чужой клуб».
+ */
+function Stamp({ message, own, readByAll, className = 'msg__time' }) {
+  const read = readByAll && new Date(message.createdAt) <= new Date(readByAll);
+  return (
+    <time className={className} dateTime={message.createdAt}>
+      {messageTime.format(new Date(message.createdAt))}
+      {own &&
+        !message.deleted &&
+        (read ? (
+          <IoCheckmarkDone className="msg__ticks msg__ticks--read" aria-label="Прочитано" />
+        ) : (
+          <IoCheckmark className="msg__ticks" aria-label="Отправлено" />
+        ))}
+    </time>
+  );
+}
+
+/**
  * Кружок автора у реплики: снимок, если он есть, иначе буква его цвета.
  * Снимок приходит ссылкой (`/api/users/:id/photo`) — браузер берёт его один раз
  * и держит в кэше, а не тянет байты с каждым опросом.
@@ -291,7 +320,7 @@ function Avatar({ message, voice = false }) {
  *
  * Лента всегда прокручена к последнему сообщению — читают её с конца.
  */
-export default function ChatRoom({ clubId, members = [] }) {
+export default function ChatRoom({ clubId, members = [], searching = false, onSearchClose }) {
   const { user } = useAuth();
 
   const listRef = useRef(null);
@@ -306,6 +335,12 @@ export default function ChatRoom({ clubId, members = [] }) {
 
   const [messages, setMessages] = useState([]);
   const [hasMore, setHasMore] = useState(false); // раньше показанного есть ещё история
+  const [pinned, setPinned] = useState(null); // закреплённое сообщение клуба
+  const [readByAll, setReadByAll] = useState(null); // до какой даты чат прочитан всеми
+  const [query, setQuery] = useState(''); // что ищут в переписке
+  const [found, setFound] = useState(null); // находки (null — ещё не искали)
+  const [jumping, setJumping] = useState(false); // идём к старому сообщению
+  const goTo = useRef(null); // id, к которому прокрутить после отрисовки
   const [loadingOlder, setLoadingOlder] = useState(false);
   // До какого момента был прочитан чат, когда его открыли: по нему — черта «Новые».
   // Берётся один раз: пока чат открыт, черта не ползёт вслед за чтением
@@ -360,6 +395,8 @@ export default function ChatRoom({ clubId, members = [] }) {
             return [...older, ...data.messages];
           });
           setCanModerate(Boolean(data.canModerate));
+          setPinned(data.pinned ?? null);
+          setReadByAll(data.readByAll ?? null);
           // Первый ответ говорит, есть ли история раньше и до какого места прочитано
           // Updater выполняется позже этой строки — «первый ли ответ» фиксируем сейчас,
           // иначе к его запуску first уже false и история считалась бы исчерпанной
@@ -539,6 +576,97 @@ export default function ChatRoom({ clubId, members = [] }) {
       setError(failure.message);
     }
   }
+
+  /** Закрепить сообщение или снять закрепление (`null`). */
+  async function pin(messageId) {
+    setOpenMenu(null);
+    try {
+      const data = await api.pinClubMessage(clubId, messageId);
+      setPinned(data.pinned);
+    } catch (failure) {
+      setError(failure.message);
+    }
+  }
+
+  /**
+   * Дойти до сообщения, даже если оно далеко в истории: подгружаем страницы
+   * вверх, пока оно не окажется в ленте, и только потом рисуем — иначе лента
+   * дёргалась бы на каждой странице. Прокрутку делает эффект: к этому моменту
+   * сообщение уже на экране.
+   */
+  async function jumpTo(id) {
+    if (messages.some((item) => item.id === id)) {
+      goTo.current = id;
+      setFound(null);
+      onSearchClose?.();
+      return;
+    }
+
+    setJumping(true);
+    let list = messages;
+    let more = hasMore;
+    // Потолок: чат может быть длинным, а бесконечный цикл — нет
+    for (let page = 0; more && page < 40; page += 1) {
+      const data = await api.clubMessages(clubId, list[0].id);
+      const known = new Set(list.map((item) => item.id));
+      list = [...data.messages.filter((item) => !known.has(item.id)), ...list];
+      more = data.hasMore;
+      if (list.some((item) => item.id === id)) break;
+    }
+
+    setMessages(list);
+    setHasMore(more);
+    setJumping(false);
+    goTo.current = id;
+    setFound(null);
+    onSearchClose?.();
+  }
+
+  // Прокрутка к найденному — после того, как оно отрисовано. Подсветка гаснет
+  // сама: она показывает, куда смотреть, а не остаётся меткой
+  useEffect(() => {
+    if (!goTo.current) return;
+    const node = document.getElementById(`msg-${goTo.current}`);
+    goTo.current = null;
+    if (!node) return;
+
+    node.scrollIntoView({ block: 'center', behavior: 'smooth' });
+    node.classList.add('msg--found');
+    // Таймер намеренно живёт сам по себе: опрос обновляет ленту каждые пять
+    // секунд, и снятие подсветки в cleanup гасило бы его раньше срока —
+    // подсветка тогда оставалась бы навсегда
+    setTimeout(() => node.classList.remove('msg--found'), 1600);
+  }, [messages]);
+
+  // Поиск по переписке: спрашиваем сервер, а не фильтруем показанное —
+  // искомое чаще всего выше того, что успели подгрузить
+  useEffect(() => {
+    if (!searching) {
+      setQuery('');
+      setFound(null);
+      return undefined;
+    }
+    if (query.trim().length < 2) {
+      setFound(null);
+      return undefined;
+    }
+
+    let alive = true;
+    // Пауза: иначе запрос уходил бы на каждую букву
+    const timer = setTimeout(async () => {
+      try {
+        const data = await api.searchClubMessages(clubId, query.trim());
+        if (alive) setFound(data.found);
+      } catch {
+        if (alive) setFound([]);
+      }
+    }, 250);
+
+    return () => {
+      alive = false;
+      clearTimeout(timer);
+    };
+  }, [searching, query, clubId]);
 
   async function removeMessage(message) {
     setOpenMenu(null);
@@ -1010,9 +1138,7 @@ export default function ChatRoom({ clubId, members = [] }) {
                 )}
                 {deletedText(message.deleted, own)}
               </span>
-              <time className="msg__time" dateTime={message.createdAt}>
-                {messageTime.format(new Date(message.createdAt))}
-              </time>
+              <Stamp message={message} />
             </p>
           </div>
         </div>
@@ -1141,6 +1267,27 @@ export default function ChatRoom({ clubId, members = [] }) {
           Ответить
         </button>
 
+        {canModerate && (
+          <button
+            className="row-menu__item"
+            type="button"
+            role="menuitem"
+            onClick={() => pin(pinned?.id === message.id ? null : message.id)}
+          >
+            {pinned?.id === message.id ? (
+              <>
+                <IoPinOutline aria-hidden="true" />
+                Открепить
+              </>
+            ) : (
+              <>
+                <IoPin aria-hidden="true" />
+                Закрепить
+              </>
+            )}
+          </button>
+        )}
+
         {(own || canModerate) && (
           <button
             className="row-menu__item row-menu__item--danger"
@@ -1240,9 +1387,12 @@ export default function ChatRoom({ clubId, members = [] }) {
 
               {/* Без подписи времени негде сесть — оно ложится на сам снимок */}
               {!message.text && (
-                <time className="msg__photo-time" dateTime={message.createdAt}>
-                  {messageTime.format(new Date(message.createdAt))}
-                </time>
+                <Stamp
+                  message={message}
+                  own={own}
+                  readByAll={readByAll}
+                  className="msg__photo-time"
+                />
               )}
             </button>
           )}
@@ -1254,9 +1404,12 @@ export default function ChatRoom({ clubId, members = [] }) {
               time={
                 // Внизу у видео свои кнопки — время садится в верхний угол
                 !message.text && (
-                  <time className="msg__photo-time" dateTime={message.createdAt}>
-                    {messageTime.format(new Date(message.createdAt))}
-                  </time>
+                  <Stamp
+                    message={message}
+                    own={own}
+                    readByAll={readByAll}
+                    className="msg__photo-time"
+                  />
                 )
               }
             />
@@ -1268,9 +1421,12 @@ export default function ChatRoom({ clubId, members = [] }) {
               onOpen={setViewing}
               time={
                 !message.text && (
-                  <time className="msg__photo-time" dateTime={message.createdAt}>
-                    {messageTime.format(new Date(message.createdAt))}
-                  </time>
+                  <Stamp
+                    message={message}
+                    own={own}
+                    readByAll={readByAll}
+                    className="msg__photo-time"
+                  />
                 )
               }
             />
@@ -1288,9 +1444,12 @@ export default function ChatRoom({ clubId, members = [] }) {
               fallback={<Unplayable file={message.file} what="Аудио" />}
               time={
                 !message.text && (
-                  <time className="msg__file-time" dateTime={message.createdAt}>
-                    {messageTime.format(new Date(message.createdAt))}
-                  </time>
+                  <Stamp
+                    message={message}
+                    own={own}
+                    readByAll={readByAll}
+                    className="msg__file-time"
+                  />
                 )
               }
             />
@@ -1308,9 +1467,12 @@ export default function ChatRoom({ clubId, members = [] }) {
                   {extensionOf(message.file.name).toUpperCase()} ·{' '}
                   {formatSize(message.file.size)}
                   {!message.text && (
-                    <time className="msg__file-time" dateTime={message.createdAt}>
-                      {messageTime.format(new Date(message.createdAt))}
-                    </time>
+                    <Stamp
+                      message={message}
+                      own={own}
+                      readByAll={readByAll}
+                      className="msg__file-time"
+                    />
                   )}
                 </span>
               </span>
@@ -1320,9 +1482,7 @@ export default function ChatRoom({ clubId, members = [] }) {
           {message.text && (
             <p className="msg__text">
               {withRich(message.text, mentionClass)}
-              <time className="msg__time" dateTime={message.createdAt}>
-                {messageTime.format(new Date(message.createdAt))}
-              </time>
+              <Stamp message={message} own={own} readByAll={readByAll} />
             </p>
           )}
 
@@ -1371,6 +1531,83 @@ export default function ChatRoom({ clubId, members = [] }) {
           <span className="chat__drop-hint">Фото, видео, аудио или документ</span>
         </span>
       </div>
+
+      {pinned && (
+        /* Объявление держится над лентой: его читают, не листая переписку.
+           Вся полоска ведёт к самому сообщению, крестик — снимает закрепление */
+        <div className="chat__pin">
+          <button className="chat__pin-go" type="button" onClick={() => jumpTo(pinned.id)}>
+            <IoPin className="chat__pin-icon" aria-hidden="true" />
+            <span className="chat__pin-body">
+              <span className="chat__pin-title">Закреплённое сообщение</span>
+              <span className="chat__pin-text">{messageLabel(pinned)}</span>
+            </span>
+          </button>
+
+          {canModerate && (
+            <button
+              className="chat__pin-off"
+              type="button"
+              aria-label="Открепить"
+              onClick={() => pin(null)}
+            >
+              <IoClose aria-hidden="true" />
+            </button>
+          )}
+        </div>
+      )}
+
+      {searching && (
+        /* Поиск закрывает ленту, но не размонтирует её: закрыли — и переписка
+           осталась там же, где была */
+        <div className="chat__find">
+          <div className="chat__find-head">
+            <SearchField
+              label="Поиск по переписке"
+              value={query}
+              onChange={(event) => setQuery(event.target.value)}
+              onClear={() => setQuery('')}
+            />
+            <button className="chat__find-close" type="button" onClick={onSearchClose}>
+              Отмена
+            </button>
+          </div>
+
+          <div className="chat__find-list">
+            {jumping ? (
+              <p className="chat__find-empty">Идём к сообщению…</p>
+            ) : query.trim().length < 2 ? (
+              <p className="chat__find-empty">Введите хотя бы два символа</p>
+            ) : found === null ? (
+              <p className="chat__find-empty">Ищем…</p>
+            ) : found.length === 0 ? (
+              <p className="chat__find-empty">Ничего не нашли</p>
+            ) : (
+              found.map((item) => (
+                <button
+                  key={item.id}
+                  className="chat__found"
+                  type="button"
+                  onClick={() => jumpTo(item.id)}
+                >
+                  <span className="chat__found-head">
+                    <span
+                      className="chat__found-author"
+                      style={{ color: authorColor(item.authorId) }}
+                    >
+                      {shortName(item.author)}
+                    </span>
+                    <span className="chat__found-date">
+                      {dayLabel(item.createdAt)}, {messageTime.format(new Date(item.createdAt))}
+                    </span>
+                  </span>
+                  <span className="chat__found-text">{item.text}</span>
+                </button>
+              ))
+            )}
+          </div>
+        </div>
+      )}
 
       {/* Лента с кнопкой ↓ поверх: кнопка держится у нижнего края ленты */}
       <div className="chat__feed">

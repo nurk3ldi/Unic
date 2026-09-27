@@ -194,3 +194,8 @@ create table if not exists message_reactions (
   created_at timestamptz not null default now(),
   primary key (message_id, user_id)
 );
+
+-- Закреплённое сообщение — одно на клуб: объявление вроде «Встреча в четверг».
+-- Ссылка, а не копия текста: сообщение удалили — закрепление уходит само
+alter table clubs add column if not exists pinned_message_id uuid
+  references club_messages (id) on delete set null;

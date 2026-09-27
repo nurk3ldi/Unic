@@ -574,6 +574,40 @@ const MESSAGE_JOINS = `left join users u on u.id = m.author_id
  * Клиент опрашивает этот адрес; отдельного «только новое» нет, потому что
  * страница всё равно показывает хвост и сравнивать ей не с чем.
  */
+/**
+ * Закреплённое сообщение клуба — то, что висит полоской над лентой.
+ * Удалённое не показываем: закрепление указывает на пустое место.
+ */
+async function pinnedMessage(clubId) {
+  const { rows } = await query(
+    `select ${MESSAGE_FIELDS}
+       from club_messages m
+       ${MESSAGE_JOINS}
+      where m.id = (select pinned_message_id from clubs where id = $1)
+        and m.deleted_at is null`,
+    [clubId],
+  );
+  return rows[0] ? publicMessage(rows[0]) : null;
+}
+
+/**
+ * До какого момента чат прочитан **всеми остальными** участниками — одна дата
+ * на всю ленту. Своё сообщение не старше её, значит его прочитали все: ✓✓.
+ *
+ * Одним числом, а не пометкой на каждом сообщении: отметка о чтении и так
+ * одна на человека (`chat_reads`), а минимум по составу отвечает сразу за всю
+ * страницу. Университет и админ в составе не числятся и в счёт не идут.
+ */
+async function readByAll(clubId, userId) {
+  const { rows } = await query(
+    `select min(${readSince('mm.user_id', '$1')}) as at
+       from club_members mm
+      where mm.club_id = $1 and mm.status = 'active' and mm.user_id <> $2`,
+    [clubId, userId],
+  );
+  return rows[0]?.at ?? null;
+}
+
 router.get('/:id/messages', requireAuth, async (req, res) => {
   if (!(await findClub(req.params.id))) {
     return res.status(404).json({ error: 'Клуб не найден' });
@@ -613,9 +647,84 @@ router.get('/:id/messages', requireAuth, async (req, res) => {
     // Полная страница — значит, раньше может быть ещё
     hasMore: rows.length === limit,
     lastReadAt: read[0]?.at ?? null,
+    // Своё сообщение не новее этой даты — значит прочитали все (✓✓)
+    readByAll: await readByAll(req.params.id, req.user.id),
+    pinned: await pinnedMessage(req.params.id),
     // Убирать чужие сообщения: университет, админ и лидер этого клуба
     canModerate: Boolean(await moderatorRole(req.params.id, req.user)),
   });
+});
+
+/**
+ * Поиск по переписке клуба. Отдаёт находки от новых к старым: что искали
+ * недавно, то обычно и нужно. Сам текст — целиком, лента покажет одну строку.
+ *
+ * `%` и `_` экранируются: иначе «%» нашёл бы всю переписку.
+ */
+router.get('/:id/messages/search', requireAuth, async (req, res) => {
+  if (!(await findClub(req.params.id))) {
+    return res.status(404).json({ error: 'Клуб не найден' });
+  }
+  if (!(await canReadChat(req.params.id, req.user))) {
+    return res.status(403).json({ error: 'Чат доступен только участникам клуба' });
+  }
+
+  const q = String(req.query.q ?? '').trim();
+  if (q.length < 2) return res.json({ found: [] });
+
+  const { rows } = await query(
+    `select m.id, m.body, m.created_at, m.author_id, u.full_name
+       from club_messages m
+       left join users u on u.id = m.author_id
+      where m.club_id = $1 and m.deleted_at is null
+        and m.body ilike '%' || replace(replace($2, '~', '~~'), '%', '~%') || '%' escape '~'
+      order by m.created_at desc
+      limit 50`,
+    [req.params.id, q.replace(/_/g, '~_')],
+  );
+
+  res.json({
+    found: rows.map((row) => ({
+      id: row.id,
+      text: row.body,
+      authorId: row.author_id,
+      author: row.full_name ?? 'Удалённый участник',
+      createdAt: row.created_at,
+    })),
+  });
+});
+
+/**
+ * Закрепить сообщение (или снять закрепление: `{ messageId: null }`).
+ * Закрепляет тот же, кто может убирать чужие реплики, — лидер клуба,
+ * университет, админ: полоска висит у всех, это не личная заметка.
+ */
+router.put('/:id/pin', requireAuth, async (req, res) => {
+  if (!(await findClub(req.params.id))) {
+    return res.status(404).json({ error: 'Клуб не найден' });
+  }
+  if (!(await moderatorRole(req.params.id, req.user))) {
+    return res.status(403).json({ error: 'Закреплять сообщения может только руководство клуба' });
+  }
+
+  const messageId = req.body?.messageId ?? null;
+  if (messageId !== null && !UUID_RE.test(messageId)) {
+    return res.status(400).json({ error: 'Некорректная ссылка на сообщение' });
+  }
+
+  if (messageId) {
+    const { rows } = await query(
+      'select 1 from club_messages where id = $1 and club_id = $2 and deleted_at is null',
+      [messageId, req.params.id],
+    );
+    if (!rows[0]) return res.status(404).json({ error: 'Сообщение не найдено' });
+  }
+
+  await query('update clubs set pinned_message_id = $1 where id = $2', [
+    messageId,
+    req.params.id,
+  ]);
+  res.json({ pinned: await pinnedMessage(req.params.id) });
 });
 
 router.post('/:id/messages', requireAuth, async (req, res) => {

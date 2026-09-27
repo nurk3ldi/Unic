@@ -275,6 +275,45 @@
   color: var(--text-on-accent);
 }
 
+/* ── Галочки ───────────────────────────────────────────── */
+/* ✓ дошло, ✓✓ прочитали все. Стоят вплотную ко времени, своим весом не спорят */
+.msg__ticks {
+  width: 0.9375rem;
+  height: 0.9375rem;
+  margin-left: 0.1875rem;
+  /* На своём синем пузыре время и галочки — приглушённо-белые */
+  color: var(--on-accent-secondary);
+  vertical-align: -0.1875rem;
+}
+
+/* Прочитано — в полную силу: разницу видно, не приглядываясь */
+.msg__ticks.msg__ticks--read {
+  color: var(--text-on-accent);
+}
+
+/* На снимке и на видео время лежит на тёмной плашке — галочки там всегда белые */
+.msg__photo-time .msg__ticks,
+.msg__photo-time .msg__ticks--read {
+  color: var(--viewer-fg);
+}
+
+/* ── Найденное ─────────────────────────────────────────── */
+/* Пришли к сообщению из поиска или из закрепления: оно коротко отзывается,
+   чтобы взгляд нашёл его среди соседей, и гаснет само */
+.msg--found .msg__bubble {
+  animation: msg-found 1.6s var(--ease-out);
+}
+
+@keyframes msg-found {
+  0%,
+  60% {
+    box-shadow: 0 0 0 3px var(--accent-soft);
+  }
+  100% {
+    box-shadow: 0 0 0 3px transparent;
+  }
+}
+
 /* Снимок занимает весь кружок: буква и фото стоят на одном месте */
 .msg__avatar img {
   width: 100%;
@@ -1083,6 +1122,173 @@ video.chat__photo-preview {
 .chat__attach-box {
   position: relative;
   flex: none;
+}
+
+/* ── Закреплённое ──────────────────────────────────────── */
+/* Полоска над лентой: не пузырь, а объявление — плотная, во всю ширину */
+.chat__pin {
+  display: flex;
+  align-items: center;
+  flex: none;
+  gap: var(--space-2);
+  padding: 0 var(--space-3) 0 max(var(--space-4), calc((100% - var(--chat-column)) / 2));
+  background: var(--surface);
+  border-bottom: 1px solid var(--separator);
+}
+
+.chat__pin-go {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  flex: 1;
+  min-width: 0;
+  /* Строка невысокая: объявление сопровождает переписку, а не теснит её */
+  padding: 0.625rem 0;
+  text-align: left;
+}
+
+.chat__pin-icon {
+  width: 1.125rem;
+  height: 1.125rem;
+  flex: none;
+  color: var(--accent);
+}
+
+.chat__pin-body {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.chat__pin-title {
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  color: var(--accent);
+}
+
+/* Одна строка: объявление зовёт к себе, а не пересказывает себя целиком */
+.chat__pin-text {
+  font-size: 0.875rem;
+  color: var(--text-secondary);
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.chat__pin-off {
+  display: grid;
+  place-items: center;
+  width: 2.25rem;
+  height: 2.25rem;
+  flex: none;
+  border-radius: 50%;
+  color: var(--text-tertiary);
+  transition:
+    background-color var(--duration-fast) var(--ease-out),
+    color var(--duration-fast) var(--ease-out);
+}
+
+.chat__pin-off:hover {
+  background: var(--fill);
+  color: var(--text-secondary);
+}
+
+.chat__pin-off svg {
+  width: 1.25rem;
+  height: 1.25rem;
+}
+
+/* ── Поиск по переписке ────────────────────────────────── */
+/* Ложится поверх ленты: закрыли — и переписка осталась на том же месте */
+.chat__find {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  display: flex;
+  flex-direction: column;
+  background: var(--surface);
+  animation: content-in var(--duration-fast) var(--ease-out) both;
+}
+
+.chat__find-head {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  flex: none;
+  padding: var(--space-3) var(--space-4);
+  border-bottom: 1px solid var(--separator);
+}
+
+.chat__find-head .search {
+  flex: 1;
+  min-width: 0;
+}
+
+.chat__find-close {
+  flex: none;
+  padding: var(--space-2);
+  font-size: 0.9375rem;
+  color: var(--accent);
+}
+
+.chat__find-list {
+  flex: 1;
+  min-height: 0;
+  padding: var(--space-2);
+  overflow-y: auto;
+}
+
+.chat__find-empty {
+  padding: var(--space-6) var(--space-4);
+  text-align: center;
+  font-size: 0.9375rem;
+  color: var(--text-secondary);
+}
+
+/* Находка — как строка списка: кто, когда и сама реплика в две строки */
+.chat__found {
+  display: flex;
+  flex-direction: column;
+  gap: 0.125rem;
+  width: 100%;
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-control);
+  text-align: left;
+  transition: background-color var(--duration-fast) var(--ease-out);
+}
+
+.chat__found:hover {
+  background: var(--fill);
+}
+
+.chat__found-head {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--space-2);
+  font-size: 0.8125rem;
+}
+
+.chat__found-author {
+  font-weight: 600;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.chat__found-date {
+  flex: none;
+  color: var(--text-tertiary);
+}
+
+/* Две строки: находку узнают по началу, читают её в самой переписке */
+.chat__found-text {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  font-size: 0.9375rem;
+  color: var(--text);
+  overflow: hidden;
 }
 
 /* ── Кого упомянуть ─────────────────────────────────────── */

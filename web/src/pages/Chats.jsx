@@ -56,6 +56,7 @@ export default function Chats() {
   const [media, setMedia] = useState(null); // { photos, images, videos, documents, links } открытого чата
   const [viewing, setViewing] = useState(null); // снимок из «Медиа» на весь экран
   const [findingMember, setFindingMember] = useState(false);
+  const [searching, setSearching] = useState(false); // открыт поиск по переписке
   const [memberQuery, setMemberQuery] = useState('');
   const memberSearchRef = useRef(null);
   const [search, setSearch] = useState('');
@@ -95,6 +96,7 @@ export default function Chats() {
     let alive = true;
     setMembers([]);
     setFindingMember(false);
+    setSearching(false);
     setMemberQuery('');
     api
       .clubMembers(id)
@@ -328,12 +330,29 @@ export default function Chats() {
                   </span>
 
                 </button>
+
+                {/* Поиск по этой переписке — рядом с тем, по чему ищут */}
+                <button
+                  className="search-toggle chats__find"
+                  type="button"
+                  aria-label="Поиск по переписке"
+                  aria-expanded={searching}
+                  onClick={() => setSearching((was) => !was)}
+                >
+                  <IoSearchOutline aria-hidden="true" />
+                </button>
               </div>
 
               {/* Состав уже загружен для шапки — лента берёт его же: по нему
                   подсказываются и подсвечиваются упоминания */}
               {/* key: смена разговора начинает ленту заново, а не дописывает чужую */}
-              <ChatRoom key={id} clubId={id} members={members} />
+              <ChatRoom
+                key={id}
+                clubId={id}
+                members={members}
+                searching={searching}
+                onSearchClose={() => setSearching(false)}
+              />
             </>
           ) : (
             <p className="chats__hint">Выберите чат слева</p>
