@@ -267,6 +267,44 @@ function withRich(text, mentionClass) {
 }
 
 /**
+ * Подсветить в уже разобранном тексте то, что искали.
+ *
+ * Работает поверх `withRich`, по готовым кускам: ссылку и упоминание не трогаем —
+ * они уже элементы, и метка внутри них разорвала бы адрес. Значит, слово внутри
+ * ссылки не подсветится — там оно и не читается как слово.
+ */
+function withMark(parts, query) {
+  if (!query) return parts;
+
+  // Искали текст, а не шаблон: точка, скобка и прочее — обычные символы
+  const cut = new RegExp(`(${query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi');
+  const out = [];
+
+  for (const part of parts) {
+    if (typeof part !== 'string') {
+      out.push(part);
+      continue;
+    }
+
+    // split с группой кладёт найденное на нечётные места
+    part.split(cut).forEach((piece, index) => {
+      if (!piece) return;
+      out.push(
+        index % 2 ? (
+          <mark key={`m${out.length}`} className="chat__mark">
+            {piece}
+          </mark>
+        ) : (
+          piece
+        ),
+      );
+    });
+  }
+
+  return out;
+}
+
+/**
  * Время реплики, а у своей — ещё и судьба: ✓ дошло, ✓✓ прочитали **все**
  * остальные участники (WhatsApp читает их так же). Одна дата на всю ленту —
  * `readByAll`: своё сообщение не новее её, значит его успели прочитать все.
@@ -341,6 +379,9 @@ export default function ChatRoom({ clubId, members = [], searching = false, onSe
   const [found, setFound] = useState(null); // находки (null — ещё не искали)
   const [jumping, setJumping] = useState(false); // идём к старому сообщению
   const goTo = useRef(null); // id, к которому прокрутить после отрисовки
+  // Что и где подсветить: { id сообщения, query }. Держится до следующего перехода —
+  // слово, ради которого сюда пришли, не должно гаснуть, пока его читают
+  const [mark, setMark] = useState(null);
   const [loadingOlder, setLoadingOlder] = useState(false);
   // До какого момента был прочитан чат, когда его открыли: по нему — черта «Новые».
   // Берётся один раз: пока чат открыт, черта не ползёт вслед за чтением
@@ -594,7 +635,10 @@ export default function ChatRoom({ clubId, members = [], searching = false, onSe
    * дёргалась бы на каждой странице. Прокрутку делает эффект: к этому моменту
    * сообщение уже на экране.
    */
-  async function jumpTo(id) {
+  async function jumpTo(id, marked = null) {
+    // Пришли из поиска — несём с собой слово; из закреплённого — гасим прежнее
+    setMark(marked ? { id, query: marked } : null);
+
     if (messages.some((item) => item.id === id)) {
       goTo.current = id;
       setFound(null);
@@ -1481,7 +1525,10 @@ export default function ChatRoom({ clubId, members = [], searching = false, onSe
 
           {message.text && (
             <p className="msg__text">
-              {withRich(message.text, mentionClass)}
+              {withMark(
+                withRich(message.text, mentionClass),
+                mark?.id === message.id ? mark.query : null,
+              )}
               <Stamp message={message} own={own} readByAll={readByAll} />
             </p>
           )}
@@ -1588,7 +1635,7 @@ export default function ChatRoom({ clubId, members = [], searching = false, onSe
                   key={item.id}
                   className="chat__found"
                   type="button"
-                  onClick={() => jumpTo(item.id)}
+                  onClick={() => jumpTo(item.id, query.trim())}
                 >
                   <span className="chat__found-head">
                     <span
@@ -1601,7 +1648,9 @@ export default function ChatRoom({ clubId, members = [], searching = false, onSe
                       {dayLabel(item.createdAt)}, {messageTime.format(new Date(item.createdAt))}
                     </span>
                   </span>
-                  <span className="chat__found-text">{item.text}</span>
+                  <span className="chat__found-text">
+                    {withMark([item.text], query.trim())}
+                  </span>
                 </button>
               ))
             )}
