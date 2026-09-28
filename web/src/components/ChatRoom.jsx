@@ -420,6 +420,7 @@ export default function ChatRoom({ clubId, members = [], jump = null }) {
   // Видео или документ к отправке: { kind, file, name, size, preview?, width?, height?, duration? }
   const [attachment, setAttachment] = useState(null);
   const [progress, setProgress] = useState(null); // доля загрузки 0…1, пока файл уходит
+  const upload = useRef(null); // чем оборвать отправку файла, пока она идёт
   const [viewing, setViewing] = useState(null); // снимок, открытый на весь экран
   const [tall, setTall] = useState(false); // поле выросло больше одной строки
   const [copied, setCopied] = useState(false);
@@ -1171,11 +1172,13 @@ export default function ChatRoom({ clubId, members = [], jump = null }) {
       let fileId = null;
       if (attachment) {
         setProgress(0);
+        upload.current = new AbortController();
         const { file } = await api.uploadChatFile(
           clubId,
           attachment.file,
           { width: attachment.width, height: attachment.height, duration: attachment.duration },
           setProgress,
+          upload.current.signal,
         );
         fileId = file.id;
       }
@@ -1199,8 +1202,11 @@ export default function ChatRoom({ clubId, members = [], jump = null }) {
       setAttachment(null);
       setError('');
     } catch (failure) {
-      setError(failure.message);
+      // Оборвали сами — это не ошибка: убираем вложение и молчим
+      if (failure.name === 'AbortError') setAttachment(null);
+      else setError(failure.message);
     } finally {
+      upload.current = null;
       setProgress(null);
       setSending(false);
       inputRef.current?.focus();
@@ -1912,10 +1918,13 @@ export default function ChatRoom({ clubId, members = [], jump = null }) {
                 <button
                   className="chat__reply-close"
                   type="button"
-                  aria-label="Убрать вложение"
+                  /* Тот же крестик: пока файл идёт — обрывает отправку, иначе
+                     просто снимает вложение. Гаснет только на последнем шаге,
+                     когда файл уже на сервере и уходит само сообщение */
+                  aria-label={progress === null ? 'Убрать вложение' : 'Отменить отправку'}
                   tabIndex={attachment ? undefined : -1}
-                  disabled={sending}
-                  onClick={() => setAttachment(null)}
+                  disabled={sending && progress === null}
+                  onClick={() => (progress === null ? setAttachment(null) : upload.current?.abort())}
                 >
                   <IoClose aria-hidden="true" />
                 </button>

@@ -89,7 +89,7 @@ export const api = {
    * хода выглядит зависшим. Имя — в заголовке, закодированным: заголовки не
    * несут кириллицу. `onProgress` получает долю от 0 до 1.
    */
-  uploadChatFile: (id, file, meta = {}, onProgress) =>
+  uploadChatFile: (id, file, meta = {}, onProgress, signal) =>
     new Promise((resolve, reject) => {
       const xhr = new XMLHttpRequest();
       xhr.open('POST', `/api/clubs/${id}/files`);
@@ -105,6 +105,13 @@ export const api = {
       // Голосовое, записанное в чате, и его «волна» для столбиков в ленте
       if (meta.voice) xhr.setRequestHeader('X-Voice', '1');
       if (meta.waveform?.length) xhr.setRequestHeader('X-Voice-Waveform', meta.waveform.join(','));
+
+      // Передумали — обрываем и сам запрос: незачем догружать то, что уже не нужно.
+      // Сервер удалит недописанный файл сам (saveBody чистит за собой)
+      const stop = () => xhr.abort();
+      signal?.addEventListener('abort', stop);
+      xhr.onloadend = () => signal?.removeEventListener('abort', stop);
+      xhr.onabort = () => reject(new DOMException('Отправка отменена', 'AbortError'));
 
       xhr.upload.onprogress = (event) =>
         event.lengthComputable && onProgress?.(event.loaded / event.total);
