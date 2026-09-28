@@ -12,7 +12,8 @@ export default function Person({ person, lead = false }) {
         style={{ color: authorColor(person.id) }}
         aria-hidden="true"
       >
-        {initial(person.name)}
+        {/* Снимок, если поставлен; иначе буква своего цвета */}
+        {person.photo ? <img src={person.photo} alt="" /> : initial(person.name)}
       </span>
       <span className="member__text">
         <span className="member__top">

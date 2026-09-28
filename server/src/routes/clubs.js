@@ -31,6 +31,9 @@ const publicMember = (row) => ({
   name: row.full_name,
   username: row.username ?? null,
   role: row.role,
+  // Ссылкой, а не байтами: списки перечитываются часто, а снимок браузер
+  // возьмёт один раз на всех (тот же адрес, что и у автора в ленте)
+  photo: row.has_photo ? `/api/users/${row.id}/photo` : null,
 });
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -215,7 +218,7 @@ router.get('/:id/members', requireAuth, async (req, res) => {
   }
 
   const { rows } = await query(
-    `select u.id, u.full_name, u.username, m.role, m.status
+    `select u.id, u.full_name, u.username, u.photo is not null as has_photo, m.role, m.status
        from club_members m
        join users u on u.id = m.user_id
       where m.club_id = $1
@@ -278,7 +281,7 @@ router.get('/:id/candidates', requireAuth, requireRole(...MANAGE_ROLES), async (
   // % и _ в запросе — обычные символы, а не шаблон LIKE
   const pattern = `%${text.replace(/[\\%_]/g, (char) => `\\${char}`)}%`;
   const { rows } = await query(
-    `select u.id, u.full_name, u.username, m.status
+    `select u.id, u.full_name, u.username, u.photo is not null as has_photo, m.status
        from users u
        left join club_members m on m.club_id = $1 and m.user_id = u.id
       where u.id <> $3

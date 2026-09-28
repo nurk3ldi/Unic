@@ -2051,7 +2051,11 @@ export default function ChatRoom({ clubId, members = [], jump = null }) {
                     style={{ '--author': authorColor(member.id) }}
                     aria-hidden="true"
                   >
-                    {initial(member.name)}
+                    {member.photo ? (
+                      <img src={member.photo} alt="" />
+                    ) : (
+                      initial(member.name)
+                    )}
                   </span>
                   <span className="chat__mention-name">{shortName(member.name)}</span>
                   <span className="chat__mention-nick">@{member.username}</span>

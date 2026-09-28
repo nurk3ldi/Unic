@@ -702,7 +702,11 @@ export default function Chats() {
                     {shownMembers.map((member) => (
                       <li className="chats__member" key={member.id}>
                         <span className="chats__member-avatar" aria-hidden="true">
-                          {initial(member.name)}
+                          {member.photo ? (
+                            <img src={member.photo} alt="" />
+                          ) : (
+                            initial(member.name)
+                          )}
                         </span>
 
                         {/* Сверху полное ФИО, под ним ник и роль: справа ник отнимал
