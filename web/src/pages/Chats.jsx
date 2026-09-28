@@ -23,6 +23,7 @@ import {
   messageLabel,
 } from '../chat.js';
 import { membersLabel } from '../club.js';
+import { useLive } from '../live.js';
 import { initial, shortName } from '../people.js';
 import ChatAudio from '../components/ChatAudio.jsx';
 import ChatRoom, { withMark } from '../components/ChatRoom.jsx';
@@ -60,6 +61,12 @@ export default function Chats() {
   const [query, setQuery] = useState(''); // что ищут в переписке
   const [found, setFound] = useState(null); // находки (null — ещё не искали)
   const [jump, setJump] = useState(null); // выбранная находка: { list, at, query }
+  const listAgain = useRef(null); // перечитать список — по событию, а не по таймеру
+
+  // Где-то написали — список чатов узнаёт об этом сразу, а не в свой черёд
+  useLive((event) => {
+    if (event.type === 'message') listAgain.current?.();
+  });
   const [memberQuery, setMemberQuery] = useState('');
   const memberSearchRef = useRef(null);
   const [search, setSearch] = useState('');
@@ -85,6 +92,7 @@ export default function Chats() {
     }
 
     load();
+    listAgain.current = load;
     const timer = setInterval(load, POLL_MS);
     return () => {
       alive = false;

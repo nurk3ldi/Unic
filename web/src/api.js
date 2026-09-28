@@ -70,6 +70,8 @@ export const api = {
   // pinned: false — снять закрепление
   pinClubMessage: (id, messageId, pinned = true) =>
     request(`/clubs/${id}/pin`, { method: 'PUT', body: { messageId, pinned } }),
+  // Ответа нет: сообщение о наборе живёт только в чужой ленте
+  typing: (id) => request(`/clubs/${id}/typing`, { method: 'POST' }),
   markChatRead: (id, messageId) =>
     request(`/clubs/${id}/read`, { method: 'PUT', body: { messageId } }),
   chatsUnread: () => request('/chats/unread'),

@@ -6,6 +6,7 @@ import clubRoutes from './routes/clubs.js';
 import eventRoutes from './routes/events.js';
 import inviteRoutes from './routes/invites.js';
 import userRoutes from './routes/users.js';
+import streamRoutes from './routes/stream.js';
 
 const app = express();
 
@@ -19,6 +20,7 @@ app.use('/api/chats', chatRoutes);
 app.use('/api/events', eventRoutes);
 app.use('/api/invites', inviteRoutes);
 app.use('/api/users', userRoutes);
+app.use('/api/stream', streamRoutes);
 
 app.use('/api', (_req, res) => res.status(404).json({ error: 'Ресурс не найден' }));
 

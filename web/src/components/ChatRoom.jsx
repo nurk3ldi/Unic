@@ -39,6 +39,9 @@ import {
   MENTION_RE,
   POLL_MS,
   REACTIONS,
+  SLOW_POLL_MS,
+  TYPING_EVERY_MS,
+  TYPING_SHOWN_MS,
   VIDEO_EXTENSIONS,
   VIDEO_LIMIT,
   dayLabel,
@@ -52,6 +55,7 @@ import {
 } from '../chat.js';
 import { authorColor, formatPhone, initial, shortName } from '../people.js';
 import { chatPhoto } from '../photo.js';
+import { useLive } from '../live.js';
 import { canRecord, useVoiceRecorder } from '../voice.js';
 import ChatAudio from './ChatAudio.jsx';
 import SearchField from './SearchField.jsx';
@@ -379,6 +383,10 @@ export default function ChatRoom({ clubId, members = [], jump = null }) {
   const [pinAt, setPinAt] = useState(0); // какое из них показывает полоска
   const [readByAll, setReadByAll] = useState(null); // до какой даты чат прочитан всеми
   const [jumping, setJumping] = useState(false); // идём к старому сообщению
+  const [typing, setTyping] = useState([]); // кто сейчас набирает: [{ id, name }]
+  const reload = useRef(null); // перечитать ленту — по событию, а не по таймеру
+  const typedAt = useRef(0); // когда последний раз сказали серверу «набираю»
+  const typingOff = useRef({}); // id → таймер, который уберёт «набирает»
   const goTo = useRef(null); // id, к которому прокрутить после отрисовки
   // Что и где подсветить: { id сообщения, query }. Держится до следующего перехода —
   // слово, ради которого сюда пришли, не должно гаснуть, пока его читают
@@ -461,13 +469,68 @@ export default function ChatRoom({ clubId, members = [], jump = null }) {
       }
     }
 
+    reload.current = load;
     load();
-    const timer = setInterval(load, POLL_MS);
     return () => {
       alive = false;
-      clearInterval(timer);
     };
   }, [clubId]);
+
+  /**
+   * События приходят сами (`live.js`): новое сообщение — перечитать ленту,
+   * чужой набор — показать строку. Своё сообщение и свой набор до нас не
+   * доходят, их и не ждём.
+   */
+  const live = useLive((event) => {
+    if (event.clubId !== clubId) return;
+
+    if (event.type === 'message') {
+      // Написал — значит уже не набирает
+      setTyping((was) => was.filter((item) => item.id !== event.userId));
+      reload.current?.();
+      return;
+    }
+
+    if (event.type === 'typing' && event.userId !== user?.id) {
+      setTyping((was) =>
+        was.some((item) => item.id === event.userId)
+          ? was
+          : [...was, { id: event.userId, name: event.name }],
+      );
+      // Знаки перестали приходить — строка гаснет сама
+      clearTimeout(typingOff.current[event.userId]);
+      typingOff.current[event.userId] = setTimeout(() => {
+        setTyping((was) => was.filter((item) => item.id !== event.userId));
+      }, TYPING_SHOWN_MS);
+    }
+  });
+
+  // Опрос остался страховкой: пока поток жив — раз в полминуты, оборвался —
+  // как прежде. Вкладку вернули — читаем сразу, не дожидаясь очереди
+  useEffect(() => {
+    const timer = setInterval(() => reload.current?.(), live ? SLOW_POLL_MS : POLL_MS);
+    const onShow = () => !document.hidden && reload.current?.();
+    document.addEventListener('visibilitychange', onShow);
+
+    return () => {
+      clearInterval(timer);
+      document.removeEventListener('visibilitychange', onShow);
+    };
+  }, [live]);
+
+  // Ушли из разговора — чужие «набирает» не должны догнать нас позже
+  useEffect(() => {
+    const timers = typingOff.current;
+    return () => Object.values(timers).forEach(clearTimeout);
+  }, []);
+
+  /** Сказать серверу, что набираем. Не чаще, чем событие успевает погаснуть. */
+  function tellTyping() {
+    const now = Date.now();
+    if (now - typedAt.current < TYPING_EVERY_MS) return;
+    typedAt.current = now;
+    api.typing(clubId).catch(() => {});
+  }
 
   // Меню закрывается кликом вне и клавишей Esc — как и остальные в проекте
   useEffect(() => {
@@ -1737,6 +1800,19 @@ export default function ChatRoom({ clubId, members = [], jump = null }) {
         />
       )}
 
+      {typing.length > 0 && (
+        /* Над полем ввода, а не в шапке: смотрят сюда — сюда и ответят */
+        <p className="chat__typing">
+          {typing.map((item) => shortName(item.name)).join(', ')}{' '}
+          {typing.length > 1 ? 'печатают' : 'печатает'}
+          <span className="chat__typing-dots" aria-hidden="true">
+            <i />
+            <i />
+            <i />
+          </span>
+        </p>
+      )}
+
       {/* Ответ и поле ввода — одна карточка: отвечают тут же, где набирают */}
       <div className={`chat__box${tall ? ' chat__box--tall' : ''}`}>
         <div className={`reveal-y${replying ? ' reveal-y--open' : ''}`}>
@@ -1995,6 +2071,7 @@ export default function ChatRoom({ clubId, members = [], jump = null }) {
             onChange={(event) => {
               setText(event.target.value);
               watchMention(event.target);
+              if (event.target.value.trim()) tellTyping();
             }}
             // Курсор переставили мышью или стрелками — набор ника мог начаться
             // или кончиться, а onChange об этом не говорит

@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { pool, query } from '../db.js';
 import { requireAuth, requireRole } from '../middleware/auth.js';
+import { announce } from './stream.js';
 import { readSince } from '../reads.js';
 import {
   TooLarge,
@@ -663,6 +664,24 @@ router.get('/:id/messages', requireAuth, async (req, res) => {
  *
  * `%` и `_` экранируются: иначе «%» нашёл бы всю переписку.
  */
+/**
+ * «Набирает текст». Нигде не хранится: событие живёт ровно столько, сколько
+ * его показывает чужая лента. Поэтому и ответ пустой — подтверждать нечего.
+ */
+router.post('/:id/typing', requireAuth, async (req, res) => {
+  if (!(await findClub(req.params.id)) || !(await canReadChat(req.params.id, req.user))) {
+    return res.status(204).end();
+  }
+
+  announce(req.params.id, {
+    type: 'typing',
+    clubId: req.params.id,
+    userId: req.user.id,
+    name: req.user.full_name,
+  });
+  res.status(204).end();
+});
+
 router.get('/:id/messages/search', requireAuth, async (req, res) => {
   if (!(await findClub(req.params.id))) {
     return res.status(404).json({ error: 'Клуб не найден' });
@@ -734,6 +753,7 @@ router.put('/:id/pin', requireAuth, async (req, res) => {
      on conflict do nothing`,
     [req.params.id, messageId],
   );
+  announce(req.params.id, { type: 'message', clubId: req.params.id, userId: req.user.id });
   res.json({ pinned: await pinnedMessages(req.params.id) });
 });
 
@@ -806,6 +826,7 @@ router.post('/:id/messages', requireAuth, async (req, res) => {
     [created[0].id],
   );
 
+  announce(req.params.id, { type: 'message', clubId: req.params.id, userId: req.user.id });
   res.status(201).json({ message: publicMessage(rows[0]) });
 });
 
@@ -1169,6 +1190,7 @@ router.put('/:id/messages/:messageId/reaction', requireAuth, async (req, res) =>
   );
 
   const [message] = await withReactions([{ id: messageId }], req.user.id);
+  announce(id, { type: 'message', clubId: id, userId: req.user.id });
   res.json({ reactions: message.reactions });
 });
 
@@ -1224,6 +1246,7 @@ router.delete('/:id/messages/:messageId', requireAuth, async (req, res) => {
     `select ${MESSAGE_FIELDS} from club_messages m ${MESSAGE_JOINS} where m.id = $1`,
     [messageId],
   );
+  announce(req.params.id, { type: 'message', clubId: req.params.id, userId: req.user.id });
   res.json({ message: publicMessage(rows[0]) });
 });
 
