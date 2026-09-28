@@ -575,19 +575,21 @@ const MESSAGE_JOINS = `left join users u on u.id = m.author_id
  * страница всё равно показывает хвост и сравнивать ей не с чем.
  */
 /**
- * Закреплённое сообщение клуба — то, что висит полоской над лентой.
- * Удалённое не показываем: закрепление указывает на пустое место.
+ * Закреплённые сообщения клуба — то, что висит полоской над лентой.
+ * Свежее закрепление впереди: полоска показывает его первым.
+ * Удалённые не отдаём: закрепление указывало бы на пустое место.
  */
-async function pinnedMessage(clubId) {
+async function pinnedMessages(clubId) {
   const { rows } = await query(
     `select ${MESSAGE_FIELDS}
-       from club_messages m
+       from club_pins p
+       join club_messages m on m.id = p.message_id
        ${MESSAGE_JOINS}
-      where m.id = (select pinned_message_id from clubs where id = $1)
-        and m.deleted_at is null`,
+      where p.club_id = $1 and m.deleted_at is null
+      order by p.pinned_at desc`,
     [clubId],
   );
-  return rows[0] ? publicMessage(rows[0]) : null;
+  return rows.map(publicMessage);
 }
 
 /**
@@ -649,7 +651,7 @@ router.get('/:id/messages', requireAuth, async (req, res) => {
     lastReadAt: read[0]?.at ?? null,
     // Своё сообщение не новее этой даты — значит прочитали все (✓✓)
     readByAll: await readByAll(req.params.id, req.user.id),
-    pinned: await pinnedMessage(req.params.id),
+    pinned: await pinnedMessages(req.params.id),
     // Убирать чужие сообщения: университет, админ и лидер этого клуба
     canModerate: Boolean(await moderatorRole(req.params.id, req.user)),
   });
@@ -695,7 +697,7 @@ router.get('/:id/messages/search', requireAuth, async (req, res) => {
 });
 
 /**
- * Закрепить сообщение (или снять закрепление: `{ messageId: null }`).
+ * Закрепить сообщение или снять закрепление: `{ messageId, pinned: false }`.
  * Закрепляет тот же, кто может убирать чужие реплики, — лидер клуба,
  * университет, админ: полоска висит у всех, это не личная заметка.
  */
@@ -707,24 +709,32 @@ router.put('/:id/pin', requireAuth, async (req, res) => {
     return res.status(403).json({ error: 'Закреплять сообщения может только руководство клуба' });
   }
 
-  const messageId = req.body?.messageId ?? null;
-  if (messageId !== null && !UUID_RE.test(messageId)) {
+  const messageId = req.body?.messageId;
+  if (!UUID_RE.test(messageId ?? '')) {
     return res.status(400).json({ error: 'Некорректная ссылка на сообщение' });
   }
 
-  if (messageId) {
-    const { rows } = await query(
-      'select 1 from club_messages where id = $1 and club_id = $2 and deleted_at is null',
-      [messageId, req.params.id],
-    );
-    if (!rows[0]) return res.status(404).json({ error: 'Сообщение не найдено' });
+  if (req.body?.pinned === false) {
+    await query('delete from club_pins where club_id = $1 and message_id = $2', [
+      req.params.id,
+      messageId,
+    ]);
+    return res.json({ pinned: await pinnedMessages(req.params.id) });
   }
 
-  await query('update clubs set pinned_message_id = $1 where id = $2', [
-    messageId,
-    req.params.id,
-  ]);
-  res.json({ pinned: await pinnedMessage(req.params.id) });
+  const { rows } = await query(
+    'select 1 from club_messages where id = $1 and club_id = $2 and deleted_at is null',
+    [messageId, req.params.id],
+  );
+  if (!rows[0]) return res.status(404).json({ error: 'Сообщение не найдено' });
+
+  // Уже закреплено — просто оставляем как есть
+  await query(
+    `insert into club_pins (club_id, message_id) values ($1, $2)
+     on conflict do nothing`,
+    [req.params.id, messageId],
+  );
+  res.json({ pinned: await pinnedMessages(req.params.id) });
 });
 
 router.post('/:id/messages', requireAuth, async (req, res) => {

@@ -1185,7 +1185,8 @@ video.chat__photo-preview {
   text-overflow: ellipsis;
 }
 
-.chat__pin-off {
+.chat__pin-off,
+.chat__nav-button {
   display: grid;
   place-items: center;
   width: 2.25rem;
@@ -1198,106 +1199,62 @@ video.chat__photo-preview {
     color var(--duration-fast) var(--ease-out);
 }
 
-.chat__pin-off:hover {
+.chat__pin-off:hover,
+.chat__nav-button:enabled:hover {
   background: var(--fill);
   color: var(--text-secondary);
 }
 
-.chat__pin-off svg {
+.chat__pin-off svg,
+.chat__nav-button svg {
   width: 1.25rem;
   height: 1.25rem;
 }
 
-/* ── Поиск по переписке ────────────────────────────────── */
-/* Ложится поверх ленты: закрыли — и переписка осталась на том же месте */
-.chat__find {
-  position: absolute;
-  inset: 0;
-  z-index: 3;
-  display: flex;
-  flex-direction: column;
-  background: var(--surface);
-  animation: content-in var(--duration-fast) var(--ease-out) both;
+/* Дальше находок нет — кнопка гаснет, но остаётся на месте: ряд не прыгает */
+.chat__nav-button:disabled {
+  opacity: 0.3;
 }
 
-.chat__find-head {
+/* ── Шаги по находкам ──────────────────────────────────── */
+/* Та же полоска, что и у закреплённого: над лентой, во всю ширину */
+.chat__nav {
   display: flex;
   align-items: center;
   gap: var(--space-2);
   flex: none;
-  padding: var(--space-3) var(--space-4);
+  min-height: 2.75rem;
+  padding: 0 var(--space-3) 0 max(var(--space-4), calc((100% - var(--chat-column)) / 2));
+  background: var(--surface);
   border-bottom: 1px solid var(--separator);
 }
 
-.chat__find-head .search {
+.chat__nav-query {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
   flex: 1;
   min-width: 0;
-}
-
-.chat__find-close {
-  flex: none;
-  padding: var(--space-2);
-  font-size: 0.9375rem;
-  color: var(--accent);
-}
-
-.chat__find-list {
-  flex: 1;
-  min-height: 0;
-  padding: var(--space-2);
-  overflow-y: auto;
-}
-
-.chat__find-empty {
-  padding: var(--space-6) var(--space-4);
-  text-align: center;
-  font-size: 0.9375rem;
+  font-size: 0.875rem;
   color: var(--text-secondary);
-}
-
-/* Находка — как строка списка: кто, когда и сама реплика в две строки */
-.chat__found {
-  display: flex;
-  flex-direction: column;
-  gap: 0.125rem;
-  width: 100%;
-  padding: var(--space-2) var(--space-3);
-  border-radius: var(--radius-control);
-  text-align: left;
-  transition: background-color var(--duration-fast) var(--ease-out);
-}
-
-.chat__found:hover {
-  background: var(--fill);
-}
-
-.chat__found-head {
-  display: flex;
-  justify-content: space-between;
-  gap: var(--space-2);
-  font-size: 0.8125rem;
-}
-
-.chat__found-author {
-  font-weight: 600;
   overflow: hidden;
   white-space: nowrap;
   text-overflow: ellipsis;
 }
 
-.chat__found-date {
+.chat__nav-query svg {
+  width: 1rem;
+  height: 1rem;
   flex: none;
-  color: var(--text-tertiary);
 }
 
-/* Две строки: находку узнают по началу, читают её в самой переписке */
-.chat__found-text {
-  display: -webkit-box;
-  -webkit-box-orient: vertical;
-  -webkit-line-clamp: 2;
-  font-size: 0.9375rem;
-  color: var(--text);
-  overflow: hidden;
+/* Счёт не дёргается при смене цифр — знаки одной ширины */
+.chat__nav-count,
+.chat__pin-count {
+  flex: none;
+  font-size: 0.8125rem;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-tertiary);
 }
 
 /* ── Кого упомянуть ─────────────────────────────────────── */

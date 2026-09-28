@@ -25,7 +25,7 @@ import {
 import { membersLabel } from '../club.js';
 import { initial, shortName } from '../people.js';
 import ChatAudio from '../components/ChatAudio.jsx';
-import ChatRoom from '../components/ChatRoom.jsx';
+import ChatRoom, { withMark } from '../components/ChatRoom.jsx';
 import PhotoViewer from '../components/PhotoViewer.jsx';
 import SearchField from '../components/SearchField.jsx';
 import './Page.css';
@@ -57,6 +57,9 @@ export default function Chats() {
   const [viewing, setViewing] = useState(null); // снимок из «Медиа» на весь экран
   const [findingMember, setFindingMember] = useState(false);
   const [searching, setSearching] = useState(false); // открыт поиск по переписке
+  const [query, setQuery] = useState(''); // что ищут в переписке
+  const [found, setFound] = useState(null); // находки (null — ещё не искали)
+  const [jump, setJump] = useState(null); // выбранная находка: { list, at, query }
   const [memberQuery, setMemberQuery] = useState('');
   const memberSearchRef = useRef(null);
   const [search, setSearch] = useState('');
@@ -97,6 +100,9 @@ export default function Chats() {
     setMembers([]);
     setFindingMember(false);
     setSearching(false);
+    setQuery('');
+    setFound(null);
+    setJump(null);
     setMemberQuery('');
     api
       .clubMembers(id)
@@ -192,6 +198,30 @@ export default function Chats() {
   }
 
   // Ищем и по названию клуба, и по последней реплике: в списке видно и то, и другое
+  // Ищем на сервере, а не в показанном: искомое чаще всего выше того, что лента
+  // успела подгрузить. Пауза — иначе запрос уходил бы на каждую букву
+  useEffect(() => {
+    if (!searching || !id || query.trim().length < 2) {
+      setFound(null);
+      return undefined;
+    }
+
+    let alive = true;
+    const timer = setTimeout(async () => {
+      try {
+        const data = await api.searchClubMessages(id, query.trim());
+        if (alive) setFound(data.found);
+      } catch {
+        if (alive) setFound([]);
+      }
+    }, 250);
+
+    return () => {
+      alive = false;
+      clearTimeout(timer);
+    };
+  }, [searching, query, id]);
+
   const visible = useMemo(() => {
     const query = search.trim().toLowerCase();
     if (!query) return chats;
@@ -208,7 +238,11 @@ export default function Chats() {
       {/* Чат — рабочее место, а не страница для чтения: он встаёт вплотную
           к краям экрана, без полей и рамки карточки */}
       {/* На узком экране видно что-то одно: список либо разговор */}
-      <div className={`chats${id ? ' chats--open' : ''}${info ? ' chats--info' : ''}`}>
+      <div
+        className={`chats${id ? ' chats--open' : ''}${info ? ' chats--info' : ''}${
+          searching ? ' chats--find' : ''
+        }`}
+      >
         <div className="chats__side">
           {/* Название раздела уже горит в навигации — здесь оно только для
               скринридера, а место в шапке отдано поиску */}
@@ -310,7 +344,10 @@ export default function Chats() {
                   className="chat-head"
                   type="button"
                   aria-expanded={info}
-                  onClick={() => setInfo((was) => !was)}
+                  onClick={() => {
+                    setInfo((was) => !was);
+                    setSearching(false);
+                  }}
                 >
                   <span className="chat-head__photo">
                     {open?.photo ? (
@@ -337,7 +374,10 @@ export default function Chats() {
                   type="button"
                   aria-label="Поиск по переписке"
                   aria-expanded={searching}
-                  onClick={() => setSearching((was) => !was)}
+                  onClick={() => {
+                    setSearching((was) => !was);
+                    setInfo(false);
+                  }}
                 >
                   <IoSearchOutline aria-hidden="true" />
                 </button>
@@ -350,8 +390,7 @@ export default function Chats() {
                 key={id}
                 clubId={id}
                 members={members}
-                searching={searching}
-                onSearchClose={() => setSearching(false)}
+                jump={jump}
               />
             </>
           ) : (
@@ -362,7 +401,59 @@ export default function Chats() {
         {/* Сведения о клубе. «Медиа» открывается внутри той же колонки, как
             следующий экран в «Настройках», — назад ведёт к сведениям */}
         <aside className="chats__info">
-          {mediaOpen ? (
+          {searching ? (
+            /* Поиск живёт в той же колонке, что и сведения: лента остаётся на
+               виду, и находку видно там же, куда она ведёт */
+            <div className="chats__pane" key="find">
+              <div className="card-header">
+                <button
+                  className="card-header__action"
+                  type="button"
+                  aria-label="Закрыть поиск"
+                  onClick={() => setSearching(false)}
+                >
+                  <IoCloseOutline aria-hidden="true" />
+                </button>
+                <h2 className="card-header__title">Поиск сообщений</h2>
+              </div>
+
+              <div className="chats__find-body">
+                <SearchField
+                  label="Поиск"
+                  value={query}
+                  onChange={(event) => setQuery(event.target.value)}
+                  onClear={() => setQuery('')}
+                />
+
+                <div className="chats__find-list">
+                  {query.trim().length < 2 ? (
+                    <p className="chats__find-empty">Введите хотя бы два символа</p>
+                  ) : found === null ? (
+                    <p className="chats__find-empty">Ищем…</p>
+                  ) : found.length === 0 ? (
+                    <p className="chats__find-empty">Ничего не нашли</p>
+                  ) : (
+                    found.map((item, index) => (
+                      <button
+                        key={item.id}
+                        className="chats__found"
+                        type="button"
+                        onClick={() => setJump({ list: found, at: index, query: query.trim() })}
+                      >
+                        <span className="chats__found-head">
+                          <span className="chats__found-author">{shortName(item.author)}</span>
+                          <span className="chats__found-date">{chatStamp(item.createdAt)}</span>
+                        </span>
+                        <span className="chats__found-text">
+                          {withMark([item.text], query.trim())}
+                        </span>
+                      </button>
+                    ))
+                  )}
+                </div>
+              </div>
+            </div>
+          ) : mediaOpen ? (
             <div className="chats__pane" key="media">
               <div className="card-header">
                 <button

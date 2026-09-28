@@ -18,8 +18,88 @@
   grid-template-columns: minmax(16rem, 22rem) 1fr 26rem;
 }
 
-.chats--info .chats__info {
+.chats--info .chats__info,
+.chats--find .chats__info {
   display: flex;
+}
+
+/* Поиск занимает ту же колонку, что и сведения, — они не открываются вместе */
+.chats--find {
+  grid-template-columns: minmax(16rem, 22rem) 1fr 26rem;
+}
+
+/* Лупа уходит к правому краю шапки — там же, откуда выедет панель */
+.chats__find {
+  margin-left: auto;
+}
+
+/* ── Поиск по переписке ────────────────────────────────── */
+.chats__find-body {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  padding: var(--space-3) var(--space-3) 0;
+}
+
+.chats__find-list {
+  flex: 1;
+  min-height: 0;
+  padding: var(--space-2) 0;
+  overflow-y: auto;
+}
+
+.chats__find-empty {
+  padding: var(--space-6) var(--space-4);
+  text-align: center;
+  font-size: 0.9375rem;
+  color: var(--text-secondary);
+}
+
+/* Находка — строка списка: кто, когда и сама реплика в две строки */
+.chats__found {
+  display: flex;
+  flex-direction: column;
+  gap: 0.125rem;
+  width: 100%;
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-control);
+  text-align: left;
+  transition: background-color var(--duration-fast) var(--ease-out);
+}
+
+.chats__found:hover {
+  background: var(--fill);
+}
+
+.chats__found-head {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--space-2);
+  font-size: 0.8125rem;
+}
+
+.chats__found-author {
+  font-weight: 600;
+  color: var(--text-secondary);
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.chats__found-date {
+  flex: none;
+  color: var(--text-tertiary);
+}
+
+/* Две строки: находку узнают по началу, читают её в самой переписке */
+.chats__found-text {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  font-size: 0.9375rem;
+  color: var(--text);
+  overflow: hidden;
 }
 
 .chats__side,

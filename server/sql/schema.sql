@@ -199,3 +199,20 @@ create table if not exists message_reactions (
 -- Ссылка, а не копия текста: сообщение удалили — закрепление уходит само
 alter table clubs add column if not exists pinned_message_id uuid
   references club_messages (id) on delete set null;
+
+-- Закреплений может быть несколько: объявления копятся, и новое не должно
+-- вытеснять прежнее. Своя таблица вместо столбца в clubs; сообщение удалили —
+-- закрепление уходит каскадом
+create table if not exists club_pins (
+  club_id    uuid not null references clubs (id) on delete cascade,
+  message_id uuid not null references club_messages (id) on delete cascade,
+  pinned_at  timestamptz not null default now(),
+  primary key (club_id, message_id)
+);
+
+-- Единственное прежнее закрепление переезжает сюда, а столбец уходит
+insert into club_pins (club_id, message_id)
+  select id, pinned_message_id from clubs where pinned_message_id is not null
+  on conflict do nothing;
+
+alter table clubs drop column if exists pinned_message_id;

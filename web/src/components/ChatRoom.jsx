@@ -10,7 +10,9 @@ import {
   IoCheckmarkDone,
   IoPin,
   IoPinOutline,
+  IoSearchOutline,
   IoChevronDown,
+  IoChevronUp,
   IoClose,
   IoCopyOutline,
   IoDocumentTextOutline,
@@ -273,7 +275,7 @@ function withRich(text, mentionClass) {
  * они уже элементы, и метка внутри них разорвала бы адрес. Значит, слово внутри
  * ссылки не подсветится — там оно и не читается как слово.
  */
-function withMark(parts, query) {
+export function withMark(parts, query) {
   if (!query) return parts;
 
   // Искали текст, а не шаблон: точка, скобка и прочее — обычные символы
@@ -358,7 +360,7 @@ function Avatar({ message, voice = false }) {
  *
  * Лента всегда прокручена к последнему сообщению — читают её с конца.
  */
-export default function ChatRoom({ clubId, members = [], searching = false, onSearchClose }) {
+export default function ChatRoom({ clubId, members = [], jump = null }) {
   const { user } = useAuth();
 
   const listRef = useRef(null);
@@ -373,15 +375,18 @@ export default function ChatRoom({ clubId, members = [], searching = false, onSe
 
   const [messages, setMessages] = useState([]);
   const [hasMore, setHasMore] = useState(false); // раньше показанного есть ещё история
-  const [pinned, setPinned] = useState(null); // закреплённое сообщение клуба
+  const [pinned, setPinned] = useState([]); // закреплённые сообщения клуба
+  const [pinAt, setPinAt] = useState(0); // какое из них показывает полоска
   const [readByAll, setReadByAll] = useState(null); // до какой даты чат прочитан всеми
-  const [query, setQuery] = useState(''); // что ищут в переписке
-  const [found, setFound] = useState(null); // находки (null — ещё не искали)
   const [jumping, setJumping] = useState(false); // идём к старому сообщению
   const goTo = useRef(null); // id, к которому прокрутить после отрисовки
   // Что и где подсветить: { id сообщения, query }. Держится до следующего перехода —
   // слово, ради которого сюда пришли, не должно гаснуть, пока его читают
   const [mark, setMark] = useState(null);
+  // Шаги по находкам: { query, list — снимок находок, at — номер текущей }.
+  // Список свой, а не тот, что в панели: пока ходишь по находкам, в поле можно
+  // набрать другое, и панельный список уже не про эти шаги
+  const [nav, setNav] = useState(null);
   const [loadingOlder, setLoadingOlder] = useState(false);
   // До какого момента был прочитан чат, когда его открыли: по нему — черта «Новые».
   // Берётся один раз: пока чат открыт, черта не ползёт вслед за чтением
@@ -436,7 +441,7 @@ export default function ChatRoom({ clubId, members = [], searching = false, onSe
             return [...older, ...data.messages];
           });
           setCanModerate(Boolean(data.canModerate));
-          setPinned(data.pinned ?? null);
+          setPinned(data.pinned ?? []);
           setReadByAll(data.readByAll ?? null);
           // Первый ответ говорит, есть ли история раньше и до какого места прочитано
           // Updater выполняется позже этой строки — «первый ли ответ» фиксируем сейчас,
@@ -618,12 +623,14 @@ export default function ChatRoom({ clubId, members = [], searching = false, onSe
     }
   }
 
-  /** Закрепить сообщение или снять закрепление (`null`). */
-  async function pin(messageId) {
+  /** Закрепить сообщение или снять закрепление (`next = false`). */
+  async function pin(messageId, next = true) {
     setOpenMenu(null);
     try {
-      const data = await api.pinClubMessage(clubId, messageId);
+      const data = await api.pinClubMessage(clubId, messageId, next);
       setPinned(data.pinned);
+      // Список сдвинулся — начинаем полоску со свежего закрепления
+      setPinAt(0);
     } catch (failure) {
       setError(failure.message);
     }
@@ -635,14 +642,20 @@ export default function ChatRoom({ clubId, members = [], searching = false, onSe
    * дёргалась бы на каждой странице. Прокрутку делает эффект: к этому моменту
    * сообщение уже на экране.
    */
+  /** Перейти к находке под номером `index`: и подсветить, и запомнить шаг. */
+  function goFound(list, index, query) {
+    setNav({ list, at: index, query });
+    jumpTo(list[index].id, query);
+  }
+
   async function jumpTo(id, marked = null) {
     // Пришли из поиска — несём с собой слово; из закреплённого — гасим прежнее
     setMark(marked ? { id, query: marked } : null);
+    // Уход не по находке (закреплённое) заканчивает и шаги по ним
+    if (!marked) setNav(null);
 
     if (messages.some((item) => item.id === id)) {
       goTo.current = id;
-      setFound(null);
-      onSearchClose?.();
       return;
     }
 
@@ -662,8 +675,6 @@ export default function ChatRoom({ clubId, members = [], searching = false, onSe
     setHasMore(more);
     setJumping(false);
     goTo.current = id;
-    setFound(null);
-    onSearchClose?.();
   }
 
   // Прокрутка к найденному — после того, как оно отрисовано. Подсветка гаснет
@@ -682,35 +693,14 @@ export default function ChatRoom({ clubId, members = [], searching = false, onSe
     setTimeout(() => node.classList.remove('msg--found'), 1600);
   }, [messages]);
 
-  // Поиск по переписке: спрашиваем сервер, а не фильтруем показанное —
-  // искомое чаще всего выше того, что успели подгрузить
+  // Из панели поиска пришла находка. Панель живёт в соседней колонке и о ленте
+  // ничего не знает: она лишь говорит, куда идти, — каждый выбор новый объект,
+  // поэтому повторный щелчок по той же находке снова сработает
   useEffect(() => {
-    if (!searching) {
-      setQuery('');
-      setFound(null);
-      return undefined;
-    }
-    if (query.trim().length < 2) {
-      setFound(null);
-      return undefined;
-    }
-
-    let alive = true;
-    // Пауза: иначе запрос уходил бы на каждую букву
-    const timer = setTimeout(async () => {
-      try {
-        const data = await api.searchClubMessages(clubId, query.trim());
-        if (alive) setFound(data.found);
-      } catch {
-        if (alive) setFound([]);
-      }
-    }, 250);
-
-    return () => {
-      alive = false;
-      clearTimeout(timer);
-    };
-  }, [searching, query, clubId]);
+    if (jump) goFound(jump.list, jump.at, jump.query);
+    // goFound держит свежие messages; следить за ним здесь незачем
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [jump]);
 
   async function removeMessage(message) {
     setOpenMenu(null);
@@ -1316,9 +1306,9 @@ export default function ChatRoom({ clubId, members = [], searching = false, onSe
             className="row-menu__item"
             type="button"
             role="menuitem"
-            onClick={() => pin(pinned?.id === message.id ? null : message.id)}
+            onClick={() => pin(message.id, !pinned.some((item) => item.id === message.id))}
           >
-            {pinned?.id === message.id ? (
+            {pinned.some((item) => item.id === message.id) ? (
               <>
                 <IoPinOutline aria-hidden="true" />
                 Открепить
@@ -1567,6 +1557,11 @@ export default function ChatRoom({ clubId, members = [], searching = false, onSe
     );
   }
 
+  // Полоска показывает одно закрепление за раз. Список мог укоротиться, пока
+  // смотрели, — номер придерживаем в границах
+  const pinShown = pinned.length ? Math.min(pinAt, pinned.length - 1) : 0;
+  const pinCurrent = pinned[pinShown] ?? null;
+
   return (
     // Обёртка несёт обои: они тянутся и под лентой, и под полем ввода
     <div className="chat" {...dropZone}>
@@ -1579,82 +1574,90 @@ export default function ChatRoom({ clubId, members = [], searching = false, onSe
         </span>
       </div>
 
-      {pinned && (
+      {nav && (
+        /* Панель закрылась, но поиск не кончился: полоска помнит, что искали,
+           и шагает по находкам, не открывая список заново. Список идёт от новых
+           к старым, поэтому «вверх» — это к более раннему */
+        <div className="chat__nav">
+          <span className="chat__nav-query">
+            <IoSearchOutline aria-hidden="true" />
+            {nav.query}
+          </span>
+
+          <span className="chat__nav-count">
+            {nav.at + 1} из {nav.list.length}
+          </span>
+
+          <button
+            className="chat__nav-button"
+            type="button"
+            aria-label="Находка выше"
+            disabled={jumping || nav.at >= nav.list.length - 1}
+            onClick={() => goFound(nav.list, nav.at + 1, nav.query)}
+          >
+            <IoChevronUp aria-hidden="true" />
+          </button>
+
+          <button
+            className="chat__nav-button"
+            type="button"
+            aria-label="Находка ниже"
+            disabled={jumping || nav.at <= 0}
+            onClick={() => goFound(nav.list, nav.at - 1, nav.query)}
+          >
+            <IoChevronDown aria-hidden="true" />
+          </button>
+
+          <button
+            className="chat__nav-button"
+            type="button"
+            aria-label="Закончить поиск"
+            onClick={() => {
+              setNav(null);
+              setMark(null);
+            }}
+          >
+            <IoClose aria-hidden="true" />
+          </button>
+        </div>
+      )}
+
+      {pinCurrent && (
         /* Объявление держится над лентой: его читают, не листая переписку.
-           Вся полоска ведёт к самому сообщению, крестик — снимает закрепление */
+           Закреплений может быть несколько — полоска показывает по одному и
+           после перехода переключается на следующее, как в Telegram */
         <div className="chat__pin">
-          <button className="chat__pin-go" type="button" onClick={() => jumpTo(pinned.id)}>
+          <button
+            className="chat__pin-go"
+            type="button"
+            onClick={() => {
+              jumpTo(pinCurrent.id);
+              if (pinned.length > 1) setPinAt((at) => (at + 1) % pinned.length);
+            }}
+          >
             <IoPin className="chat__pin-icon" aria-hidden="true" />
             <span className="chat__pin-body">
               <span className="chat__pin-title">Закреплённое сообщение</span>
-              <span className="chat__pin-text">{messageLabel(pinned)}</span>
+              <span className="chat__pin-text">{messageLabel(pinCurrent)}</span>
             </span>
           </button>
+
+          {pinned.length > 1 && (
+            <span className="chat__pin-count">
+              {pinShown + 1} из {pinned.length}
+            </span>
+          )}
 
           {canModerate && (
             <button
               className="chat__pin-off"
               type="button"
               aria-label="Открепить"
-              onClick={() => pin(null)}
+              onClick={() => pin(pinCurrent.id, false)}
             >
               <IoClose aria-hidden="true" />
             </button>
           )}
-        </div>
-      )}
-
-      {searching && (
-        /* Поиск закрывает ленту, но не размонтирует её: закрыли — и переписка
-           осталась там же, где была */
-        <div className="chat__find">
-          <div className="chat__find-head">
-            <SearchField
-              label="Поиск по переписке"
-              value={query}
-              onChange={(event) => setQuery(event.target.value)}
-              onClear={() => setQuery('')}
-            />
-            <button className="chat__find-close" type="button" onClick={onSearchClose}>
-              Отмена
-            </button>
-          </div>
-
-          <div className="chat__find-list">
-            {jumping ? (
-              <p className="chat__find-empty">Идём к сообщению…</p>
-            ) : query.trim().length < 2 ? (
-              <p className="chat__find-empty">Введите хотя бы два символа</p>
-            ) : found === null ? (
-              <p className="chat__find-empty">Ищем…</p>
-            ) : found.length === 0 ? (
-              <p className="chat__find-empty">Ничего не нашли</p>
-            ) : (
-              found.map((item) => (
-                <button
-                  key={item.id}
-                  className="chat__found"
-                  type="button"
-                  onClick={() => jumpTo(item.id, query.trim())}
-                >
-                  <span className="chat__found-head">
-                    <span
-                      className="chat__found-author"
-                      style={{ color: authorColor(item.authorId) }}
-                    >
-                      {shortName(item.author)}
-                    </span>
-                    <span className="chat__found-date">
-                      {dayLabel(item.createdAt)}, {messageTime.format(new Date(item.createdAt))}
-                    </span>
-                  </span>
-                  <span className="chat__found-text">
-                    {withMark([item.text], query.trim())}
-                  </span>
-                </button>
-              ))
-            )}
-          </div>
         </div>
       )}
 

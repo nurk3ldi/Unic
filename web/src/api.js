@@ -67,9 +67,9 @@ export const api = {
     request(`/clubs/${id}/messages${before ? `?before=${before}` : ''}`),
   searchClubMessages: (id, q) =>
     request(`/clubs/${id}/messages/search?q=${encodeURIComponent(q)}`),
-  // messageId: null — снять закрепление
-  pinClubMessage: (id, messageId) =>
-    request(`/clubs/${id}/pin`, { method: 'PUT', body: { messageId } }),
+  // pinned: false — снять закрепление
+  pinClubMessage: (id, messageId, pinned = true) =>
+    request(`/clubs/${id}/pin`, { method: 'PUT', body: { messageId, pinned } }),
   markChatRead: (id, messageId) =>
     request(`/clubs/${id}/read`, { method: 'PUT', body: { messageId } }),
   chatsUnread: () => request('/chats/unread'),
