@@ -39,6 +39,19 @@
   }
 }
 
+/* Поиск сверху: пришли выбирать — можно сразу набрать «сердце» */
+.emoji__search {
+  flex: none;
+  padding: var(--space-2) var(--space-2) 0;
+}
+
+.emoji__empty {
+  padding: var(--space-6) var(--space-4);
+  text-align: center;
+  font-size: 0.9375rem;
+  color: var(--text-secondary);
+}
+
 /* Группы: значки в ряд, видимая — в мягком акценте */
 .emoji__tabs {
   display: flex;
