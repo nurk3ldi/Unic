@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
 import { api } from '../api.js';
-import { IoPersonCircleOutline } from 'react-icons/io5';
+import { IconUser } from '../icons.jsx';
 import { useAuth } from '../AuthContext.jsx';
 import logo from '../assets/logo.png';
 import InvitesBell from './InvitesBell.jsx';
@@ -53,7 +53,7 @@ export default function Header() {
             {user?.photo ? (
               <img className="header__photo" src={user.photo} alt="" />
             ) : (
-              <IoPersonCircleOutline aria-hidden="true" />
+              <IconUser aria-hidden="true" />
             )}
           </NavLink>
         </div>

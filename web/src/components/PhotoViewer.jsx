@@ -1,12 +1,12 @@
 import { useEffect, useRef, useState } from 'react';
 import {
-  IoCloseOutline,
-  IoDownloadOutline,
-  IoPause,
-  IoPlay,
-  IoVolumeHighOutline,
-  IoVolumeMuteOutline,
-} from 'react-icons/io5';
+  IconClose,
+  IconDownload,
+  IconPause,
+  IconPlay,
+  IconVolume,
+  IconVolumeOff,
+} from '../icons.jsx';
 import { formatDuration } from '../chat.js';
 import './PhotoViewer.css';
 
@@ -59,7 +59,7 @@ export default function PhotoViewer({ photo, onClose }) {
 
       <button className="photo-viewer__close" type="button" aria-label="Закрыть" onClick={onClose}>
         {/* Контурный знак, а не залитый: толщину штриха можно задать */}
-        <IoCloseOutline aria-hidden="true" />
+        <IconClose aria-hidden="true" />
       </button>
     </dialog>
   );
@@ -162,7 +162,7 @@ function VideoPlayer({ media, videoRef }) {
           aria-label={playing ? 'Пауза' : 'Смотреть'}
           onClick={toggle}
         >
-          {playing ? <IoPause aria-hidden="true" /> : <IoPlay aria-hidden="true" />}
+          {playing ? <IconPause aria-hidden="true" /> : <IconPlay aria-hidden="true" />}
         </button>
 
         <span className="player__time">{formatDuration(current)}</span>
@@ -193,9 +193,9 @@ function VideoPlayer({ media, videoRef }) {
           }}
         >
           {muted ? (
-            <IoVolumeMuteOutline aria-hidden="true" />
+            <IconVolumeOff aria-hidden="true" />
           ) : (
-            <IoVolumeHighOutline aria-hidden="true" />
+            <IconVolume aria-hidden="true" />
           )}
         </button>
 
@@ -218,7 +218,7 @@ function VideoPlayer({ media, videoRef }) {
           download={media.name ?? ''}
           aria-label="Скачать видео"
         >
-          <IoDownloadOutline aria-hidden="true" />
+          <IconDownload aria-hidden="true" />
         </a>
       </div>
     </div>

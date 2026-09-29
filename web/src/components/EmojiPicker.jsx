@@ -1,24 +1,24 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import {
-  IoAirplaneOutline,
-  IoBulbOutline,
-  IoFastFoodOutline,
-  IoFootballOutline,
-  IoHappyOutline,
-  IoHeartOutline,
-  IoLeafOutline,
-} from 'react-icons/io5';
+  IconBall,
+  IconBulb,
+  IconFood,
+  IconHeart,
+  IconLeaf,
+  IconPlane,
+  IconSmile,
+} from '../icons.jsx';
 import SearchField from './SearchField.jsx';
 import './EmojiPicker.css';
 
 const ICONS = {
-  people: IoHappyOutline,
-  nature: IoLeafOutline,
-  food: IoFastFoodOutline,
-  activity: IoFootballOutline,
-  travel: IoAirplaneOutline,
-  objects: IoBulbOutline,
-  symbols: IoHeartOutline,
+  people: IconSmile,
+  nature: IconLeaf,
+  food: IconFood,
+  activity: IconBall,
+  travel: IconPlane,
+  objects: IconBulb,
+  symbols: IconHeart,
 };
 
 // Размер окна — тот же, что в CSS: по нему окно ставится до того, как его видно

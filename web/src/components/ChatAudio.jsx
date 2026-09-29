@@ -1,5 +1,9 @@
 import { useRef, useState } from 'react';
-import { IoMic, IoPause, IoPlay } from 'react-icons/io5';
+import {
+  IconMic,
+  IconPause,
+  IconPlay,
+} from '../icons.jsx';
 import { extensionOf, formatDuration, formatSize } from '../chat.js';
 import { authorColor, initial } from '../people.js';
 import './ChatAudio.css';
@@ -96,7 +100,7 @@ export default function ChatAudio({ file, time, fallback, author }) {
           ) : (
             <span aria-hidden="true">{initial(author.name)}</span>
           )}
-          <IoMic className="audio__avatar-mic" aria-hidden="true" />
+          <IconMic className="audio__avatar-mic" aria-hidden="true" />
         </span>
       )}
 
@@ -107,9 +111,9 @@ export default function ChatAudio({ file, time, fallback, author }) {
         onClick={toggle}
       >
         {playing ? (
-          <IoPause aria-hidden="true" />
+          <IconPause aria-hidden="true" />
         ) : (
-          <IoPlay className="audio__play-icon" aria-hidden="true" />
+          <IconPlay className="audio__play-icon" aria-hidden="true" />
         )}
       </button>
 

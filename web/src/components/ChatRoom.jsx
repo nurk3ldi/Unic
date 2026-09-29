@@ -1,31 +1,29 @@
 import { Fragment, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import {
-  IoAdd,
-  IoAddOutline,
-  IoArrowUp,
-  IoArrowUndoOutline,
-  IoBanOutline,
-  IoArrowDown,
-  IoCheckmark,
-  IoCheckmarkDone,
-  IoPin,
-  IoPinOutline,
-  IoSearchOutline,
-  IoChevronDown,
-  IoChevronUp,
-  IoClose,
-  IoCopyOutline,
-  IoDocumentTextOutline,
-  IoDownloadOutline,
-  IoImageOutline,
-  IoPlay,
-  IoImagesOutline,
-  IoMicOutline,
-  IoMusicalNotesOutline,
-  IoCloudUploadOutline,
-  IoTrashOutline,
-  IoVideocamOutline,
-} from 'react-icons/io5';
+  IconArrowDown,
+  IconArrowUp,
+  IconBan,
+  IconCheck,
+  IconCheckDouble,
+  IconChevronDown,
+  IconChevronUp,
+  IconClose,
+  IconCopy,
+  IconDocument,
+  IconDownload,
+  IconImage,
+  IconImages,
+  IconMic,
+  IconMusic,
+  IconPin,
+  IconPlay,
+  IconPlus,
+  IconReply,
+  IconSearch,
+  IconTrash,
+  IconUpload,
+  IconVideo,
+} from '../icons.jsx';
 import { api } from '../api.js';
 import { useAuth } from '../AuthContext.jsx';
 import {
@@ -128,18 +126,18 @@ function Unplayable({ file, what }) {
     <div className="msg__unplayable">
       <span className="msg__file-icon" aria-hidden="true">
         {what === 'Видео' ? (
-          <IoVideocamOutline />
+          <IconVideo />
         ) : what === 'Аудио' ? (
-          <IoMusicalNotesOutline />
+          <IconMusic />
         ) : (
-          <IoImageOutline />
+          <IconImage />
         )}
       </span>
       <span className="msg__file-body">
         <span className="msg__file-name">{what} не открывается в этом браузере</span>
         <span className="msg__unplayable-hint">Откройте в Safari или скачайте файл</span>
         <a className="msg__unplayable-download" href={file.url} download={file.name}>
-          <IoDownloadOutline aria-hidden="true" />
+          <IconDownload aria-hidden="true" />
           Скачать · {extensionOf(file.name).toUpperCase()} · {formatSize(file.size)}
         </a>
       </span>
@@ -182,7 +180,7 @@ function ChatVideo({ file, time, onOpen }) {
       />
 
       <span className="msg__video-play" aria-hidden="true">
-        <IoPlay />
+        <IconPlay />
       </span>
 
       {file.duration && <span className="msg__video-duration">{formatDuration(file.duration)}</span>}
@@ -326,9 +324,9 @@ function Stamp({ message, own, readByAll, className = 'msg__time' }) {
       {own &&
         !message.deleted &&
         (read ? (
-          <IoCheckmarkDone className="msg__ticks msg__ticks--read" aria-label="Прочитано" />
+          <IconCheckDouble className="msg__ticks msg__ticks--read" aria-label="Прочитано" />
         ) : (
-          <IoCheckmark className="msg__ticks" aria-label="Отправлено" />
+          <IconCheck className="msg__ticks" aria-label="Отправлено" />
         ))}
     </time>
   );
@@ -1229,7 +1227,7 @@ export default function ChatRoom({ clubId, members = [], jump = null }) {
           {!own && <Avatar message={message} />}
           <div className="msg__bubble msg__bubble--deleted">
             <p className="msg__deleted">
-              <IoBanOutline aria-hidden="true" />
+              <IconBan aria-hidden="true" />
               <span>
                 {!own && (
                   <span
@@ -1273,7 +1271,7 @@ export default function ChatRoom({ clubId, members = [], jump = null }) {
               setOpenMenu((current) => (current === message.id ? null : message.id));
             }}
           >
-            <IoChevronDown aria-hidden="true" />
+            <IconChevronDown aria-hidden="true" />
           </button>
         </span>
       </span>
@@ -1323,7 +1321,7 @@ export default function ChatRoom({ clubId, members = [], jump = null }) {
               setOpenMenu(null);
             }}
           >
-            <IoAddOutline aria-hidden="true" />
+            <IconPlus aria-hidden="true" />
           </button>
         </div>
 
@@ -1337,7 +1335,7 @@ export default function ChatRoom({ clubId, members = [], jump = null }) {
               copy(message);
             }}
           >
-            <IoCopyOutline aria-hidden="true" />
+            <IconCopy aria-hidden="true" />
             {copied ? 'Скопировано' : 'Копировать'}
           </button>
         )}
@@ -1351,7 +1349,7 @@ export default function ChatRoom({ clubId, members = [], jump = null }) {
             download={message.file.name}
             onClick={() => setOpenMenu(null)}
           >
-            <IoDownloadOutline aria-hidden="true" />
+            <IconDownload aria-hidden="true" />
             Скачать
           </a>
         )}
@@ -1366,7 +1364,7 @@ export default function ChatRoom({ clubId, members = [], jump = null }) {
             inputRef.current?.focus();
           }}
         >
-          <IoArrowUndoOutline aria-hidden="true" />
+          <IconReply aria-hidden="true" />
           Ответить
         </button>
 
@@ -1379,12 +1377,12 @@ export default function ChatRoom({ clubId, members = [], jump = null }) {
           >
             {pinned.some((item) => item.id === message.id) ? (
               <>
-                <IoPinOutline aria-hidden="true" />
+                <IconPin aria-hidden="true" />
                 Открепить
               </>
             ) : (
               <>
-                <IoPin aria-hidden="true" />
+                <IconPin aria-hidden="true" />
                 Закрепить
               </>
             )}
@@ -1398,7 +1396,7 @@ export default function ChatRoom({ clubId, members = [], jump = null }) {
             role="menuitem"
             onClick={() => removeMessage(message)}
           >
-            <IoTrashOutline aria-hidden="true" />
+            <IconTrash aria-hidden="true" />
             Удалить
           </button>
         )}
@@ -1562,7 +1560,7 @@ export default function ChatRoom({ clubId, members = [], jump = null }) {
             /* Документ — карточкой: что это, сколько весит; нажатие скачивает */
             <a className="msg__file" href={message.file.url} download={message.file.name}>
               <span className="msg__file-icon" aria-hidden="true">
-                <IoDocumentTextOutline />
+                <IconDocument />
               </span>
               <span className="msg__file-body">
                 <span className="msg__file-name">{message.file.name}</span>
@@ -1637,7 +1635,7 @@ export default function ChatRoom({ clubId, members = [], jump = null }) {
       {/* Тащат файл — весь чат становится зоной: отпустить можно куда угодно */}
       <div className={`chat__drop${dragging ? ' chat__drop--shown' : ''}`} aria-hidden="true">
         <span className="chat__drop-card">
-          <IoCloudUploadOutline />
+          <IconUpload />
           <span className="chat__drop-title">Отпустите, чтобы прикрепить</span>
           <span className="chat__drop-hint">Фото, видео, аудио или документ</span>
         </span>
@@ -1649,7 +1647,7 @@ export default function ChatRoom({ clubId, members = [], jump = null }) {
            к старым, поэтому «вверх» — это к более раннему */
         <div className="chat__nav">
           <span className="chat__nav-query">
-            <IoSearchOutline aria-hidden="true" />
+            <IconSearch aria-hidden="true" />
             {nav.query}
           </span>
 
@@ -1664,7 +1662,7 @@ export default function ChatRoom({ clubId, members = [], jump = null }) {
             disabled={jumping || nav.at >= nav.list.length - 1}
             onClick={() => goFound(nav.list, nav.at + 1, nav.query)}
           >
-            <IoChevronUp aria-hidden="true" />
+            <IconChevronUp aria-hidden="true" />
           </button>
 
           <button
@@ -1674,7 +1672,7 @@ export default function ChatRoom({ clubId, members = [], jump = null }) {
             disabled={jumping || nav.at <= 0}
             onClick={() => goFound(nav.list, nav.at - 1, nav.query)}
           >
-            <IoChevronDown aria-hidden="true" />
+            <IconChevronDown aria-hidden="true" />
           </button>
 
           <button
@@ -1686,7 +1684,7 @@ export default function ChatRoom({ clubId, members = [], jump = null }) {
               setMark(null);
             }}
           >
-            <IoClose aria-hidden="true" />
+            <IconClose aria-hidden="true" />
           </button>
         </div>
       )}
@@ -1704,7 +1702,7 @@ export default function ChatRoom({ clubId, members = [], jump = null }) {
               if (pinned.length > 1) setPinAt((at) => (at + 1) % pinned.length);
             }}
           >
-            <IoPin className="chat__pin-icon" aria-hidden="true" />
+            <IconPin className="chat__pin-icon" aria-hidden="true" />
             <span className="chat__pin-body">
               <span className="chat__pin-title">Закреплённое сообщение</span>
               <span className="chat__pin-text">{messageLabel(pinCurrent)}</span>
@@ -1724,7 +1722,7 @@ export default function ChatRoom({ clubId, members = [], jump = null }) {
               aria-label="Открепить"
               onClick={() => pin(pinCurrent.id, false)}
             >
-              <IoClose aria-hidden="true" />
+              <IconClose aria-hidden="true" />
             </button>
           )}
         </div>
@@ -1778,7 +1776,7 @@ export default function ChatRoom({ clubId, members = [], jump = null }) {
           tabIndex={showDown ? undefined : -1}
           onClick={toBottom}
         >
-          <IoArrowDown aria-hidden="true" />
+          <IconArrowDown aria-hidden="true" />
           {newBelow > 0 && <span className="chat__down-badge">{newBelow}</span>}
         </button>
       </div>
@@ -1840,7 +1838,7 @@ export default function ChatRoom({ clubId, members = [], jump = null }) {
                 tabIndex={replying ? undefined : -1}
                 onClick={() => setReplying(null)}
               >
-                <IoClose aria-hidden="true" />
+                <IconClose aria-hidden="true" />
               </button>
             </div>
           </div>
@@ -1862,7 +1860,7 @@ export default function ChatRoom({ clubId, members = [], jump = null }) {
                 tabIndex={photo ? undefined : -1}
                 onClick={() => setPhoto(null)}
               >
-                <IoClose aria-hidden="true" />
+                <IconClose aria-hidden="true" />
               </button>
             </div>
           </div>
@@ -1883,11 +1881,11 @@ export default function ChatRoom({ clubId, members = [], jump = null }) {
                 ) : (
                   <span className="chat__photo-preview chat__file-icon" aria-hidden="true">
                     {shownAttachment.current.kind === 'image' ? (
-                      <IoImageOutline />
+                      <IconImage />
                     ) : shownAttachment.current.kind === 'audio' ? (
-                      <IoMusicalNotesOutline />
+                      <IconMusic />
                     ) : (
-                      <IoDocumentTextOutline />
+                      <IconDocument />
                     )}
                   </span>
                 )}
@@ -1926,7 +1924,7 @@ export default function ChatRoom({ clubId, members = [], jump = null }) {
                   disabled={sending && progress === null}
                   onClick={() => (progress === null ? setAttachment(null) : upload.current?.abort())}
                 >
-                  <IoClose aria-hidden="true" />
+                  <IconClose aria-hidden="true" />
                 </button>
               </div>
             )}
@@ -1967,7 +1965,7 @@ export default function ChatRoom({ clubId, members = [], jump = null }) {
                 disabled={sending}
                 onClick={recorder.cancel}
               >
-                <IoTrashOutline aria-hidden="true" />
+                <IconTrash aria-hidden="true" />
               </button>
 
               <div className="chat__recording" role="status" aria-live="off">
@@ -1997,7 +1995,7 @@ export default function ChatRoom({ clubId, members = [], jump = null }) {
                 setAttaching((was) => !was);
               }}
             >
-              <IoAdd aria-hidden="true" />
+              <IconPlus aria-hidden="true" />
             </button>
 
             {attaching && (
@@ -2008,7 +2006,7 @@ export default function ChatRoom({ clubId, members = [], jump = null }) {
                   role="menuitem"
                   onClick={() => documentRef.current?.click()}
                 >
-                  <IoDocumentTextOutline aria-hidden="true" />
+                  <IconDocument aria-hidden="true" />
                   Документ
                 </button>
                 <button
@@ -2017,7 +2015,7 @@ export default function ChatRoom({ clubId, members = [], jump = null }) {
                   role="menuitem"
                   onClick={() => fileRef.current?.click()}
                 >
-                  <IoImagesOutline aria-hidden="true" />
+                  <IconImages aria-hidden="true" />
                   Фото и видео
                 </button>
                 <button
@@ -2026,7 +2024,7 @@ export default function ChatRoom({ clubId, members = [], jump = null }) {
                   role="menuitem"
                   onClick={() => audioRef.current?.click()}
                 >
-                  <IoMusicalNotesOutline aria-hidden="true" />
+                  <IconMusic aria-hidden="true" />
                   Аудио
                 </button>
               </div>
@@ -2106,7 +2104,7 @@ export default function ChatRoom({ clubId, members = [], jump = null }) {
               disabled={sending}
               onClick={sendVoice}
             >
-              <IoArrowUp aria-hidden="true" key="send-voice" />
+              <IconArrowUp aria-hidden="true" key="send-voice" />
             </button>
           ) : hasContent || !canRecord ? (
             <button
@@ -2115,7 +2113,7 @@ export default function ChatRoom({ clubId, members = [], jump = null }) {
               disabled={!hasContent || sending}
               aria-label="Отправить"
             >
-              <IoArrowUp aria-hidden="true" key="send" />
+              <IconArrowUp aria-hidden="true" key="send" />
             </button>
           ) : (
             <button
@@ -2125,7 +2123,7 @@ export default function ChatRoom({ clubId, members = [], jump = null }) {
               disabled={sending}
               onClick={startVoice}
             >
-              <IoMicOutline aria-hidden="true" key="mic" />
+              <IconMic aria-hidden="true" key="mic" />
             </button>
           )}
         </form>

@@ -1,6 +1,9 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { IoChevronBack, IoChevronForward } from 'react-icons/io5';
+import {
+  IconChevronLeft,
+  IconChevronRight,
+} from '../icons.jsx';
 import { api } from '../api.js';
 import { eventTime } from '../events.js';
 import { authorColor, initial } from '../people.js';
@@ -151,7 +154,7 @@ function Calendar() {
             aria-label="Предыдущий месяц"
             onClick={() => shift(-1)}
           >
-            <IoChevronBack aria-hidden="true" />
+            <IconChevronLeft aria-hidden="true" />
           </button>
           <button
             className="calendar__button calendar__button--today"
@@ -167,7 +170,7 @@ function Calendar() {
             aria-label="Следующий месяц"
             onClick={() => shift(1)}
           >
-            <IoChevronForward aria-hidden="true" />
+            <IconChevronRight aria-hidden="true" />
           </button>
         </div>
       </div>

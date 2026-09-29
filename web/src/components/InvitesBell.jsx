@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { IoNotificationsOutline } from 'react-icons/io5';
+import { IconBell } from '../icons.jsx';
 import { api } from '../api.js';
 import { initial } from '../people.js';
 import './InvitesBell.css';
@@ -72,7 +72,7 @@ export default function InvitesBell() {
         aria-label={count ? `Приглашения: ${count}` : 'Приглашения'}
         onClick={load}
       >
-        <IoNotificationsOutline aria-hidden="true" />
+        <IconBell aria-hidden="true" />
         {count > 0 && <span className="bell__badge">{count}</span>}
       </button>
 

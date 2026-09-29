@@ -317,19 +317,18 @@ a:hover {
   background: var(--red-soft);
 }
 
+/* Толщина у Hugeicons — атрибут на самой фигуре, поэтому правило идёт на `svg *`.
+   1.5 рядом с полужирной строкой меню смотрится хилым */
+.row-menu__item svg * {
+  stroke-width: 2;
+}
+
 .row-menu__item svg {
   width: 1.125rem;
   height: 1.125rem;
   flex: none;
   color: currentColor;
   opacity: 0.85;
-}
-
-/* Ionicons-outline рисуется штрихом, и толщина записана атрибутом на самой
-   фигуре — правило на <svg> до неё не доходит. 32 на 18px смотрится хилым
-   рядом с полужирным текстом */
-.row-menu__item svg * {
-  stroke-width: 44;
 }
 
 /* Уход тем же путём, что и приход (§4.3): обратно в кнопку, чуть быстрее */

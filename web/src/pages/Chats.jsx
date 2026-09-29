@@ -1,17 +1,17 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, NavLink, useParams } from 'react-router-dom';
 import {
-  IoChevronBack,
-  IoChevronForward,
-  IoCloseOutline,
-  IoDocumentTextOutline,
-  IoDownloadOutline,
-  IoImagesOutline,
-  IoPlay,
-  IoLinkOutline,
-  IoNotificationsOutline,
-  IoSearchOutline,
-} from 'react-icons/io5';
+  IconBell,
+  IconChevronLeft,
+  IconChevronRight,
+  IconClose,
+  IconDocument,
+  IconDownload,
+  IconImages,
+  IconLink,
+  IconPlay,
+  IconSearch,
+} from '../icons.jsx';
 import { api } from '../api.js';
 import { useAuth } from '../AuthContext.jsx';
 import {
@@ -342,7 +342,7 @@ export default function Chats() {
               <div className="card-header">
                 {/* На узком экране шапка разговора — единственный путь назад */}
                 <Link className="card-header__back chats__back" to="/chats" viewTransition>
-                  <IoChevronBack aria-hidden="true" />
+                  <IconChevronLeft aria-hidden="true" />
                   Чаты
                 </Link>
 
@@ -387,7 +387,7 @@ export default function Chats() {
                     setInfo(false);
                   }}
                 >
-                  <IoSearchOutline aria-hidden="true" />
+                  <IconSearch aria-hidden="true" />
                 </button>
               </div>
 
@@ -420,7 +420,7 @@ export default function Chats() {
                   aria-label="Закрыть поиск"
                   onClick={() => setSearching(false)}
                 >
-                  <IoCloseOutline aria-hidden="true" />
+                  <IconClose aria-hidden="true" />
                 </button>
                 <h2 className="card-header__title">Поиск сообщений</h2>
               </div>
@@ -470,7 +470,7 @@ export default function Chats() {
                   aria-label="Назад к данным клуба"
                   onClick={() => setMediaOpen(false)}
                 >
-                  <IoChevronBack aria-hidden="true" />
+                  <IconChevronLeft aria-hidden="true" />
                 </button>
 
                 <h2 className="card-header__title">Медиа, ссылки и документы</h2>
@@ -527,7 +527,7 @@ export default function Chats() {
                               video
                             >
                               <span className="chats__video-badge">
-                                <IoPlay aria-hidden="true" />
+                                <IconPlay aria-hidden="true" />
                                 {video.duration ? formatDuration(video.duration) : ''}
                               </span>
                             </MediaTile>
@@ -564,7 +564,7 @@ export default function Chats() {
                               href={doc.url}
                               download={doc.name}
                             >
-                              <IoDocumentTextOutline aria-hidden="true" />
+                              <IconDocument aria-hidden="true" />
                               <span className="chats__link-body">
                                 <span className="chats__doc-name">{doc.name}</span>
                                 <span className="chats__link-meta">
@@ -590,7 +590,7 @@ export default function Chats() {
                               target="_blank"
                               rel="noreferrer"
                             >
-                              <IoLinkOutline aria-hidden="true" />
+                              <IconLink aria-hidden="true" />
                               <span className="chats__link-body">
                                 {/* Протокол ничего не говорит человеку — показываем адрес */}
                                 <span className="chats__link-url">
@@ -618,7 +618,7 @@ export default function Chats() {
                   aria-label="Закрыть сведения"
                   onClick={() => setInfo(false)}
                 >
-                  <IoCloseOutline aria-hidden="true" />
+                  <IconClose aria-hidden="true" />
                 </button>
 
                 <h2 className="card-header__title">Данные клуба</h2>
@@ -645,15 +645,15 @@ export default function Chats() {
                     type="button"
                     onClick={() => setMediaOpen(true)}
                   >
-                    <IoImagesOutline aria-hidden="true" />
+                    <IconImages aria-hidden="true" />
                     <span className="group__label">Медиа, ссылки и документы</span>
                     {mediaCount > 0 && <span className="chats__row-value">{mediaCount}</span>}
-                    <IoChevronForward className="chats__row-more" aria-hidden="true" />
+                    <IconChevronRight className="chats__row-more" aria-hidden="true" />
                   </button>
 
                   {/* Вся строка — label: переключают нажатием по ней целиком, не целясь в ручку */}
                   <label className="group__row chats__row">
-                    <IoNotificationsOutline aria-hidden="true" />
+                    <IconBell aria-hidden="true" />
                     <span className="group__label">Уведомления</span>
                     <input
                       className="switch"
@@ -678,7 +678,7 @@ export default function Chats() {
                       aria-expanded={findingMember}
                       onClick={toggleMemberSearch}
                     >
-                      <IoSearchOutline aria-hidden="true" />
+                      <IconSearch aria-hidden="true" />
                     </button>
                   </div>
 
@@ -761,7 +761,7 @@ function MediaTile({ url, name, label, onOpen, video = false, children }) {
         download={name}
         title="Не открывается в этом браузере — скачать"
       >
-        <IoDownloadOutline aria-hidden="true" />
+        <IconDownload aria-hidden="true" />
         {ext}
       </a>
     );

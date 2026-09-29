@@ -1,5 +1,8 @@
 import { useEffect, useRef, useState } from 'react';
-import { IoAdd, IoImageOutline } from 'react-icons/io5';
+import {
+  IconImage,
+  IconPlus,
+} from '../icons.jsx';
 import Field from './Field.jsx';
 import { squareDataUrl } from '../photo.js';
 import './ClubFormModal.css';
@@ -87,7 +90,7 @@ export default function ClubFormModal({ open, onClose, onCreate }) {
             <img className="photo-picker__image" src={photo.url} alt="" />
           ) : (
             <span className="photo-picker__hint">
-              <IoImageOutline aria-hidden="true" />
+              <IconImage aria-hidden="true" />
               Добавить фото
             </span>
           )}
@@ -121,7 +124,7 @@ export default function ClubFormModal({ open, onClose, onCreate }) {
             type="submit"
             disabled={busy}
           >
-            <IoAdd aria-hidden="true" />
+            <IconPlus aria-hidden="true" />
             {busy ? 'Создаём…' : 'Создать'}
           </button>
         </div>

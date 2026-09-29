@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { IoLogOutOutline } from 'react-icons/io5';
+import { IconSignOut } from '../icons.jsx';
 import { api } from '../api.js';
 import { useAuth } from '../AuthContext.jsx';
 import { ROLE_LABELS, formatPhone, initial } from '../people.js';
@@ -31,7 +31,7 @@ export default function Profile() {
           {/* Выход — в самом низу карточки, подальше от правок: до него доходят, а не
               натыкаются. Без подтверждения — ничего не теряется, войти можно снова */}
           <button className="profile-card__signout" type="button" onClick={signOut}>
-            <IoLogOutOutline aria-hidden="true" />
+            <IconSignOut aria-hidden="true" />
             Выйти из аккаунта
           </button>
         </section>
@@ -87,7 +87,7 @@ function Identity() {
       {/* Выход — отдельной группой в самом низу: до него доходят, а не натыкаются */}
       <div className="group profile__group">
         <button className="group__row profile__signout" type="button" onClick={signOut}>
-          <IoLogOutOutline aria-hidden="true" />
+          <IconSignOut aria-hidden="true" />
           Выйти
         </button>
       </div>

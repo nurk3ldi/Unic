@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { IoChevronForward } from 'react-icons/io5';
+import { IconChevronRight } from '../icons.jsx';
 import { api } from '../api.js';
 import { useAuth } from '../AuthContext.jsx';
 import { POLL_MS, messageLabel } from '../chat.js';
@@ -86,7 +86,7 @@ export default function ClubChatCard({ clubId }) {
       {/* Карточка и так ссылка, но строка снизу называет, куда именно */}
       <span className="card-more">
         Открыть чат
-        <IoChevronForward aria-hidden="true" />
+        <IconChevronRight aria-hidden="true" />
       </span>
     </div>
   );

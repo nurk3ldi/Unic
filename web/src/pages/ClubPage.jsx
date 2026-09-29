@@ -1,6 +1,10 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
-import { IoChevronBack, IoChevronForward, IoCameraOutline } from 'react-icons/io5';
+import {
+  IconCamera,
+  IconChevronLeft,
+  IconChevronRight,
+} from '../icons.jsx';
 import { api } from '../api.js';
 import { useAuth } from '../AuthContext.jsx';
 import { squareDataUrl } from '../photo.js';
@@ -140,7 +144,7 @@ export default function ClubPage() {
               <div className="card-header">
                 {/* Возврат назван разделом, а не «Назад»: так видно, куда именно ведёт */}
                 <Link className="card-header__back" to="/clubs" viewTransition>
-                  <IoChevronBack aria-hidden="true" />
+                  <IconChevronLeft aria-hidden="true" />
                   Клубы
                 </Link>
 
@@ -196,7 +200,7 @@ export default function ClubPage() {
                     )}
 
                     <span className="club-hero__change">
-                      <IoCameraOutline aria-hidden="true" />
+                      <IconCamera aria-hidden="true" />
                       Изменить фото
                     </span>
                   </button>
@@ -363,7 +367,7 @@ function UpcomingEvents({ clubId }) {
       {/* Карточка и так ссылка, но строка снизу называет, куда именно */}
       <span className="card-more">
         Открыть календарь
-        <IoChevronForward aria-hidden="true" />
+        <IconChevronRight aria-hidden="true" />
       </span>
     </div>
   );

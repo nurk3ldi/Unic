@@ -1,4 +1,7 @@
-import { IoCloseOutline, IoSearchOutline } from 'react-icons/io5';
+import {
+  IconClose,
+  IconSearch,
+} from '../icons.jsx';
 import './SearchField.css';
 
 /**
@@ -14,7 +17,7 @@ export default function SearchField({ label, value, onChange, onClear }) {
   return (
     <div className="search">
       <span className="search__field">
-        <IoSearchOutline aria-hidden="true" />
+        <IconSearch aria-hidden="true" />
         <input
           className="search__input"
           type="search"
@@ -26,7 +29,7 @@ export default function SearchField({ label, value, onChange, onClear }) {
 
         {value && onClear && (
           <button className="search__clear" type="button" aria-label="Очистить" onClick={onClear}>
-            <IoCloseOutline aria-hidden="true" />
+            <IconClose aria-hidden="true" />
           </button>
         )}
       </span>

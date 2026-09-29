@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { IoAdd } from 'react-icons/io5';
+import { IconPlus } from '../icons.jsx';
 import { api } from '../api.js';
 import ClubCard from '../components/ClubCard.jsx';
 import ClubFormModal from '../components/ClubFormModal.jsx';
@@ -44,7 +44,7 @@ export default function Clubs() {
         ))}
 
         <button className="club-add" type="button" onClick={() => setFormOpen(true)}>
-          <IoAdd aria-hidden="true" />
+          <IconPlus aria-hidden="true" />
           Создать клуб
         </button>
       </div>

@@ -83,6 +83,9 @@
 .search__clear svg {
   width: 100%;
   height: 100%;
-  /* Ionicons рисует крестик штрихом — делаем его тоньше системного */
-  stroke-width: 24;
+}
+
+/* Крестик очистки тише самого поля — он не зовёт, а ждёт */
+.search__clear svg * {
+  stroke-width: 1.2;
 }

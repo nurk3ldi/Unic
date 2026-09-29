@@ -1,14 +1,14 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
-  IoAdd,
-  IoCheckmark,
-  IoClose,
-  IoEllipsisHorizontal,
-  IoPersonRemoveOutline,
-  IoRemoveCircleOutline,
-  IoSearchOutline,
-  IoSwapHorizontalOutline,
-} from 'react-icons/io5';
+  IconCheck,
+  IconClose,
+  IconDots,
+  IconMinusCircle,
+  IconPlus,
+  IconSearch,
+  IconSwap,
+  IconUserRemove,
+} from '../icons.jsx';
 import { api } from '../api.js';
 import { shortName } from '../people.js';
 import InviteDialog from './InviteDialog.jsx';
@@ -249,7 +249,7 @@ export default function MembersPanel({ clubId, onCountChange }) {
             tabIndex={searching ? -1 : undefined}
             onClick={openSearch}
           >
-            <IoSearchOutline aria-hidden="true" />
+            <IconSearch aria-hidden="true" />
           </button>
         </div>
       </div>
@@ -283,7 +283,7 @@ export default function MembersPanel({ clubId, onCountChange }) {
                             run(() => api.updateClubMember(clubId, person.id, { status: 'active' }))
                           }
                         >
-                          <IoCheckmark aria-hidden="true" />
+                          <IconCheck aria-hidden="true" />
                         </button>
                         <button
                           className="icon-button icon-button--no"
@@ -292,7 +292,7 @@ export default function MembersPanel({ clubId, onCountChange }) {
                           aria-label={`Отклонить заявку: ${shortName(person.name)}`}
                           onClick={() => run(() => api.removeClubMember(clubId, person.id))}
                         >
-                          <IoClose aria-hidden="true" />
+                          <IconClose aria-hidden="true" />
                         </button>
                       </li>
               ) : tab === 'invites' ? (
@@ -306,7 +306,7 @@ export default function MembersPanel({ clubId, onCountChange }) {
                           aria-label={`Отозвать приглашение: ${shortName(person.name)}`}
                           onClick={() => run(() => api.removeClubMember(clubId, person.id))}
                         >
-                          <IoClose aria-hidden="true" />
+                          <IconClose aria-hidden="true" />
                         </button>
                       </li>
               ) : (
@@ -328,7 +328,7 @@ export default function MembersPanel({ clubId, onCountChange }) {
                             aria-label={`Действия: ${shortName(person.name)}`}
                             onClick={toggleMenu(person.id)}
                           >
-                            <IoEllipsisHorizontal aria-hidden="true" />
+                            <IconDots aria-hidden="true" />
                           </button>
                         )}
 
@@ -352,7 +352,7 @@ export default function MembersPanel({ clubId, onCountChange }) {
                                   run(() => api.updateClubMember(clubId, person.id, { role: 'member' }))
                                 }
                               >
-                                <IoRemoveCircleOutline aria-hidden="true" />
+                                <IconMinusCircle aria-hidden="true" />
                                 Снять с должности
                               </button>
                             ) : (
@@ -364,7 +364,7 @@ export default function MembersPanel({ clubId, onCountChange }) {
                                   run(() => api.updateClubMember(clubId, person.id, { role: 'lead' }))
                                 }
                               >
-                                <IoSwapHorizontalOutline aria-hidden="true" />
+                                <IconSwap aria-hidden="true" />
                                 Сделать руководителем
                               </button>
                             )}
@@ -374,7 +374,7 @@ export default function MembersPanel({ clubId, onCountChange }) {
                               role="menuitem"
                               onClick={() => run(() => api.removeClubMember(clubId, person.id))}
                             >
-                              <IoPersonRemoveOutline aria-hidden="true" />
+                              <IconUserRemove aria-hidden="true" />
                               Исключить из клуба
                             </button>
                           </div>
@@ -389,7 +389,7 @@ export default function MembersPanel({ clubId, onCountChange }) {
       {canManage && (
         <>
           <button className="side-add" type="button" onClick={openInvite}>
-            <IoAdd aria-hidden="true" />
+            <IconPlus aria-hidden="true" />
             Пригласить участника
           </button>
 

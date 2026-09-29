@@ -135,14 +135,14 @@
 
 /* Тот же тонкий ✕, что в просмотре фото: штрих иконки по умолчанию, без утолщения.
    Поле крупнее знака — штрих IoClose занимает меньше половины своего поля */
+/* Тот же тонкий ✕, что в просмотре фото */
+.chats__info .card-header__action svg * {
+  stroke-width: 1.2;
+}
+
 .chats__info .card-header__action svg {
   width: 1.5rem;
   height: 1.5rem;
-}
-
-/* Тот же тонкий контурный ✕, что в просмотре фото */
-.chats__info-close svg * {
-  stroke-width: 24;
 }
 
 .chats__info-body {

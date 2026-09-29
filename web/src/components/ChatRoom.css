@@ -1010,7 +1010,11 @@
 .chat__reply-close svg {
   width: 1rem;
   height: 1rem;
-  stroke-width: 44;
+}
+
+/* Крестик мелкий — добираем весом, иначе теряется рядом с превью */
+.chat__reply-close svg * {
+  stroke-width: 2;
 }
 
 /* ── Снимок к отправке ──────────────────────────────────── */

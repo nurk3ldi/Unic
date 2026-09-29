@@ -1,5 +1,8 @@
 import { useState } from 'react';
-import { IoEyeOffOutline, IoEyeOutline } from 'react-icons/io5';
+import {
+  IconEye,
+  IconEyeOff,
+} from '../icons.jsx';
 import Field from './Field.jsx';
 import './PasswordField.css';
 
@@ -20,7 +23,7 @@ export default function PasswordField({ label = 'Пароль', ...rest }) {
           aria-pressed={shown}
         >
           <span className="password-toggle__icon" key={shown ? 'shown' : 'hidden'}>
-            {shown ? <IoEyeOffOutline /> : <IoEyeOutline />}
+            {shown ? <IconEyeOff /> : <IconEye />}
           </span>
         </button>
       }
