@@ -2,6 +2,7 @@ import { Outlet } from 'react-router-dom';
 import ChatNotifier from './ChatNotifier.jsx';
 import Header from './Header.jsx';
 import ProfileCard from './ProfileCard.jsx';
+import Requests from './Requests.jsx';
 import Sidebar from './Sidebar.jsx';
 import './AppLayout.css';
 
@@ -29,6 +30,11 @@ export default function AppLayout() {
       <div className="app__content">
         <Outlet />
       </div>
+
+      {/* Правый столбец: пока в нём только заголовок — карточки встанут под ним */}
+      <aside className="app__aside">
+        <Requests />
+      </aside>
 
       <ChatNotifier />
     </div>

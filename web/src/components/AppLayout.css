@@ -1,16 +1,15 @@
-/* Каркас внутренних экранов: полоса сверху, под ней — левый столбец и
-   содержимое. Окно не прокручивается, прокручивается содержимое: полоса и
-   столбец стоят на месте без sticky.
-
-   Панель разделов временно убрана; когда вернётся — встанет в тот же столбец,
-   под визиткой (правила для неё лежат в Sidebar.css) */
+/* Каркас внутренних экранов: полоса сверху, под ней — левый столбец,
+   содержимое и правый столбец. Окно не прокручивается, прокручивается каждый
+   столбец сам по себе: полоса и столбцы стоят на месте без sticky */
 .app {
   display: grid;
-  grid-template-columns: var(--side) minmax(0, 1fr);
+  /* Правая колонка — `auto`: когда в ней нечего показывать, она исчезает вместе
+     со своей шириной, а не оставляет пустую серую полосу */
+  grid-template-columns: var(--side) minmax(0, 1fr) auto;
   grid-template-rows: auto minmax(0, 1fr);
   grid-template-areas:
-    'head head'
-    'side content';
+    'head head head'
+    'side content aside';
   height: 100dvh;
 }
 
@@ -18,10 +17,10 @@
   grid-area: head;
 }
 
-/* Столбец и содержимое стоят на одном сером полотне, без линии между ними:
+/* Столбцы и содержимое стоят на одном сером полотне, без линий между ними:
    белые карточки на нём и есть содержание, а серое — воздух вокруг них */
-.app__side {
-  grid-area: side;
+.app__side,
+.app__aside {
   display: flex;
   flex-direction: column;
   gap: var(--space-4);
@@ -31,6 +30,20 @@
   background: var(--bg-secondary);
 }
 
+.app__side {
+  grid-area: side;
+}
+
+.app__aside {
+  grid-area: aside;
+  width: var(--aside);
+}
+
+/* Нечего показывать — колонки нет совсем */
+.app__aside:empty {
+  display: none;
+}
+
 .app__content {
   grid-area: content;
   min-width: 0;
@@ -38,18 +51,21 @@
   background: var(--bg-secondary);
 }
 
-/* Узкий экран: столбец забрал бы треть ширины — визитка уходит наверх, в строку */
-@media (max-width: 48rem) {
+/* Узкий экран: столбцы забрали бы всю ширину — они встают над содержимым
+   и под ним, строками */
+@media (max-width: 64rem) {
   .app {
     grid-template-columns: none;
-    grid-template-rows: auto auto minmax(0, 1fr);
+    grid-template-rows: auto auto minmax(0, 1fr) auto;
     grid-template-areas:
       'head'
       'side'
-      'content';
+      'content'
+      'aside';
   }
 
-  .app__side {
+  .app__side,
+  .app__aside {
     padding: var(--space-3) var(--space-4);
   }
 }
