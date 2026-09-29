@@ -1,0 +1,40 @@
+/* ── Заголовок раздела правой колонки ────────────────────── */
+/* Подпись над списком, а не карточка: фона нет, только поля вровень с тем,
+   что под ним */
+.aside-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding: var(--space-2) var(--space-4);
+}
+
+.aside-head__title {
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-tertiary);
+}
+
+/* Скруглённый квадрат, а не кружок: цифра в нём — значение, а не метка */
+.aside-head__count {
+  display: grid;
+  place-items: center;
+  min-width: 1.75rem;
+  height: 1.75rem;
+  flex: none;
+  padding: 0 0.375rem;
+  border-radius: var(--radius-control);
+  background: var(--fill);
+  color: var(--text-tertiary);
+  font-size: 0.8125rem;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Число зовёт к действию — цветом бренда */
+.aside-head__count--accent {
+  background: var(--accent);
+  color: var(--text-on-accent);
+}

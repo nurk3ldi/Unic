@@ -1,6 +1,7 @@
 import { Outlet } from 'react-router-dom';
 import ChatNotifier from './ChatNotifier.jsx';
 import Header from './Header.jsx';
+import AsideChats from './AsideChats.jsx';
 import ProfileCard from './ProfileCard.jsx';
 import Requests from './Requests.jsx';
 import Sidebar from './Sidebar.jsx';
@@ -31,9 +32,10 @@ export default function AppLayout() {
         <Outlet />
       </div>
 
-      {/* Правый столбец: пока в нём только заголовок — карточки встанут под ним */}
+      {/* Правый столбец: то, что ждёт ответа, и переписки под ним */}
       <aside className="app__aside">
         <Requests />
+        <AsideChats />
       </aside>
 
       <ChatNotifier />

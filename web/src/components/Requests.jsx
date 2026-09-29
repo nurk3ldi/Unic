@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { api } from '../api.js';
 import { initial } from '../people.js';
+import AsideHead from './AsideHead.jsx';
 import './Requests.css';
 
 // Приглашения приходят редко — спрашиваем реже, чем чат
@@ -59,13 +60,7 @@ export default function Requests() {
 
   return (
     <>
-      <section className="requests">
-        <h2 className="requests__title">Приглашения</h2>
-
-        <span className="requests__count" aria-label={`Приглашений: ${count}`}>
-          {count > MAX ? `${MAX}+` : count}
-        </span>
-      </section>
+      <AsideHead title="Приглашения" value={count > MAX ? `${MAX}+` : count} accent />
 
       {invites.map(({ club, inviter }) => (
         <article className="invite" key={club.id}>
