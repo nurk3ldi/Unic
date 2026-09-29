@@ -63,6 +63,19 @@ const icon = (glyph) =>
     return <HugeiconsIcon icon={glyph} size="1em" {...props} />;
   };
 
+/**
+ * Залитый знак. В свободном наборе Hugeicons всё нарисовано штрихом, а для
+ * ▶, ❚❚, микрофона и «···» контур не годится: на синем пузыре он почти не
+ * виден. Фигуры у них замкнутые, поэтому заливка даёт ровно тот плотный знак,
+ * который был раньше.
+ */
+const solid = (glyph) =>
+  function Icon({ style, ...props }) {
+    return (
+      <HugeiconsIcon icon={glyph} size="1em" style={{ fill: 'currentColor', ...style }} {...props} />
+    );
+  };
+
 export const IconArrowDown = icon(ArrowDown01Icon);
 export const IconArrowUp = icon(ArrowUp01Icon);
 export const IconBall = icon(FootballIcon);
@@ -79,7 +92,7 @@ export const IconChevronUp = icon(ArrowUp01Icon);
 export const IconClose = icon(Cancel01Icon);
 export const IconCopy = icon(Copy01Icon);
 export const IconDocument = icon(File01Icon);
-export const IconDots = icon(MoreHorizontalIcon);
+export const IconDots = solid(MoreHorizontalIcon);
 export const IconDownload = icon(Download01Icon);
 export const IconEye = icon(ViewIcon);
 export const IconEyeOff = icon(ViewOffSlashIcon);
@@ -90,12 +103,14 @@ export const IconImages = icon(Album02Icon);
 export const IconLeaf = icon(Leaf01Icon);
 export const IconLink = icon(Link01Icon);
 export const IconMic = icon(Mic01Icon);
+export const IconMicSolid = solid(Mic01Icon);
 export const IconMinusCircle = icon(MinusSignCircleIcon);
 export const IconMusic = icon(MusicNote01Icon);
-export const IconPause = icon(PauseIcon);
+export const IconPause = solid(PauseIcon);
 export const IconPin = icon(PinIcon);
+export const IconPinSolid = solid(PinIcon);
 export const IconPlane = icon(Airplane01Icon);
-export const IconPlay = icon(PlayIcon);
+export const IconPlay = solid(PlayIcon);
 export const IconPlus = icon(PlusSignIcon);
 export const IconReply = icon(ArrowTurnBackwardIcon);
 export const IconSearch = icon(Search01Icon);

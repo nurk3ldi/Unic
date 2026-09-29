@@ -36,7 +36,10 @@ function toWaveform(levels, count = WAVE_BARS) {
     const slice = levels.slice(from, to);
     return slice.length ? Math.max(...slice) : 0;
   });
-  const peak = Math.max(...raw) || 1;
+  const peak = Math.max(...raw);
+  // Тишина (анализатор не завёлся): волны нет вовсе — лента нарисует ровный
+  // ряд, и это честнее, чем черта из минимальных столбиков
+  if (!peak) return [];
   // Корень выравнивает шкалу: без него один громкий слог делает остальную речь
   // плоской. Тишина — невысокий, но видимый столбик: ряд не рвётся на пустые места
   return raw.map((value) => Math.max(3, Math.round(Math.sqrt(value / peak) * 31)));
@@ -88,6 +91,10 @@ export function useVoiceRecorder({ onLimit } = {}) {
     let analyser = null;
     try {
       context = new AudioContext();
+      // Контекст рождается остановленным: пока ждали разрешения на микрофон,
+      // жест пользователя «протух». Остановленный анализатор отдаёт тишину —
+      // и волна выходит ровной чертой, как будто записи и не было
+      if (context.state === 'suspended') await context.resume();
       analyser = context.createAnalyser();
       analyser.fftSize = 512;
       context.createMediaStreamSource(stream).connect(analyser);

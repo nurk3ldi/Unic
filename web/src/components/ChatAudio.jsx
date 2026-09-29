@@ -1,6 +1,6 @@
 import { useRef, useState } from 'react';
 import {
-  IconMic,
+  IconMicSolid,
   IconPause,
   IconPlay,
 } from '../icons.jsx';
@@ -100,7 +100,7 @@ export default function ChatAudio({ file, time, fallback, author }) {
           ) : (
             <span aria-hidden="true">{initial(author.name)}</span>
           )}
-          <IconMic className="audio__avatar-mic" aria-hidden="true" />
+          <IconMicSolid className="audio__avatar-mic" aria-hidden="true" />
         </span>
       )}
 
