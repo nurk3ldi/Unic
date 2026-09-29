@@ -6,7 +6,7 @@
      интерполируются и панель выезжает, а не появляется рывком */
   grid-template-columns: minmax(16rem, 22rem) 1fr 0;
   transition: grid-template-columns var(--duration-base) var(--ease-out);
-  height: calc(100dvh - var(--header-height));
+  height: var(--screen);
   /* Панель сведений выезжает из-за правого края: пока колонка узкая, её рамка
      торчит наружу и дала бы странице полосы прокрутки */
   overflow: hidden;

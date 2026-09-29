@@ -1,31 +1,14 @@
+/* ── Верхняя полоса ──────────────────────────────────────── */
+/* Во всю ширину, над панелью разделов. Отделена волоском, а не заливкой:
+   цветная полоса спорила бы со всем, что под ней (§4.6) */
 .header {
-  position: sticky;
-  top: 0;
-  z-index: var(--z-header);
-  background: var(--header-bg);
-  -webkit-backdrop-filter: var(--material-blur);
-  backdrop-filter: var(--material-blur);
-}
-
-/* Край прокрутки вместо жёсткой разделительной линии */
-.header::after {
-  content: '';
-  position: absolute;
-  inset: 100% 0 auto 0;
-  height: 1px;
-  background: var(--separator);
-}
-
-/* Панель идёт во всю ширину: логотип и профиль прижаты к краям, навигация —
-   ровно посередине. Крайние колонки равны (1fr), поэтому центр не сдвигается
-   от того, что логотип шире значка профиля */
-.header__inner {
-  display: grid;
-  grid-template-columns: 1fr auto 1fr;
+  display: flex;
   align-items: center;
   gap: var(--space-4);
   height: var(--header-height);
   padding: 0 var(--space-6);
+  background: var(--surface);
+  border-bottom: 1px solid var(--separator);
 }
 
 .header__logo {
@@ -33,114 +16,70 @@
   flex: none;
 }
 
-.header__nav {
-  display: flex;
-  align-items: center;
-  gap: var(--space-8);
-}
-
-/* Навигация — только текст, крупнее подписи (17px — размер навигации у Apple).
-   Разделы — основным цветом, чтобы читались сразу; текущий — цветом бренда */
-.header__link {
-  font-size: 1.0625rem;
-  font-weight: 500;
-  color: var(--text);
-  white-space: nowrap;
-  transition: color var(--duration-fast) var(--ease-out);
-}
-
-/* Наведение подсказывает переход тем же цветом, каким горит открытый раздел */
-.header__link:hover {
-  color: var(--accent);
-  text-decoration: none;
-}
-
-/* Число непрочитанного у «Чатов» — маленькой капсулой справа вверху от слова */
-.header__link {
-  position: relative;
-}
-
-.header__badge {
-  position: absolute;
-  top: -0.375rem;
-  left: 100%;
-  min-width: 1.125rem;
-  height: 1.125rem;
-  margin-left: 0.125rem;
-  padding: 0 0.3125rem;
-  border-radius: var(--radius-pill);
-  background: var(--accent);
-  color: var(--text-on-accent);
-  font-size: 0.6875rem;
-  font-weight: 600;
-  line-height: 1.125rem;
-  text-align: center;
-  font-variant-numeric: tabular-nums;
-}
-
-/* NavLink сам ставит aria-current — отдельный класс не нужен */
-.header__link[aria-current='page'] {
-  color: var(--accent);
-}
-
-/* Правый край: колокольчик приглашений и профиль */
+/* Поиск и фото держатся правого края */
 .header__end {
-  justify-self: end;
   display: flex;
   align-items: center;
-  gap: var(--space-2);
+  gap: var(--space-4);
+  margin-left: auto;
+  min-width: 0;
 }
 
-.header__avatar {
+/* Поле — то же, что в списках; здесь у него своя ширина и нет полей обёртки */
+.header__search {
+  width: min(20rem, 34vw);
+}
+
+.header__search .search {
+  padding: 0;
+}
+
+/* Своё фото: скруглённый квадрат — так на образце. Отклик на нажатии */
+.header__me {
   display: grid;
   place-items: center;
   width: 2.25rem;
   height: 2.25rem;
   flex: none;
-  border-radius: var(--radius-pill);
-  color: var(--header-fg);
-  font-size: 1.75rem;
+  overflow: hidden;
+  border-radius: var(--radius-control);
+  background: var(--fill);
+  color: var(--text-secondary);
+  font-size: 1.5rem;
   transition:
-    background-color var(--duration-fast) var(--ease-out),
     color var(--duration-fast) var(--ease-out),
     transform var(--duration-press) var(--ease-out);
 }
 
-.header__avatar:hover {
-  background: var(--header-fill);
+.header__me:hover {
   color: var(--text);
 }
 
-/* Открытый профиль — иконка темнее, как активный раздел навигации */
-.header__avatar[aria-current='page'] {
-  color: var(--text);
+.header__me:active {
+  transform: scale(0.92);
 }
 
-/* Своё фото вместо значка — кружок во всю кнопку */
 .header__photo {
   width: 100%;
   height: 100%;
-  border-radius: 50%;
   object-fit: cover;
 }
 
-/* Отклик наступает на нажатии, а не на отпускании */
-.header__avatar:active {
-  transform: scale(0.92);
-  background: var(--fill-hover);
-}
-
-@media (max-width: 34rem) {
-  .header__inner {
-    padding-inline: var(--space-4);
+@media (max-width: 48rem) {
+  .header {
+    gap: var(--space-3);
+    padding: 0 var(--space-4);
   }
 
-  /* На телефоне крупная навигация с широкими промежутками не помещается в строку */
-  .header__nav {
-    gap: var(--space-4);
+  /* На узком экране поле забирает всё, что осталось от знака и фото */
+  .header__search {
+    width: auto;
+    flex: 1;
+    min-width: 0;
   }
 
-  .header__link {
-    font-size: 0.9375rem;
+  .header__end {
+    flex: 1;
+    gap: var(--space-3);
   }
 }

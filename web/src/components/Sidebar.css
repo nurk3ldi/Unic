@@ -1,0 +1,187 @@
+/* ── Боковая панель ──────────────────────────────────────── */
+/* Узкий столбец значков у левого края. Белая, как содержимое, — её границу
+   держит волосок, а не заливка: цветная полоса на всю высоту спорила бы с
+   лентой и карточками (§4.6 — материал не кричит) */
+.rail {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-2);
+  width: var(--rail);
+  height: 100%;
+  padding: var(--space-4) 0;
+  z-index: var(--z-header);
+  background: var(--surface);
+  border-right: 1px solid var(--separator);
+}
+
+/* Столбец ровно по ширине значка — в нём подсветка встаёт без отдельных отступов */
+.rail__nav {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: var(--rail-gap);
+  width: var(--rail-item);
+}
+
+/* Подсветка одна на всю панель и переезжает с раздела на раздел: видно, откуда
+   и куда перешли. Едет только transform — раскладка не пересчитывается */
+.rail__pill {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: var(--rail-item);
+  height: var(--rail-item);
+  border-radius: var(--radius-control);
+  background: var(--accent-soft);
+  transform: translateY(calc(var(--index) * (var(--rail-item) + var(--rail-gap))));
+  transition:
+    transform var(--duration-base) var(--ease-out),
+    opacity var(--duration-fast) var(--ease-out);
+}
+
+/* На профиле раздел не выбран — подсветка тает на месте, а не прыгает в угол */
+.rail__pill--off {
+  opacity: 0;
+}
+
+.rail__item {
+  position: relative; /* значок поверх подсветки, подпись — рядом с ним */
+  z-index: 1;
+  display: grid;
+  place-items: center;
+  width: var(--rail-item);
+  height: var(--rail-item);
+  flex: none;
+  border-radius: var(--radius-control);
+  color: var(--text-secondary);
+  font-size: 1.625rem;
+  transition:
+    color var(--duration-fast) var(--ease-out),
+    background-color var(--duration-fast) var(--ease-out),
+    transform var(--duration-press) var(--ease-out);
+}
+
+.rail__item:hover {
+  color: var(--text);
+  text-decoration: none;
+}
+
+/* Открытый раздел — цветом бренда: подсветка под ним того же цвета */
+.rail__item[aria-current='page'] {
+  color: var(--accent);
+}
+
+/* Отклик наступает на нажатии, а не на отпускании */
+.rail__item:active {
+  transform: scale(0.92);
+}
+
+/* Наведение на чужой раздел — своя мягкая подложка: подсветка занята открытым */
+.rail__item:not([aria-current='page']):hover {
+  background: var(--fill);
+}
+
+/* ── Подпись ─────────────────────────────────────────────── */
+/* Значок без слова узнаётся не всеми: имя раздела выезжает из-под панели.
+   Приходит и уходит одним путём — сдвиг плюс растворение (§4.3) */
+.rail__tip {
+  position: absolute;
+  left: calc(100% + var(--space-3));
+  padding: 0.375rem var(--space-3);
+  border-radius: var(--radius-control);
+  background: var(--surface);
+  border: 1px solid var(--separator);
+  box-shadow: var(--shadow-card);
+  color: var(--text);
+  font-size: 0.875rem;
+  font-weight: 500;
+  white-space: nowrap;
+  pointer-events: none;
+  opacity: 0;
+  transform: translateX(-0.25rem);
+  transition:
+    opacity var(--duration-fast) var(--ease-out),
+    transform var(--duration-fast) var(--ease-out);
+}
+
+.rail__item:hover .rail__tip,
+.rail__item:focus-visible .rail__tip {
+  opacity: 1;
+  transform: none;
+}
+
+/* ── Метка непрочитанного ────────────────────────────────── */
+/* В углу значка, как у иконок iOS: число видно, значок не закрыт */
+.rail__badge {
+  position: absolute;
+  top: 0.125rem;
+  right: 0.125rem;
+  min-width: 1.125rem;
+  height: 1.125rem;
+  padding: 0 0.3125rem;
+  border-radius: var(--radius-pill);
+  background: var(--accent);
+  color: var(--text-on-accent);
+  font-size: 0.6875rem;
+  font-weight: 600;
+  line-height: 1.125rem;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ── Низ панели ──────────────────────────────────────────── */
+/* Приглашения ждут внизу: разделы зовут чаще, и они идут первыми */
+.rail__end {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-2);
+  margin-top: auto;
+}
+
+/* ── Телефон: панель уходит вниз ─────────────────────────── */
+/* Столбец у левого края съел бы треть узкого экрана, а большой палец достаёт
+   до низа — там же полоса и в iOS */
+@media (max-width: 48rem) {
+  .rail {
+    flex-direction: row;
+    justify-content: center;
+    gap: var(--space-6);
+    width: auto;
+    height: var(--rail-bar);
+    padding: 0 var(--space-4);
+    border-right: none;
+    border-top: 1px solid var(--separator);
+  }
+
+  .rail__nav {
+    flex-direction: row;
+    width: auto;
+  }
+
+  .rail__pill {
+    transform: translateX(calc(var(--index) * (var(--rail-item) + var(--rail-gap))));
+  }
+
+  .rail__end {
+    flex-direction: row;
+    margin-top: 0;
+  }
+
+  /* Подпись выезжала бы за край экрана, а палец её и не вызовет */
+  .rail__tip {
+    display: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  /* Подсветка не едет, а проявляется на новом месте */
+  .rail__pill {
+    transition: opacity var(--duration-fast) var(--ease-out);
+  }
+
+  .rail__tip {
+    transform: none;
+  }
+}

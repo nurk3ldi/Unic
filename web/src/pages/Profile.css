@@ -91,7 +91,7 @@
    отрицательным отступом, а высота считается за их вычетом — прокрутки нет */
 .profile-card {
   width: 70%;
-  height: calc(100dvh - var(--header-height) - 2 * var(--space-4));
+  height: calc(var(--screen) - 2 * var(--space-4));
   /* Сверху и снизу — вплотную к краям экрана, по бокам — по центру страницы */
   margin: calc(var(--space-4) - var(--space-8)) auto;
   display: flex;

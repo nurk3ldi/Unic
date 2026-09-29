@@ -1,0 +1,38 @@
+/* Каркас внутренних экранов: полоса сверху во всю ширину, под ней — панель
+   разделов и содержимое. Окно не прокручивается, прокручивается содержимое:
+   полоса и панель стоят на месте без sticky */
+.app {
+  display: grid;
+  grid-template-columns: var(--rail) minmax(0, 1fr);
+  grid-template-rows: auto minmax(0, 1fr);
+  grid-template-areas:
+    'head head'
+    'rail content';
+  height: 100dvh;
+}
+
+.header {
+  grid-area: head;
+}
+
+.rail {
+  grid-area: rail;
+}
+
+.app__content {
+  grid-area: content;
+  min-width: 0;
+  overflow-y: auto;
+}
+
+/* Телефон: панель разделов уходит вниз, полоса остаётся сверху */
+@media (max-width: 48rem) {
+  .app {
+    grid-template-columns: none;
+    grid-template-rows: auto minmax(0, 1fr) auto;
+    grid-template-areas:
+      'head'
+      'content'
+      'rail';
+  }
+}

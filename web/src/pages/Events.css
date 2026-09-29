@@ -1,10 +1,12 @@
-/* Весь экран под шапкой: слева полоса клубов шириной в снимок, справа — календарь.
-   Высота — ровно до низа окна, у страницы прокрутки нет */
+/* Весь экран: слева полоса клубов шириной в снимок, справа — календарь.
+   Высота — ровно до низа окна, у страницы прокрутки нет.
+   Имя переменной своё (`--club-rail`): `--rail` занят панелью разделов, и две
+   разные ширины под одним именем рано или поздно перепутались бы */
 .events-layout {
-  --rail: calc(3.4375rem + 2 * var(--space-4)); /* снимок + поля строки */
+  --club-rail: calc(3.4375rem + 2 * var(--space-4)); /* снимок + поля строки */
   display: grid;
-  grid-template-columns: var(--rail) minmax(0, 1fr);
-  height: calc(100dvh - var(--header-height));
+  grid-template-columns: var(--club-rail) minmax(0, 1fr);
+  height: var(--screen);
 }
 
 /* Место под полосу в сетке — постоянное: выезжающая полоса ложится поверх
@@ -25,9 +27,11 @@
   inset: 0 auto 0 0;
   display: flex;
   flex-direction: column;
-  width: var(--rail);
+  width: var(--club-rail);
   overflow: hidden;
-  background: var(--surface);
+  /* Серая, а не белая: рядом стоит белая панель разделов, и две одинаковые
+     полосы читались бы как одна двойная. Серый говорит, что это уже страница */
+  background: var(--bg-secondary);
   border-right: 1px solid var(--separator);
   transition:
     width var(--duration-base) var(--ease-out),
@@ -100,7 +104,7 @@
 /* Где наведения нет, полоса открыта всегда — иначе названий не узнать */
 @media (hover: none) {
   .events-layout {
-    --rail: 16rem;
+    --club-rail: 16rem;
   }
 
   .events-club__name {

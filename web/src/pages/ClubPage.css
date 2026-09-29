@@ -2,9 +2,7 @@
 .club-page {
   /* Две карточки + отступы сверху, между ними и снизу должны уместиться в экран.
      Высота живёт в переменной: правая карточка верхнего ряда берёт её же как ширину */
-  --card-height: calc(
-    (100dvh - var(--header-height) - var(--space-4) * 2 - var(--space-8)) / 2
-  );
+  --card-height: calc((var(--screen) - var(--space-4) * 2 - var(--space-8)) / 2);
   display: grid;
   grid-template-columns: 1fr 30%;
   gap: var(--space-6);
@@ -150,9 +148,9 @@
 .club-page__side {
   margin-top: calc(var(--space-4) - var(--space-8));
   position: sticky;
-  top: calc(var(--header-height) + var(--space-4));
+  top: var(--space-4);
   /* Нижний отступ страницы тоже вычитаем — иначе колонка выходит за экран */
-  height: calc(100dvh - var(--header-height) - var(--space-4) - var(--space-8));
+  height: calc(var(--screen) - var(--space-4) - var(--space-8));
   display: flex;
   flex-direction: column;
   background: var(--surface);
