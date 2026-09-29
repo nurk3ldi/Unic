@@ -1,0 +1,45 @@
+<!doctype html><meta charset="utf-8">
+<body style="margin:0;background:#F5F5F7">
+<script type="module">
+  import '/src/index.css';
+  import '/src/components/ChatRoom.css';
+</script>
+<div class="chat" style="height:560px"><div class="chat__list" style="padding:16px">
+ <div class="msg">
+  <span class="msg__avatar" style="--author:#b3005e">А</span>
+  <div class="msg__bubble" style="--author:#b3005e">
+   <span class="msg__head"><span class="msg__nick">@unic</span><span class="msg__phone">+7 701 000 00 04</span>
+    <span class="msg__more-slot"><button class="msg__more" type="button">⌄</button></span></span>
+   Привет, как дела?
+   <div class="row-menu row-menu--msg" role="menu">
+    <div class="row-menu__reactions">
+     <button class="row-menu__reaction">👍</button><button class="row-menu__reaction">❤️</button>
+     <button class="row-menu__reaction">😂</button><button class="row-menu__reaction">😮</button>
+     <button class="row-menu__reaction">😢</button><button class="row-menu__reaction">🙏</button>
+     <button class="row-menu__reaction row-menu__reaction--more">+</button>
+    </div>
+    <button class="row-menu__item">Копировать</button>
+    <button class="row-menu__item">Ответить</button>
+    <button class="row-menu__item">Закрепить</button>
+    <button class="row-menu__item row-menu__item--danger">Удалить</button>
+   </div>
+  </div>
+ </div>
+</div></div>
+<pre id="R" style="font:12px monospace"></pre>
+<script>
+setTimeout(() => {
+  const L = document.querySelector('.chat__list').getBoundingClientRect();
+  const b = document.querySelector('.msg__bubble').getBoundingClientRect();
+  const m = document.querySelector('.row-menu').getBoundingClientRect();
+  R.textContent = JSON.stringify({
+    терезе: innerWidth,
+    пузырь_x: Math.round(b.left) + '..' + Math.round(b.right),
+    пузырь_y: Math.round(b.top) + '..' + Math.round(b.bottom),
+    мәзір_x: Math.round(m.left) + '..' + Math.round(m.right),
+    мәзір_y: Math.round(m.top) + '..' + Math.round(m.bottom),
+    жауыпты_ма: m.top < b.bottom && m.bottom > b.top && m.left < b.right && m.right > b.left,
+    шетінен_шықты: m.left < L.left || m.right > L.right,
+  });
+}, 400);
+</script>
