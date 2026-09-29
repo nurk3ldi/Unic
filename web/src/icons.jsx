@@ -108,7 +108,6 @@ export const IconMinusCircle = icon(MinusSignCircleIcon);
 export const IconMusic = icon(MusicNote01Icon);
 export const IconPause = solid(PauseIcon);
 export const IconPin = icon(PinIcon);
-export const IconPinSolid = solid(PinIcon);
 export const IconPlane = icon(Airplane01Icon);
 export const IconPlay = solid(PlayIcon);
 export const IconPlus = icon(PlusSignIcon);
