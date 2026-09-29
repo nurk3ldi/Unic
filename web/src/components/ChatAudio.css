@@ -151,12 +151,19 @@
    по центру всего блока (волна + время) и оказывалась ниже волны */
 .audio--voice {
   display: grid;
-  grid-template-columns: 3rem auto minmax(0, 1fr);
-  grid-template-rows: auto auto;
+  grid-template-columns: 3.5rem auto minmax(0, 1fr);
+  /* Верхняя строка забирает всю высоту, которую даёт аватар, а подпись берёт
+     ровно своё. Волна прижата к низу этой строки — её середина приходится
+     ровно на середину карточки и на центр аватара, как в WhatsApp */
+  grid-template-rows: minmax(0, 1fr) auto;
   align-items: center;
   column-gap: var(--space-2);
   row-gap: 0.125rem;
   min-width: 17rem;
+  /* Своих полей нет: сверху и снизу остаются только поля пузыря, поэтому они
+     равны. Высоту карточки задаёт аватар — он выше двух строк, и те тянутся
+     до него. Так же устроено в WhatsApp: кружок почти во всю высоту */
+  padding: 0;
 }
 
 .audio--voice .audio__avatar {
@@ -167,6 +174,7 @@
 .audio--voice .audio__play {
   grid-row: 1;
   grid-column: 2;
+  align-self: end;
 }
 
 /* Обёртка волны и времени растворяется в сетке: каждое встаёт в свою клетку */
@@ -174,9 +182,13 @@
   display: contents;
 }
 
+/* Волна прижата к низу своей строки, подпись — к верху своей: лишняя высота,
+   которую даёт крупный аватар, уходит воздухом над волной и под подписью
+   поровну, а не дырой между ними */
 .audio--voice .audio__wave {
   grid-row: 1;
   grid-column: 3;
+  align-self: end;
 }
 
 .audio--voice .audio__meta {
@@ -189,13 +201,13 @@
   position: relative;
   display: grid;
   place-items: center;
-  width: 3rem;
-  height: 3rem;
+  width: 3.5rem;
+  height: 3.5rem;
   flex: none;
   border-radius: 50%;
   background: color-mix(in srgb, var(--author) 16%, var(--surface));
   color: var(--author);
-  font-size: 1.125rem;
+  font-size: 1.25rem;
   font-weight: 600;
 }
 
@@ -219,8 +231,8 @@
   position: absolute;
   right: -0.25rem;
   bottom: -0.125rem;
-  width: 1.25rem;
-  height: 1.25rem;
+  width: 1.375rem;
+  height: 1.375rem;
   padding: 0.1875rem;
   border-radius: 50%;
   background: var(--surface);
@@ -257,7 +269,20 @@
   color: var(--text-on-accent);
 }
 
-/* Под волной: слева длительность, справа время (время само уходит вправо) */
+/* Под волной: слева длительность, справа время (время само уходит вправо).
+   Строка прижата к низу — лишнюю высоту от аватара забирает воздух над волной,
+   как на образце, а не зазор между волной и подписью */
 .audio--voice .audio__meta {
+  align-self: start;
+  /* Строка в одну цифру — межстрочный интервал ей не нужен и только поднимает
+     волну: эти 6px возвращаются воздуху над ней */
+  line-height: 1;
   padding-left: 0.125rem;
+}
+
+/* Время уходит к правому краю: у него `float: right`, а во flex-строке float
+   не действует — вправо его уводит отступ. Заодно снимается верхний отступ,
+   который сдвигал время вниз относительно длительности */
+.audio--voice .audio__meta .msg__time {
+  margin: 0 0 0 auto;
 }
