@@ -16,7 +16,6 @@ import {
   IconMic,
   IconMusic,
   IconPin,
-  IconPinSolid,
   IconPlay,
   IconPlus,
   IconReply,
@@ -1706,7 +1705,7 @@ export default function ChatRoom({ clubId, members = [], jump = null }) {
               if (pinned.length > 1) setPinAt((at) => (at + 1) % pinned.length);
             }}
           >
-            <IconPinSolid className="chat__pin-icon" aria-hidden="true" />
+            <IconPin className="chat__pin-icon" aria-hidden="true" />
             <span className="chat__pin-body">
               <span className="chat__pin-title">Закреплённое сообщение</span>
               <span className="chat__pin-text">{messageLabel(pinCurrent)}</span>
