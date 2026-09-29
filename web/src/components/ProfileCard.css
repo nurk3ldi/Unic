@@ -1,0 +1,72 @@
+/* ── Визитка в боковой колонке ───────────────────────────── */
+/* Белая карточка на сером столбце: её отделяет контраст, как на сгруппированных
+   экранах, — ни рамки, ни тени */
+.me-card {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-6);
+  /* Скругление меньше карточного в полтора раза (18 → 12px): боковые карточки
+     читаются спокойнее, чем модальные окна */
+  border-radius: var(--radius-control);
+  background: var(--surface);
+  color: var(--text);
+  min-width: 0;
+  transition:
+    background-color var(--duration-fast) var(--ease-out),
+    transform var(--duration-press) var(--ease-out);
+}
+
+.me-card:hover {
+  background: var(--fill);
+  text-decoration: none;
+}
+
+/* Отклик наступает на нажатии, а не на отпускании */
+.me-card:active {
+  transform: scale(0.98);
+}
+
+/* Скруглённый квадрат — так на образце; буква на мягкой подложке бренда */
+.me-card__photo {
+  display: grid;
+  place-items: center;
+  width: 2.75rem;
+  height: 2.75rem;
+  flex: none;
+  overflow: hidden;
+  border-radius: var(--radius-control);
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-size: 1.125rem;
+  font-weight: 600;
+}
+
+.me-card__photo img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* Длинное имя не расталкивает колонку — обрезается многоточием */
+.me-card__body {
+  display: flex;
+  flex-direction: column;
+  gap: 0.125rem;
+  min-width: 0;
+}
+
+/* Полное ФИО переносится по словам: обрезать своё имя многоточием незачем */
+.me-card__name {
+  font-size: 0.9375rem;
+  font-weight: 600;
+  line-height: 1.25;
+}
+
+.me-card__nick {
+  font-size: 0.8125rem;
+  color: var(--text-secondary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}

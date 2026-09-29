@@ -34,35 +34,13 @@
   padding: 0;
 }
 
-/* Своё фото: скруглённый квадрат — так на образце. Отклик на нажатии */
-.header__me {
-  display: grid;
-  place-items: center;
+/* Колокольчик пришёл из панели разделов — здесь он меньше, вровень с полем,
+   а скругление то же, что у поля: в ряду одна форма */
+.header__end .bell {
   width: 2.25rem;
   height: 2.25rem;
-  flex: none;
-  overflow: hidden;
   border-radius: var(--radius-control);
-  background: var(--fill);
-  color: var(--text-secondary);
-  font-size: 1.5rem;
-  transition:
-    color var(--duration-fast) var(--ease-out),
-    transform var(--duration-press) var(--ease-out);
-}
-
-.header__me:hover {
-  color: var(--text);
-}
-
-.header__me:active {
-  transform: scale(0.92);
-}
-
-.header__photo {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
+  font-size: 1.375rem;
 }
 
 @media (max-width: 48rem) {

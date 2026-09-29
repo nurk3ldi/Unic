@@ -4,8 +4,8 @@
   position: relative;
   display: grid;
   place-items: center;
-  width: var(--rail-item);
-  height: var(--rail-item);
+  width: 2.25rem;
+  height: 2.25rem;
   flex: none;
   border-radius: var(--radius-control);
   color: var(--text-secondary);
@@ -47,13 +47,13 @@
 }
 
 /* ── Список приглашений ──────────────────────────────────── */
-/* Выходит сбоку от колокольчика и растёт из его угла (§4.3 — привязка к триггеру).
-   Колокольчик стоит внизу панели разделов, поэтому список идёт от нижнего края */
+/* Выпадает под колокольчиком и растёт из его угла (§4.3 — привязка к триггеру).
+   Колокольчик стоит в правом краю верхней полосы — список идёт от него вниз */
 .invites {
   position: fixed;
-  inset: auto auto var(--space-4) calc(var(--rail) + var(--space-2));
-  width: min(22rem, calc(100vw - var(--rail) - 2rem));
-  max-height: calc(100dvh - var(--space-8));
+  inset: calc(var(--header-height) + var(--space-2)) var(--space-6) auto auto;
+  width: min(22rem, calc(100vw - 2rem));
+  max-height: calc(var(--screen) - var(--space-8));
   margin: 0;
   padding: var(--space-4);
   overflow-y: auto;
@@ -62,7 +62,7 @@
   background: var(--surface);
   color: var(--text);
   box-shadow: var(--shadow-raised);
-  transform-origin: bottom left;
+  transform-origin: top right;
   /* Приходит и уходит одним путём: масштаб + растворение */
   opacity: 0;
   transform: scale(0.96);

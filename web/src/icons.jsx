@@ -8,8 +8,7 @@ import {
   ArrowRight01Icon,
   ArrowTurnBackwardIcon,
   ArrowUp01Icon,
-  BubbleChatIcon,
-  Calendar03Icon,
+  Calendar04Icon,
   Camera01Icon,
   Cancel01Icon,
   CloudUploadIcon,
@@ -21,7 +20,7 @@ import {
   FootballIcon,
   Hamburger01Icon,
   HappyIcon,
-  Home01Icon,
+  Home09Icon,
   Idea01Icon,
   Image01Icon,
   Leaf01Icon,
@@ -37,6 +36,7 @@ import {
   PlayIcon,
   PlusSignIcon,
   Search01Icon,
+  SendIcon,
   Tick02Icon,
   TickDouble01Icon,
   UnavailableIcon,
@@ -86,9 +86,9 @@ export const IconBall = icon(FootballIcon);
 export const IconBan = icon(UnavailableIcon);
 export const IconBell = icon(Notification01Icon);
 export const IconBulb = icon(Idea01Icon);
-export const IconCalendar = icon(Calendar03Icon);
+export const IconCalendar = icon(Calendar04Icon);
 export const IconCamera = icon(Camera01Icon);
-export const IconChats = icon(BubbleChatIcon);
+export const IconChats = icon(SendIcon);
 export const IconCheck = icon(Tick02Icon);
 export const IconCheckDouble = icon(TickDouble01Icon);
 export const IconChevronDown = icon(ArrowDown01Icon);
@@ -105,7 +105,7 @@ export const IconEye = icon(ViewIcon);
 export const IconEyeOff = icon(ViewOffSlashIcon);
 export const IconFood = icon(Hamburger01Icon);
 export const IconHeart = icon(FavouriteIcon);
-export const IconHome = icon(Home01Icon);
+export const IconHome = icon(Home09Icon);
 export const IconImage = icon(Image01Icon);
 export const IconImages = icon(Album02Icon);
 export const IconLeaf = icon(Leaf01Icon);
