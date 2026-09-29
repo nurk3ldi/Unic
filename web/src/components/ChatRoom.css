@@ -367,12 +367,15 @@
   transform: scale(0.92);
 }
 
-/* Меню падает прямо из-под кнопки (§4.3 — привязка к триггеру).
-   Селектор составной: у базового .row-menu такой же вес */
+/* Меню падает из-под пузыря и раскрывается вправо, в свободное поле ленты.
+   Не поверх реплики: внутри пузыря (`top: 1.25rem`) оно закрывало сам текст,
+   а правым краем (`right: 0`) у короткой реплики уезжало за левый край панели */
 .msg__bubble .row-menu--msg {
-  top: 1.25rem;
-  right: 0;
+  top: calc(100% + var(--space-1));
+  right: auto;
+  left: 0;
   max-width: none;
+  transform-origin: top left;
 }
 
 /* У своей реплики меню живёт снаружи пузыря, у кнопки: падает из-под неё
@@ -400,7 +403,7 @@
 .msg__bubble .row-menu--msg.row-menu--above {
   top: auto;
   bottom: calc(100% + var(--space-1));
-  transform-origin: bottom right;
+  transform-origin: bottom left;
 }
 
 /* ── Реакции ───────────────────────────────────────────── */

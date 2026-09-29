@@ -1262,11 +1262,14 @@ export default function ChatRoom({ clubId, members = [], jump = null }) {
             onClick={(event) => {
               event.stopPropagation(); // иначе тот же клик сразу закроет меню
 
-              // Меряем в момент открытия: сколько ленты осталось под кнопкой
+              // Меряем в момент открытия: сколько ленты осталось под тем, из-под чего
+              // падает меню. У чужой реплики это сам пузырь (кнопка сидит в его шапке),
+              // у своей — кнопка снаружи
               const rem = parseFloat(getComputedStyle(document.documentElement).fontSize);
+              const anchor = event.currentTarget.closest('.msg__bubble') ?? event.currentTarget;
               const below =
                 listRef.current.getBoundingClientRect().bottom -
-                event.currentTarget.getBoundingClientRect().bottom;
+                anchor.getBoundingClientRect().bottom;
               setMenuUp(below < MENU_ROOM_REM * rem);
 
               setOpenMenu((current) => (current === message.id ? null : message.id));
