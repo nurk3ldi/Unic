@@ -1,0 +1,134 @@
+/* ── Истории ─────────────────────────────────────────────── */
+/* Ряд карточек над лентой. Размеры сняты с образца: 96×160 и 9px между ними */
+.stories {
+  display: flex;
+  gap: 0.5625rem;
+  overflow-x: auto;
+  /* Карточка при нажатии чуть уменьшается — тень от соседа не должна её резать */
+  padding-bottom: var(--space-1);
+}
+
+.story {
+  position: relative;
+  display: block;
+  width: 6rem;
+  height: 10rem;
+  flex: none;
+  overflow: hidden;
+  border-radius: var(--radius-control);
+  background: var(--fill);
+  transition: transform var(--duration-press) var(--ease-out);
+}
+
+/* Отклик наступает на нажатии, а не на отпускании */
+.story:active {
+  transform: scale(0.97);
+}
+
+.story__cover {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* Имя лежит на снимке — под ним затемнение, иначе на светлом кадре не прочесть */
+.story::after {
+  content: '';
+  position: absolute;
+  inset: 40% 0 0;
+  background: linear-gradient(to bottom, transparent, rgba(0, 0, 0, 0.55));
+  pointer-events: none;
+}
+
+.story__name {
+  position: absolute;
+  inset: auto var(--space-2) var(--space-2);
+  z-index: 1;
+  color: var(--text-on-accent);
+  font-size: 0.75rem;
+  font-weight: 600;
+  line-height: 1.2;
+  text-align: center;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Кружок рассказчика в углу — как в историях Instagram: сразу видно, чей кадр */
+.story__avatar {
+  position: absolute;
+  top: var(--space-2);
+  left: var(--space-2);
+  z-index: 1;
+  display: grid;
+  place-items: center;
+  width: 1.75rem;
+  height: 1.75rem;
+  overflow: hidden;
+  border: 2px solid var(--surface);
+  border-radius: 50%;
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.story__avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* ── «Добавить» ──────────────────────────────────────────── */
+/* Не снимок, а приглашение: приглушённое небо вместо кадра (см. --story-add).
+   Низ градиента тёмный, поэтому подпись остаётся белой, как у остальных */
+.story--add {
+  background: var(--story-add);
+}
+
+/* Своего затемнения не нужно: низ градиента и так тёмный */
+.story--add::after {
+  content: none;
+}
+
+/* Белый кружок со знаком внутри — ниже середины, ровно как на образце (69%) */
+.story__plus {
+  position: absolute;
+  top: 69%;
+  left: 50%;
+  z-index: 1;
+  display: grid;
+  place-items: center;
+  width: 1.75rem;
+  height: 1.75rem;
+  border-radius: 50%;
+  background: var(--surface);
+  color: var(--accent);
+  font-size: 1rem;
+  transform: translate(-50%, -50%);
+}
+
+.story--add:disabled {
+  opacity: 0.6;
+}
+
+/* Меню «от чьего имени»: растёт из карточки, как остальные меню проекта */
+.stories__add-box {
+  position: relative;
+  flex: none;
+}
+
+.stories__menu {
+  position: absolute;
+  top: calc(100% + var(--space-1));
+  left: 0;
+  right: auto;
+  max-width: none;
+  transform-origin: top left;
+}
+
+.stories__error {
+  margin-top: var(--space-2);
+  font-size: 0.875rem;
+  color: var(--red);
+}

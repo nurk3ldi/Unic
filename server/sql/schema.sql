@@ -216,3 +216,22 @@ insert into club_pins (club_id, message_id)
   on conflict do nothing;
 
 alter table clubs drop column if exists pinned_message_id;
+
+-- Истории: фото или видео, которые живут сутки. Публикуют только клуб (его
+-- руководитель) и университет; `club_id` пуст — история от самого аккаунта,
+-- а не от клуба. Файл лежит на диске под тем же id, как и вложения чата
+create table if not exists stories (
+  id         uuid primary key default gen_random_uuid(),
+  club_id    uuid references clubs (id) on delete cascade,
+  author_id  uuid not null references users (id) on delete cascade,
+  kind       text not null check (kind in ('image', 'video')),
+  mime       text not null,
+  size       integer not null,
+  width      integer,
+  height     integer,
+  duration   real,
+  created_at timestamptz not null default now()
+);
+
+-- Лента всегда читается «свежие сверху» и за последние сутки
+create index if not exists stories_fresh on stories (created_at desc);

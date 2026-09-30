@@ -34,10 +34,15 @@ const VIDEO_TYPES = {
   mov: 'video/quicktime',
 };
 
-// Снимки Apple (HEIC/HEIF) — оригиналом. Браузер, который их читает (Safari),
-// сам переводит снимок в JPEG до отправки; оригинал уходит только из того,
-// что прочитать не смог. Показывает его тоже только тот, кто умеет
+// Снимки. В чат обычные форматы приходят строкой data URL, файлом — только
+// те, что браузер не прочитал (HEIC/HEIF с iPhone). А в историю снимок идёт
+// файлом, как и видео, — поэтому обычные форматы тоже в списке
 const IMAGE_TYPES = {
+  jpg: 'image/jpeg',
+  jpeg: 'image/jpeg',
+  png: 'image/png',
+  webp: 'image/webp',
+  gif: 'image/gif',
   heic: 'image/heic',
   heif: 'image/heif',
 };

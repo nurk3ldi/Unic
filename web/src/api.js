@@ -128,4 +128,33 @@ export const api = {
       xhr.onerror = () => reject(new Error('Не удалось загрузить файл'));
       xhr.send(file);
     }),
+
+  stories: () => request('/stories'),
+  deleteStory: (id) => request(`/stories/${id}`, { method: 'DELETE' }),
+
+  /** История уходит тем же путём, что и вложение чата: тело запроса — сам файл. */
+  uploadStory: (file, clubId, meta = {}) =>
+    new Promise((resolve, reject) => {
+      const xhr = new XMLHttpRequest();
+      xhr.open('POST', '/api/stories');
+      xhr.setRequestHeader('Content-Type', 'application/octet-stream');
+      xhr.setRequestHeader('X-File-Name', encodeURIComponent(file.name));
+      if (clubId) xhr.setRequestHeader('X-Club-Id', clubId);
+      if (meta.width) xhr.setRequestHeader('X-Video-Width', String(meta.width));
+      if (meta.height) xhr.setRequestHeader('X-Video-Height', String(meta.height));
+      if (meta.duration) xhr.setRequestHeader('X-Video-Duration', String(meta.duration));
+
+      xhr.onload = () => {
+        let data = {};
+        try {
+          data = JSON.parse(xhr.responseText);
+        } catch {
+          // пустой или не JSON ответ — ниже обычное сообщение об ошибке
+        }
+        if (xhr.status >= 200 && xhr.status < 300) resolve(data);
+        else reject(new Error(data.error ?? 'Не удалось выложить историю'));
+      };
+      xhr.onerror = () => reject(new Error('Не удалось выложить историю'));
+      xhr.send(file);
+    }),
 };
