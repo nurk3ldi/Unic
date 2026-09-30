@@ -2,7 +2,6 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import {
   IconCamera,
-  IconChevronLeft,
   IconChevronRight,
 } from '../icons.jsx';
 import { api } from '../api.js';
@@ -139,46 +138,9 @@ export default function ClubPage() {
 
           {/* Верхний ряд делится по ширине на две отдельные карточки */}
           <div className="club-top">
-            {/* Возврат, название, фото и сведения о клубе */}
+            {/* Фото, название и сведения о клубе. Возврата нет: «Клубы» слева в
+                навигации подсвечен и ведёт обратно */}
             <div className="club-card">
-              <div className="card-header">
-                {/* Возврат назван разделом, а не «Назад»: так видно, куда именно ведёт */}
-                <Link className="card-header__back" to="/clubs" viewTransition>
-                  <IconChevronLeft aria-hidden="true" />
-                  Клубы
-                </Link>
-
-                {mayEdit && (
-                  <div className="card-header__actions">
-                    {/* Ряд раскрывается, чтобы впустить «Отмену»: она — прямое
-                        следствие нажатия «Редактировать», поэтому должна откуда-то
-                        приехать, а не оказаться на месте следующим кадром */}
-                    <div className={`reveal-x${editing ? ' reveal-x--open' : ''}`}>
-                      <div className="reveal-x__clip">
-                        <button
-                          className="card-header__action"
-                          type="button"
-                          onClick={cancel}
-                          disabled={saving}
-                          tabIndex={editing ? undefined : -1}
-                        >
-                          Отмена
-                        </button>
-                      </div>
-                    </div>
-
-                    <button
-                      className={`card-header__action${editing ? ' card-header__action--primary' : ''}`}
-                      type="button"
-                      onClick={() => (editing ? done() : setEditing(true))}
-                      disabled={saving}
-                    >
-                      {saving ? 'Сохраняем…' : editing ? 'Готово' : 'Редактировать'}
-                    </button>
-                  </div>
-                )}
-              </div>
-
               {club && (
                 <div className="club-hero">
                   {/* Фото остаётся на месте, меняется только то, что оно кликабельно */}
@@ -250,6 +212,37 @@ export default function ClubPage() {
                         </p>
                       </div>
                     </div>
+
+                    {/* Шапки у карточки нет — правка стоит под сведениями, тихим действием */}
+                    {mayEdit && (
+                      <div className="card-header__actions club-hero__actions">
+                        {/* Ряд раскрывается, чтобы впустить «Отмену»: она — прямое
+                            следствие нажатия «Редактировать», поэтому должна откуда-то
+                            приехать, а не оказаться на месте следующим кадром */}
+                        <div className={`reveal-x${editing ? ' reveal-x--open' : ''}`}>
+                          <div className="reveal-x__clip">
+                            <button
+                              className="card-header__action"
+                              type="button"
+                              onClick={cancel}
+                              disabled={saving}
+                              tabIndex={editing ? undefined : -1}
+                            >
+                              Отмена
+                            </button>
+                          </div>
+                        </div>
+
+                        <button
+                          className={`card-header__action${editing ? ' card-header__action--primary' : ''}`}
+                          type="button"
+                          onClick={() => (editing ? done() : setEditing(true))}
+                          disabled={saving}
+                        >
+                          {saving ? 'Сохраняем…' : editing ? 'Готово' : 'Редактировать'}
+                        </button>
+                      </div>
+                    )}
                   </div>
 
                   <input
@@ -265,10 +258,6 @@ export default function ClubPage() {
 
             {/* Управление самим клубом — рядом с управлением участниками */}
             <div className="club-card">
-              <div className="card-header">
-                <h2 className="card-header__title">Управление клубом</h2>
-              </div>
-
               {club && (
                 <ClubControls club={club} canManage={Boolean(mayEdit)} onUpdated={setClub} />
               )}
@@ -278,31 +267,17 @@ export default function ClubPage() {
           <div className="club-bottom">
             {/* Карточка целиком ведёт в чат: свёрнутый вид только читают */}
             <Link className="club-card club-card--tap" to={`/chats/${id}`} viewTransition>
-              <div className="card-header">
-                <h2 className="card-header__title">Чат</h2>
-              </div>
-
               <ClubChatCard clubId={id} />
             </Link>
 
             {/* Как чат: карточка целиком ведёт в календарь */}
             <Link className="club-card club-card--tap" to="/events" viewTransition>
-              <div className="card-header">
-                <h2 className="card-header__title">События</h2>
-              </div>
-
               <UpcomingEvents clubId={id} />
             </Link>
           </div>
         </div>
 
         <aside className="club-page__side">
-          {/* «Состав», а не «Управление участниками»: вкладки ниже уже называют
-              разделы, и студент здесь ничем не управляет — он смотрит */}
-          <div className="card-header">
-            <h2 className="card-header__title">Состав клуба</h2>
-          </div>
-
           <MembersPanel clubId={id} onCountChange={syncMembers} />
         </aside>
       </div>
