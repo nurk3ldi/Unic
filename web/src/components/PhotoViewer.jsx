@@ -1,5 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import {
+  IconChevronLeft,
+  IconChevronRight,
   IconClose,
   IconDownload,
   IconPause,
@@ -16,14 +18,19 @@ const RATES = [1, 1.5, 2];
 const IDLE_MS = 2500;
 // Шаг перемотки стрелками
 const SEEK_STEP = 5;
+// Сколько стоит снимок в серии, прежде чем уйти к следующему — как в Instagram
+const STEP_MS = 5000;
 
 /**
  * Снимок или видео на весь экран поверх страницы. Нативный <dialog>: Esc, фокус и
  * верхний слой даёт платформа. Клик мимо — тоже выход: так закрывают любое окно.
  * Нужен и ленте, и разделу «Медиа», поэтому живёт отдельно.
  * `photo` — { url } снимка или { url, kind: 'video', name? } видео.
+ * `steps` — необязательно, для серии (истории): { index, count, onPrev, onNext } —
+ * сверху полоски «который из скольких», по бокам ‹ ›; у снимка листают и ← →.
+ * Серия идёт сама: снимок — через 5 секунд, видео — когда доиграло.
  */
-export default function PhotoViewer({ photo, onClose }) {
+export default function PhotoViewer({ photo, onClose, steps }) {
   const dialogRef = useRef(null);
   const videoRef = useRef(null);
   // Окно держит последний снимок, пока растворяется, — иначе он пропал бы раньше окна
@@ -42,6 +49,25 @@ export default function PhotoViewer({ photo, onClose }) {
     }
   }, [photo]);
 
+  // ← → листают серию, но только у снимка: у видео эти клавиши перематывают
+  useEffect(() => {
+    if (!photo || !steps || photo.kind === 'video') return;
+    function onKey(event) {
+      if (event.key === 'ArrowLeft') steps.onPrev?.();
+      else if (event.key === 'ArrowRight') steps.onNext?.();
+    }
+    document.addEventListener('keydown', onKey);
+    return () => document.removeEventListener('keydown', onKey);
+  }, [photo, steps]);
+
+  // Снимок в серии уходит сам. Таймер в JS, а не конец CSS-анимации: при
+  // «Уменьшить движение» анимации сжимаются до нуля — серия пролетела бы разом
+  useEffect(() => {
+    if (!photo || !steps?.onNext || photo.kind === 'video') return;
+    const timer = setTimeout(steps.onNext, STEP_MS);
+    return () => clearTimeout(timer);
+  }, [photo, steps]);
+
   return (
     <dialog
       className="photo-viewer"
@@ -52,9 +78,65 @@ export default function PhotoViewer({ photo, onClose }) {
     >
       {shown.current?.kind === 'video' ? (
         // Ключ — адрес: другое видео начинается с нуля, а не с чужой позиции
-        <VideoPlayer key={shown.current.url} media={shown.current} videoRef={videoRef} />
+        <VideoPlayer
+          key={shown.current.url}
+          media={shown.current}
+          videoRef={videoRef}
+          onEnded={steps?.onNext}
+        />
       ) : (
         shown.current && <img className="photo-viewer__image" src={shown.current.url} alt="" />
+      )}
+
+      {steps && (
+        <>
+          {/* Идущая полоска заполняется за время кадра: снимок — 5 секунд, видео —
+              его длина. Ключ — адрес: новый кадр начинает полоску с нуля */}
+          <div className="photo-viewer__steps" aria-label={`${steps.index + 1} из ${steps.count}`}>
+            {Array.from({ length: steps.count }, (_, index) => (
+              <span
+                key={index === steps.index ? shown.current?.url : index}
+                className={`photo-viewer__step${
+                  index < steps.index
+                    ? ' photo-viewer__step--done'
+                    : index === steps.index
+                      ? ' photo-viewer__step--now'
+                      : ''
+                }`}
+                style={
+                  index === steps.index
+                    ? {
+                        '--step-time':
+                          shown.current?.kind === 'video' && shown.current.duration
+                            ? `${shown.current.duration}s`
+                            : `${STEP_MS}ms`,
+                      }
+                    : undefined
+                }
+              />
+            ))}
+          </div>
+
+          {/* Крайняя стрелка не пропадает, а гаснет — ряд не прыгает */}
+          <button
+            className="photo-viewer__turn photo-viewer__turn--prev"
+            type="button"
+            aria-label="Предыдущая"
+            disabled={!steps.onPrev}
+            onClick={steps.onPrev}
+          >
+            <IconChevronLeft aria-hidden="true" />
+          </button>
+          <button
+            className="photo-viewer__turn photo-viewer__turn--next"
+            type="button"
+            aria-label="Следующая"
+            disabled={!steps.onNext}
+            onClick={steps.onNext}
+          >
+            <IconChevronRight aria-hidden="true" />
+          </button>
+        </>
       )}
 
       <button className="photo-viewer__close" type="button" aria-label="Закрыть" onClick={onClose}>
@@ -72,7 +154,7 @@ export default function PhotoViewer({ photo, onClose }) {
  * через пару секунд уходит и возвращается от движения мыши; на паузе — видна.
  * Клавиши: пробел — пауза, ← → — ±5 секунд.
  */
-function VideoPlayer({ media, videoRef }) {
+function VideoPlayer({ media, videoRef, onEnded }) {
   const [playing, setPlaying] = useState(false);
   const [current, setCurrent] = useState(0);
   const [duration, setDuration] = useState(media.duration ?? 0);
@@ -149,7 +231,10 @@ function VideoPlayer({ media, videoRef }) {
           wake();
         }}
         onPause={() => setPlaying(false)}
-        onEnded={() => setPlaying(false)}
+        onEnded={() => {
+          setPlaying(false);
+          onEnded?.();
+        }}
         onTimeUpdate={(event) => setCurrent(event.currentTarget.currentTime)}
         onLoadedMetadata={(event) => setDuration(event.currentTarget.duration)}
         onVolumeChange={(event) => setMuted(event.currentTarget.muted)}

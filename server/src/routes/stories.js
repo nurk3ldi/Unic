@@ -17,6 +17,10 @@ const router = Router();
 // уборка, ответ), поэтому лежит здесь
 const LIFETIME = "24 hours";
 
+// Сколько живых историй может быть у одного рассказчика (клуба или аккаунта) разом —
+// то есть за сутки: старше суток история и так уходит
+const DAILY_LIMIT = 10;
+
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 /** Число из заголовка: только положительное и в пределах разумного. */
@@ -55,7 +59,7 @@ async function sweep() {
  */
 async function targetsFor(user) {
   if (user.role === 'university' || user.role === 'admin') {
-    return [{ club: null, name: user.full_name }];
+    return [{ club: null, key: `user:${user.id}`, name: user.full_name }];
   }
 
   const { rows } = await query(
@@ -66,7 +70,7 @@ async function targetsFor(user) {
       order by c.name`,
     [user.id],
   );
-  return rows.map((row) => ({ club: row.id, name: row.name }));
+  return rows.map((row) => ({ club: row.id, key: `club:${row.id}`, name: row.name }));
 }
 
 /**
@@ -108,7 +112,13 @@ router.get('/', requireAuth, async (req, res) => {
     });
   }
 
-  res.json({ tellers: [...tellers.values()], targets: await targetsFor(req.user) });
+  // Сколько ещё можно выложить от каждого имени — чтобы не грузить файл впустую
+  const targets = (await targetsFor(req.user)).map((target) => ({
+    ...target,
+    left: Math.max(0, DAILY_LIMIT - (tellers.get(target.key)?.items.length ?? 0)),
+  }));
+
+  res.json({ tellers: [...tellers.values()], targets });
 });
 
 /**
@@ -124,6 +134,21 @@ router.post('/', requireAuth, async (req, res) => {
   if (!(await canPost(clubId, req.user))) {
     return rejectAfterBody(req, () =>
       res.status(403).json({ error: 'Публиковать истории может клуб или университет' }),
+    );
+  }
+
+  // Лимит — до чтения тела: сто мегабайт видео не должны грузиться ради отказа.
+  // Без клуба рассказчик — сам аккаунт, как и в выдаче
+  const { rows: live } = await query(
+    `select count(*)::int as count from stories
+      where created_at > now() - interval '${LIFETIME}'
+        and (case when $1::uuid is null then club_id is null and author_id = $2
+                  else club_id = $1::uuid end)`,
+    [clubId, req.user.id],
+  );
+  if (live[0].count >= DAILY_LIMIT) {
+    return rejectAfterBody(req, () =>
+      res.status(429).json({ error: `Не больше ${DAILY_LIMIT} историй в сутки` }),
     );
   }
 

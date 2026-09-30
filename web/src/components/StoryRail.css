@@ -219,8 +219,55 @@
   content: none;
 }
 
-.story--add:disabled {
+.story--busy {
   opacity: 0.6;
+}
+
+/* Карточка «Добавить» — не кнопка, а коробка: в ней две кнопки (открыть свои
+   истории и плюс), а кнопку в кнопку класть нельзя. Невидимая кнопка лежит на
+   всей карточке, плюс — над ней. Подпись и плюс-значок клики не ловят */
+.story__hit {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  border-radius: inherit;
+}
+
+.story--add .story__name,
+.story--add span.story__plus {
+  pointer-events: none;
+}
+
+.story--add .story__name,
+.story--add .story__plus {
+  z-index: 2;
+}
+
+/* relative — только ради слоя над невидимой кнопкой; угловые отступы общего
+   с аватаром правила здесь не нужны */
+.story--add button.story__plus {
+  position: relative;
+  inset: auto;
+  transition: transform var(--duration-press) var(--ease-out);
+}
+
+.story--add button.story__plus:active {
+  transform: scale(0.9);
+}
+
+/* Свои истории уже есть: вместо неба — последний свой кадр, снизу то же
+   затемнение, что у соседей, — белые плюс и подпись читаются на любом снимке */
+.story--mine {
+  background: var(--fill);
+}
+
+.story--mine .story__cover {
+  position: absolute;
+  inset: 0;
+}
+
+.story--add.story--mine::after {
+  content: '';
 }
 
 /* Меню «от чьего имени»: растёт из карточки, как остальные меню проекта */

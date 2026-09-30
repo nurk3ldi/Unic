@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { api } from '../api.js';
 import { IconChevronLeft, IconChevronRight, IconPlus } from '../icons.jsx';
 import { initial } from '../people.js';
@@ -38,13 +38,16 @@ function Cover({ item }) {
  * Истории: ряд карточек над лентой. Публикуют только клуб (его руководитель) и
  * университет — у остальных карточки «Добавить» просто нет. История живёт сутки.
  *
- * Карточки сгруппированы по рассказчику: у клуба может быть несколько историй,
- * в ряду он один. Открывается пока первая — листание сделаем, когда историй
- * станет больше одной у кого-то.
+ * Карточка — один рассказчик (клуб или университет), за ней до 10 историй за сутки.
+ * Открытая карточка листается как в Instagram: полоски сверху, ‹ ›, снимок уходит
+ * сам через 5 секунд, видео — когда доиграло; после последней истории — следующий
+ * рассказчик. Свои истории живут в карточке «Добавить»: нажал на карточку — смотришь,
+ * на плюс — выкладываешь ещё.
  */
 export default function StoryRail() {
   const [tellers, setTellers] = useState([]);
   const [targets, setTargets] = useState([]);
+  // Что открыто: индексы рассказчика в `order` и истории у него
   const [open, setOpen] = useState(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
@@ -69,6 +72,50 @@ export default function StoryRail() {
   }, []);
 
   useEffect(load, [load]);
+
+  // Свои истории — в карточке «Добавить», в ряду второй раз не повторяются.
+  // В просмотре они идут первыми, как и на экране
+  const mine = tellers.find((teller) => targets.some((target) => target.key === teller.key));
+  const order = useMemo(
+    () => [...tellers].sort((a, b) => (b === mine) - (a === mine)),
+    [tellers, mine],
+  );
+
+  const current = open && order[open.teller];
+  const shown = current?.items[open.item] ?? null;
+
+  // Шаги серии для окна: вперёд — следующая история, потом следующий рассказчик,
+  // за последним — выход. Назад — так же, до самой первой
+  const steps = useMemo(() => {
+    if (!open || !current) return undefined;
+    const { teller, item } = open;
+    return {
+      index: item,
+      count: current.items.length,
+      onNext: () =>
+        setOpen(
+          item + 1 < current.items.length
+            ? { teller, item: item + 1 }
+            : teller + 1 < order.length
+              ? { teller: teller + 1, item: 0 }
+              : null,
+        ),
+      onPrev:
+        item > 0
+          ? () => setOpen({ teller, item: item - 1 })
+          : teller > 0
+            ? () =>
+                setOpen({
+                  teller: teller - 1,
+                  item: order[teller - 1].items.length - 1,
+                })
+            : null,
+    };
+  }, [open, current, order]);
+
+  function watch(teller) {
+    setOpen({ teller: order.indexOf(teller), item: 0 });
+  }
 
   const measure = useCallback(() => {
     const rail = railRef.current;
@@ -97,6 +144,11 @@ export default function StoryRail() {
   }
 
   function pick(chosen) {
+    // Лимит известен заранее — не гоняем файл на сервер ради отказа
+    if (chosen.left <= 0) {
+      setError('На сегодня лимит исчерпан: не больше 10 историй в сутки');
+      return;
+    }
     target.current = chosen;
     setError('');
     fileRef.current.click();
@@ -123,27 +175,49 @@ export default function StoryRail() {
 
   const canAdd = targets.length > 0;
 
+  // Клубов у руководителя может быть несколько — тогда сначала спросим, от чьего имени
+  const addProps = {
+    disabled: busy,
+    onClick: () => targets.length === 1 && pick(targets[0]),
+    popoverTarget: targets.length > 1 ? 'story-target' : undefined,
+  };
+
   return (
     <>
       <div className="stories-box">
         <div className="stories" ref={railRef} onScroll={measure} style={{ '--cards': CARDS }}>
           {canAdd && (
             <div className="stories__add-box">
-              <button
-                className="story story--add"
-                type="button"
-                disabled={busy}
-                onClick={() => targets.length === 1 && pick(targets[0])}
-                /* Клубов у руководителя может быть несколько — тогда сначала спросим,
-                   от чьего имени история */
-                popoverTarget={targets.length > 1 ? 'story-target' : undefined}
+              <div
+                className={`story story--add${mine ? ' story--mine' : ''}${busy ? ' story--busy' : ''}`}
               >
-                {/* Сначала кнопка, под ней подпись — порядок здесь тот же, что на экране */}
-                <span className="story__plus" aria-hidden="true">
-                  <IconPlus />
-                </span>
+                {mine && <Cover item={mine.items.at(-1)} />}
+
+                {/* Своих историй нет — вся карточка добавляет. Есть — карточка
+                    открывает их, а добавляет только плюс */}
+                <button
+                  className="story__hit"
+                  type="button"
+                  aria-label={mine ? 'Смотреть свои истории' : 'Добавить историю'}
+                  {...(mine ? { onClick: () => watch(mine) } : addProps)}
+                />
+
+                {mine ? (
+                  <button
+                    className="story__plus"
+                    type="button"
+                    aria-label="Добавить историю"
+                    {...addProps}
+                  >
+                    <IconPlus />
+                  </button>
+                ) : (
+                  <span className="story__plus" aria-hidden="true">
+                    <IconPlus />
+                  </span>
+                )}
                 <span className="story__name">{busy ? 'Загружаем…' : 'Добавить'}</span>
-              </button>
+              </div>
 
               {targets.length > 1 && (
                 <div className="row-menu stories__menu" id="story-target" popover="auto">
@@ -162,22 +236,24 @@ export default function StoryRail() {
             </div>
           )}
 
-          {tellers.map((teller) => (
-            <button
-              key={teller.key}
-              className="story"
-              type="button"
-              onClick={() => setOpen(teller.items[0])}
-            >
-              <Cover item={teller.items[0]} />
+          {tellers
+            .filter((teller) => teller !== mine)
+            .map((teller) => (
+              <button
+                key={teller.key}
+                className="story"
+                type="button"
+                onClick={() => watch(teller)}
+              >
+                <Cover item={teller.items[0]} />
 
-              <span className="story__avatar">
-                {teller.photo ? <img src={teller.photo} alt="" /> : initial(teller.name)}
-              </span>
+                <span className="story__avatar">
+                  {teller.photo ? <img src={teller.photo} alt="" /> : initial(teller.name)}
+                </span>
 
-              <span className="story__name">{teller.name}</span>
-            </button>
-          ))}
+                <span className="story__name">{teller.name}</span>
+              </button>
+            ))}
         </div>
 
         {/* Стрелки поверх крайних карточек. Спрятанная — disabled: не ловит ни клик,
@@ -212,7 +288,7 @@ export default function StoryRail() {
         onChange={send}
       />
 
-      <PhotoViewer photo={open} onClose={() => setOpen(null)} />
+      <PhotoViewer photo={shown} steps={steps} onClose={() => setOpen(null)} />
     </>
   );
 }

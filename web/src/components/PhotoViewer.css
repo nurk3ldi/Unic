@@ -240,3 +240,85 @@
     transform: translateX(-50%);
   }
 }
+
+/* ── Серия (истории) ────────────────────────────────────── */
+/* Полоски сверху — сколько всего и какая сейчас, как в историях Instagram */
+.photo-viewer__steps {
+  position: absolute;
+  top: var(--space-4);
+  left: 50%;
+  display: flex;
+  gap: var(--space-1);
+  width: min(24rem, calc(100vw - 8rem));
+  transform: translateX(-50%);
+}
+
+.photo-viewer__step {
+  flex: 1;
+  height: 3px;
+  border-radius: var(--radius-pill);
+  background: var(--viewer-track);
+  transition: background-color var(--duration-fast) var(--ease-out);
+}
+
+.photo-viewer__step--done {
+  background: var(--viewer-fg);
+}
+
+/* Идущий кадр: белое заполняется слева направо за его время (scaleX, §4.3) */
+.photo-viewer__step--now {
+  position: relative;
+  overflow: hidden;
+}
+
+.photo-viewer__step--now::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: var(--viewer-fg);
+  transform-origin: left;
+  animation: photo-viewer-step var(--step-time) linear forwards;
+}
+
+@keyframes photo-viewer-step {
+  from {
+    transform: scaleX(0);
+  }
+  to {
+    transform: scaleX(1);
+  }
+}
+
+/* ‹ › — кружок из тёмного материала у краёв окна, по центру высоты */
+.photo-viewer__turn {
+  position: absolute;
+  top: 50%;
+  display: grid;
+  place-items: center;
+  width: 2.75rem;
+  height: 2.75rem;
+  border-radius: 50%;
+  background: var(--viewer-material);
+  color: var(--viewer-fg);
+  font-size: 1.375rem;
+  transform: translateY(-50%);
+  transition:
+    opacity var(--duration-fast) var(--ease-out),
+    transform var(--duration-press) var(--ease-out);
+}
+
+.photo-viewer__turn--prev {
+  left: var(--space-4);
+}
+
+.photo-viewer__turn--next {
+  right: var(--space-4);
+}
+
+.photo-viewer__turn:active {
+  transform: translateY(-50%) scale(0.92);
+}
+
+.photo-viewer__turn:disabled {
+  opacity: 0.3;
+}
