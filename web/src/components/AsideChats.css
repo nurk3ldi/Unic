@@ -8,6 +8,9 @@
      длинный список прокручивался внутри, а не распирал столбец */
   flex: 1;
   min-height: 0;
+  /* Вместе с полями строки даёт 20px от края карточки до снимка сверху и снизу —
+     столько же, сколько слева и справа (снято с образца) */
+  padding: var(--space-3) 0;
   border-radius: var(--radius-control);
   background: var(--surface);
   overflow-y: auto;
@@ -19,7 +22,7 @@
   align-items: center;
   gap: var(--space-3);
   min-height: 3.5rem;
-  padding: var(--space-2) var(--space-4);
+  padding: var(--space-2) var(--space-5);
   color: var(--text);
   transition: background-color var(--duration-fast) var(--ease-out);
 }
@@ -38,7 +41,7 @@
 .aside-chats__row + .aside-chats__row::before {
   content: '';
   position: absolute;
-  inset: 0 0 auto var(--space-4);
+  inset: 0 0 auto var(--space-5);
   height: 1px;
   background: var(--separator);
 }

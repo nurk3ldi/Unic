@@ -16,6 +16,7 @@ import { api } from '../api.js';
 import { useAuth } from '../AuthContext.jsx';
 import {
   POLL_MS,
+  badgeCount,
   chatStamp,
   extensionOf,
   formatDuration,
@@ -316,7 +317,7 @@ export default function Chats() {
                       )}
                       {unread > 0 && (
                         <span className="chat-row__badge" aria-label={`Непрочитанных: ${unread}`}>
-                          {unread > 99 ? '99+' : unread}
+                          {badgeCount(unread)}
                         </span>
                       )}
                     </span>

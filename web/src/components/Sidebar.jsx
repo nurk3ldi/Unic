@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
 import { api } from '../api.js';
+import { badgeCount } from '../chat.js';
 import { IconCalendar, IconChats, IconClubs, IconHome } from '../icons.jsx';
 import './Sidebar.css';
 
@@ -49,7 +50,7 @@ export default function Sidebar() {
           {/* Сколько непрочитанного во всех чатах — чтобы знать, что там ждут */}
           {to === '/chats' && unread > 0 && (
             <span className="side-nav__badge" aria-label={`Непрочитанных: ${unread}`}>
-              {unread > 99 ? '99+' : unread}
+              {badgeCount(unread)}
             </span>
           )}
         </NavLink>

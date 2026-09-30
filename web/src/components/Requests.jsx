@@ -1,14 +1,12 @@
 import { useCallback, useEffect, useState } from 'react';
 import { api } from '../api.js';
+import { badgeCount } from '../chat.js';
 import { initial } from '../people.js';
 import AsideHead from './AsideHead.jsx';
 import './Requests.css';
 
 // Приглашения приходят редко — спрашиваем реже, чем чат
 const POLL_MS = 30_000;
-
-// Больше девяти не показываем: счётчик — про «сколько ждёт», а не про точное число
-const MAX = 9;
 
 /**
  * Правая колонка: приглашения в клубы, которые ждут ответа. Заголовок со
@@ -60,7 +58,7 @@ export default function Requests() {
 
   return (
     <>
-      <AsideHead title="Приглашения" value={count > MAX ? `${MAX}+` : count} accent />
+      <AsideHead title="Приглашения" value={badgeCount(count)} accent />
 
       {invites.map(({ club, inviter }) => (
         <article className="invite" key={club.id}>

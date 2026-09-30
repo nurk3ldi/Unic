@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { NavLink } from 'react-router-dom';
 import { api } from '../api.js';
+import { badgeCount } from '../chat.js';
 import { useLive } from '../live.js';
 import { initial } from '../people.js';
 import AsideHead from './AsideHead.jsx';
@@ -47,7 +48,7 @@ export default function AsideChats() {
 
   return (
     <>
-      <AsideHead title="Чаты" value={chats.length} />
+      <AsideHead title="Чаты" value={badgeCount(chats.length)} />
 
       <nav className="aside-chats" aria-label="Чаты">
         {chats.map((chat) => (
@@ -65,7 +66,7 @@ export default function AsideChats() {
 
             {chat.unread > 0 && (
               <span className="aside-chats__badge" aria-label={`Непрочитанных: ${chat.unread}`}>
-                {chat.unread > 99 ? '99+' : chat.unread}
+                {badgeCount(chat.unread)}
               </span>
             )}
           </NavLink>
