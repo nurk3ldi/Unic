@@ -16,7 +16,8 @@
   flex: 1;
   min-height: 0;
   overflow: hidden;
-  padding: var(--space-3);
+  /* По бокам 20px — как поля остальных карточек страницы клуба */
+  padding: var(--space-3) var(--space-5);
   background: var(--bg-secondary) url('../assets/chat-background.webp') center / cover;
   background-blend-mode: multiply;
   /* Старые реплики не обрезаются по линейке, а растворяются под верхним краем.

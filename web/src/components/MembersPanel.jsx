@@ -204,7 +204,7 @@ export default function MembersPanel({ clubId, onCountChange }) {
                   aria-selected={tab === item.key}
                   onClick={() => openTab(item.key)}
                 >
-                  {item.label}
+                  <span className="segments__label">{item.label}</span>
                   <span className={urgent ? 'segments__badge' : 'segments__count'}>{count}</span>
                 </button>
               );
