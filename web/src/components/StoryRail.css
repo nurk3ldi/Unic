@@ -75,6 +75,17 @@
   pointer-events: auto;
 }
 
+/* Мышью стрелки видны, только пока курсор над рядом: в покое кадры ничем не
+   закрыты. С клавиатуры — пока фокус внутри ряда. На сенсорном экране листают
+   пальцем, и там стрелки остаются как есть */
+@media (hover: hover) {
+  .stories-box:not(:hover):not(:focus-within) .stories__nav--shown {
+    opacity: 0;
+    transform: translateY(-50%) scale(0.8);
+    pointer-events: none;
+  }
+}
+
 /* Отклик на нажатии, а не на отпускании */
 .stories__nav--shown:active {
   transform: translateY(-50%) scale(0.9);
