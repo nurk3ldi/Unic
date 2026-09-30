@@ -53,12 +53,14 @@ export default function Requests() {
 
   const count = invites.length;
 
-  // Ждать нечего — раздела нет совсем: пустой заголовок с нулём ничего не сообщает
-  if (count === 0) return null;
-
   return (
     <>
-      <AsideHead title="Приглашения" value={badgeCount(count)} accent />
+      {/* Счётчик брендовый, только когда есть чего ждать: ноль — тихий, серый */}
+      <AsideHead title="Приглашения" value={badgeCount(count)} accent={count > 0} />
+
+      {/* Раздел стоит на месте и пустым: так видно, что приглашений нет,
+          а не что блок куда-то делся */}
+      {count === 0 && <p className="invite invite--empty">Приглашений нет</p>}
 
       {invites.map(({ club, inviter }) => (
         <article className="invite" key={club.id}>

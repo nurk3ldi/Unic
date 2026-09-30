@@ -9,6 +9,16 @@
   background: var(--surface);
 }
 
+/* Пустой раздел: та же карточка, в ней по центру одна строка */
+.invite--empty {
+  align-items: center;
+  justify-content: center;
+  min-height: 6rem;
+  color: var(--text-secondary);
+  font-size: 0.875rem;
+  text-align: center;
+}
+
 .invite__head {
   display: flex;
   align-items: flex-start;
