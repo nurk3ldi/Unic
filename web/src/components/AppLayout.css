@@ -3,7 +3,12 @@
    столбец сам по себе: полоса и столбцы стоят на месте без sticky */
 .app {
   display: grid;
-  grid-template-columns: var(--side) minmax(0, 1fr) var(--aside);
+  /* Поле у края окна прибавляется к столбцу, а не вычитается из карточек:
+     их ширина та же, воздух берётся у середины */
+  grid-template-columns:
+    calc(var(--side) + var(--gutter) - var(--space-4))
+    minmax(0, 1fr)
+    calc(var(--aside) + var(--gutter) - var(--space-4));
   grid-template-rows: auto minmax(0, 1fr);
   grid-template-areas:
     'head head head'
@@ -30,10 +35,12 @@
 
 .app__side {
   grid-area: side;
+  padding-left: var(--gutter);
 }
 
 .app__aside {
   grid-area: aside;
+  padding-right: var(--gutter);
 }
 
 .app__content {

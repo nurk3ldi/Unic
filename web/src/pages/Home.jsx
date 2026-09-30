@@ -19,10 +19,12 @@ const DEMO_POST = {
 export default function Home() {
   return (
     <main className="page">
-      <StoryRail />
+      <div className="home">
+        <StoryRail />
 
-      <div className="feed">
-        <PostCard post={DEMO_POST} />
+        <div className="feed">
+          <PostCard post={DEMO_POST} />
+        </div>
       </div>
     </main>
   );

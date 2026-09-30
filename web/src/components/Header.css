@@ -6,7 +6,9 @@
   align-items: center;
   gap: var(--space-4);
   height: var(--header-height);
-  padding: 0 var(--space-6);
+  /* Края — те же, что у столбцов под ней: логотип стоит над визиткой,
+     колокольчик — над правым столбцом */
+  padding: 0 var(--gutter);
   background: var(--surface);
   border-bottom: 1px solid var(--separator);
 }
