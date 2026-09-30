@@ -1,15 +1,32 @@
-/* auto-fit схлопывает пустые колонки — иначе карточка висла бы в первой из них */
+/* Четыре клуба в ряд: колонки делят ширину поровну, карточка растёт с окном.
+   Сетка — контейнер: по её ширине (cqw) «Создать клуб» знает размер карточки */
 .clubs {
+  --columns: 4;
   display: grid;
-  grid-template-columns: repeat(auto-fit, var(--club-size));
+  grid-template-columns: repeat(var(--columns), minmax(0, 1fr));
   gap: var(--space-4);
-  justify-content: start; /* карточки прижаты к левому краю */
+  container-type: inline-size;
+}
+
+/* Узкий экран: четыре карточки стали бы марками — меньше колонок */
+@media (max-width: 64rem) {
+  .clubs {
+    --columns: 2;
+  }
+}
+
+@media (max-width: 34rem) {
+  .clubs {
+    --columns: 1;
+  }
 }
 
 /* Кнопка создания: высоту задаёт сетка — она равна соседней карточке */
 .club-add {
-  /* Держит размер карточки даже когда клубов ещё нет */
-  min-height: calc(var(--club-size) + var(--club-header-height));
+  /* Держит размер карточки даже когда клубов ещё нет: квадрат колонки + шапка */
+  min-height: calc(
+    (100cqw - (var(--columns) - 1) * var(--space-4)) / var(--columns) + var(--club-header-height)
+  );
   display: flex;
   flex-direction: column;
   align-items: center;
