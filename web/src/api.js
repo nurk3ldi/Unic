@@ -49,6 +49,7 @@ export const api = {
   clubMedia: (id) => request(`/clubs/${id}/media`),
   setChatNotifications: (id, enabled) =>
     request(`/clubs/${id}/notifications`, { method: 'PUT', body: { enabled } }),
+  pinChat: (id, pinned) => request(`/clubs/${id}/chat-pin`, { method: 'PUT', body: { pinned } }),
 
   // Без промежутка — ближайшие; с промежутком — всё в нём (для календаря)
   events: (range) =>

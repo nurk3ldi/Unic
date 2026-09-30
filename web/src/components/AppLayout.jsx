@@ -28,8 +28,7 @@ export default function AppLayout() {
         <Sidebar />
       </aside>
 
-      {/* Прокручивается содержимое, а не окно: панель остаётся на месте сама,
-          без sticky и без того, чтобы страница считала её высоту */}
+      {/* Прокручивается окно; левый столбец прилипает и едет с лентой (AppLayout.css) */}
       <div className="app__content">
         <Outlet />
       </div>

@@ -28,8 +28,10 @@ router.get('/', requireAuth, async (req, res) => {
             m.body ~* ('(^|[^a-z0-9_@.])@' || $3 || '([^a-z0-9_]|$)') as mentioned,
             exists (
               select 1 from chat_mutes mu where mu.club_id = c.id and mu.user_id = $1
-            ) as muted
+            ) as muted,
+            pc.pinned_at
        from clubs c
+       left join pinned_chats pc on pc.club_id = c.id and pc.user_id = $1
        -- lateral: последнее сообщение каждого клуба одним проходом
        left join lateral (
          select cm.id, cm.body, cm.photo is not null as has_photo, cm.created_at, cm.author_id,
@@ -57,6 +59,9 @@ router.get('/', requireAuth, async (req, res) => {
       photo: row.photo_url,
       // Уведомления выключены — по ним молчит и системное оповещение
       muted: row.muted,
+      // Закреплён ли у этого человека и когда: список наверху колонки сортирует сам,
+      // порядок здесь прежний — страница чатов его не меняет
+      pinnedAt: row.pinned_at,
       // Сколько чужих сообщений новее отметки «прочитано»
       unread: row.unread,
       // Фото без подписи — тоже сообщение: проверяем время, а не текст.

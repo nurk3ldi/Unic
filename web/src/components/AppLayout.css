@@ -1,6 +1,8 @@
 /* Каркас внутренних экранов: полоса сверху, под ней — левый столбец,
-   содержимое и правый столбец. Окно не прокручивается, прокручивается каждый
-   столбец сам по себе: полоса и столбцы стоят на месте без sticky */
+   содержимое и (на главной) правый столбец.
+   Прокручивается окно, как в Instagram: полоса прокрутки стоит у самого края
+   браузера, а не посреди раскладки. С лентой уходят вверх шапка и правый
+   столбец, а левый — визитка и разделы — прилипает и едет вместе */
 .app {
   display: grid;
   /* Поле у края окна прибавляется к столбцу, а не вычитается из карточек:
@@ -8,11 +10,14 @@
   grid-template-columns:
     calc(var(--side) + var(--gutter) - var(--space-4))
     minmax(0, 1fr);
-  grid-template-rows: auto minmax(0, 1fr);
+  grid-template-rows: auto 1fr;
   grid-template-areas:
     'head head'
     'side content';
-  height: 100dvh;
+  min-height: 100dvh;
+  /* Столбцы и содержимое стоят на одном сером полотне, без линий между ними:
+     белые карточки на нём и есть содержание, а серое — воздух вокруг них */
+  background: var(--bg-secondary);
 }
 
 /* Главная: справа ещё столбец — приглашения и чаты */
@@ -30,8 +35,6 @@
   grid-area: head;
 }
 
-/* Столбцы и содержимое стоят на одном сером полотне, без линий между ними:
-   белые карточки на нём и есть содержание, а серое — воздух вокруг них */
 .app__side,
 .app__aside {
   display: flex;
@@ -39,34 +42,41 @@
   gap: var(--space-4);
   min-width: 0;
   padding: var(--space-4);
-  overflow-y: auto;
-  background: var(--bg-secondary);
 }
 
+/* Левый столбец едет с лентой: прилипает к верху окна, когда шапка ушла.
+   Высота — не больше окна; не влезет — прокрутится сам, не таща страницу */
 .app__side {
   grid-area: side;
+  position: sticky;
+  top: 0;
+  align-self: start;
+  max-height: 100dvh;
+  overflow-y: auto;
   padding-left: var(--gutter);
 }
 
+/* Правый столбец уходит вместе со страницей. Не короче экрана — карточка чатов
+   тянется до низа, как раньше, но и не растягивается на всю длину ленты */
 .app__aside {
   grid-area: aside;
+  align-self: start;
+  min-height: var(--screen);
   padding-right: var(--gutter);
 }
 
 .app__content {
   grid-area: content;
   min-width: 0;
-  overflow-y: auto;
-  background: var(--bg-secondary);
 }
 
 /* Узкий экран: столбцы забрали бы всю ширину — они встают над содержимым
-   и под ним, строками */
+   и под ним, строками, и ничего не прилипает */
 @media (max-width: 64rem) {
   .app,
   .app--home {
     grid-template-columns: none;
-    grid-template-rows: auto auto minmax(0, 1fr) auto;
+    grid-template-rows: auto auto 1fr auto;
     grid-template-areas:
       'head'
       'side'
@@ -77,5 +87,15 @@
   .app__side,
   .app__aside {
     padding: var(--space-3) var(--space-4);
+  }
+
+  .app__side {
+    position: static;
+    max-height: none;
+    overflow-y: visible;
+  }
+
+  .app__aside {
+    min-height: 0;
   }
 }

@@ -121,6 +121,15 @@ create table if not exists chat_mutes (
   primary key (user_id, club_id)
 );
 
+-- Закреплённые чаты: у каждого свои, наверху его списка. Время закрепления —
+-- порядок среди закреплённых: закреплённый позже стоит выше
+create table if not exists pinned_chats (
+  user_id uuid not null references users (id) on delete cascade,
+  club_id uuid not null references clubs (id) on delete cascade,
+  pinned_at timestamptz not null default now(),
+  primary key (user_id, club_id)
+);
+
 -- Фото человека (у университета — логотип): data URL, как у фото клуба.
 -- Сессия его не читает — слишком тяжёл для каждого запроса; отдаёт /me и вход
 alter table users add column if not exists photo text;

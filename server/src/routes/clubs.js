@@ -1159,6 +1159,34 @@ router.put('/:id/notifications', requireAuth, async (req, res) => {
 });
 
 /**
+ * Закрепить чат у себя: `{pinned: true}` — наверх своего списка, `false` — снять.
+ * Это не закреплённое сообщение клуба (/pin) — личный порядок, другие его не видят.
+ */
+router.put('/:id/chat-pin', requireAuth, async (req, res) => {
+  const { id } = req.params;
+  if (!(await findClub(id))) return res.status(404).json({ error: 'Клуб не найден' });
+  if (!(await canReadChat(id, req.user))) {
+    return res.status(403).json({ error: 'Чат доступен только участникам клуба' });
+  }
+
+  const pinned = req.body?.pinned;
+  if (typeof pinned !== 'boolean') {
+    return res.status(400).json({ error: 'Укажите, закрепить чат или открепить' });
+  }
+
+  const { rows } = await query(
+    pinned
+      ? `insert into pinned_chats (user_id, club_id) values ($1, $2)
+         on conflict (user_id, club_id) do update set pinned_at = pinned_chats.pinned_at
+         returning pinned_at`
+      : 'delete from pinned_chats where user_id = $1 and club_id = $2 returning null as pinned_at',
+    [req.user.id, id],
+  );
+
+  res.json({ pinnedAt: pinned ? rows[0].pinned_at : null });
+});
+
+/**
  * Своя реакция на сообщение: `{emoji}` — поставить или заменить, `{emoji: null}` —
  * убрать. Удалённому сообщению реакция не ставится. Ответ — все реакции сообщения,
  * чтобы лента сразу нарисовала их такими, какими их видит сервер.
