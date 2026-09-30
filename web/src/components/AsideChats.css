@@ -3,9 +3,14 @@
 .aside-chats {
   display: flex;
   flex-direction: column;
+  /* Карточка занимает всю оставшуюся высоту столбца: переписок бывает мало,
+     но столбец не должен обрываться на середине. `min-height: 0` — чтобы
+     длинный список прокручивался внутри, а не распирал столбец */
+  flex: 1;
+  min-height: 0;
   border-radius: var(--radius-control);
   background: var(--surface);
-  overflow: hidden;
+  overflow-y: auto;
 }
 
 .aside-chats__row {
