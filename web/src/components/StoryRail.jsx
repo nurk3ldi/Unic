@@ -5,9 +5,10 @@ import { initial } from '../people.js';
 import PhotoViewer from './PhotoViewer.jsx';
 import './StoryRail.css';
 
-// Сколько карточек стоит в ряду, считая «Добавить»: столько же, сколько на образце.
+// Сколько карточек стоит в ряду, считая «Добавить». Число уходит и в сетку
+// (`--cards`), чтобы ширина колонок и длина списка не разъехались.
 // Ряд — не полный список, а верхушка: кто выложил раньше, тот и левее
-const CARDS = 5;
+const CARDS = 6;
 
 /** Размеры видео — до отправки: сервер сам их не считает, а лента ставит кадр по ним. */
 async function videoMeta(file) {
@@ -96,7 +97,7 @@ export default function StoryRail() {
 
   return (
     <>
-      <div className="stories">
+      <div className="stories" style={{ '--cards': CARDS }}>
         {canAdd && (
           <div className="stories__add-box">
             <button
@@ -108,6 +109,7 @@ export default function StoryRail() {
                  от чьего имени история */
               popoverTarget={targets.length > 1 ? 'story-target' : undefined}
             >
+              {/* Сначала кнопка, под ней подпись — порядок здесь тот же, что на экране */}
               <span className="story__plus" aria-hidden="true">
                 <IconPlus />
               </span>

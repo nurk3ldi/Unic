@@ -1,10 +1,11 @@
 /* ── Истории ─────────────────────────────────────────────── */
 /* Ряд карточек над лентой. Размеры сняты с образца: 96×160 и 9px между ними */
-/* Пять карточек делят ширину колонки поровну и доходят до её правого края.
-   Ряд всегда из пяти мест: меньше историй — меньше карточек, но не шире */
+/* Карточки делят ширину колонки поровну и доходят до её правого края. Мест в
+   ряду всегда одинаково (`--cards` задаёт StoryRail): меньше историй — меньше
+   карточек, но не шире */
 .stories {
   display: grid;
-  grid-template-columns: repeat(5, minmax(0, 1fr));
+  grid-template-columns: repeat(var(--cards), minmax(0, 1fr));
   gap: 0.5625rem;
 }
 
@@ -41,12 +42,13 @@
   pointer-events: none;
 }
 
+/* Карточка крупная — имя стоит вровень с ней: чуть больше и выше от нижнего края */
 .story__name {
   position: absolute;
-  inset: auto var(--space-2) var(--space-2);
+  inset: auto var(--space-2) var(--space-6);
   z-index: 1;
   color: var(--text-on-accent);
-  font-size: 0.75rem;
+  font-size: 1rem;
   font-weight: 600;
   line-height: 1.2;
   text-align: center;
@@ -55,23 +57,38 @@
   white-space: nowrap;
 }
 
-/* Кружок рассказчика в углу — как в историях Instagram: сразу видно, чей кадр */
-.story__avatar {
+/* Значок в углу кадра. У чужой истории это снимок рассказчика (сразу
+   видно, чей кадр), у «Добавить» — плюс: одно и то же место и одна форма,
+   поэтому правило одно. Скруглённый квадрат в белой рамке (как на образце),
+   а не кружок: так же, как аватары в боковых колонках — кружки остались
+   только в ленте чата */
+.story__avatar,
+.story__plus {
   position: absolute;
-  top: var(--space-2);
-  left: var(--space-2);
+  top: var(--space-3);
+  left: var(--space-3);
   z-index: 1;
   display: grid;
   place-items: center;
-  width: 1.75rem;
-  height: 1.75rem;
+  width: 2.5rem;
+  height: 2.5rem;
   overflow: hidden;
-  border: 2px solid var(--surface);
-  border-radius: 50%;
+  /* Белая рамка снаружи и просвет до неё: фон обрезается по padding-box, поэтому
+     прозрачный border оставляет щель с кадром; outline идёт по тому же радиусу,
+     а снимок внутри скругляется сам — overflow режет по внутреннему радиусу */
+  border: 4px solid transparent;
+  outline: 3px solid var(--surface);
+  border-radius: 0.75rem;
   background: var(--accent-soft);
+  background-clip: padding-box;
   color: var(--accent);
-  font-size: 0.75rem;
+  font-size: 0.9375rem;
   font-weight: 600;
+}
+
+/* Сам знак — половина плашки, как на образце (иконка идёт от font-size) */
+.story__plus {
+  font-size: 1.25rem;
 }
 
 .story__avatar img {
@@ -82,31 +99,35 @@
 
 /* ── «Добавить» ──────────────────────────────────────────── */
 /* Не снимок, а приглашение: приглушённое небо вместо кадра (см. --story-add).
-   Низ градиента тёмный, поэтому подпись остаётся белой, как у остальных */
+   Кнопка и подпись стоят вместе внизу — это одно действие, а не углы кадра,
+   поэтому здесь они выходят из absolute в обычный столбец. Нижний отступ тот же,
+   что у имён на соседних карточках: «Добавить» стоит с ними на одной линии,
+   а тёмный низ градиента держит белую подпись читаемой */
 .story--add {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--space-3);
+  padding-bottom: var(--space-6);
   background: var(--story-add);
+}
+
+.story--add .story__name {
+  position: static;
+}
+
+/* Рамка и просвет — общие с аватаром; у плюса внутри не снимок, а белая карточка */
+.story--add .story__plus {
+  position: static;
+  background: var(--surface);
+  background-clip: padding-box;
+  font-size: 1rem;
 }
 
 /* Своего затемнения не нужно: низ градиента и так тёмный */
 .story--add::after {
   content: none;
-}
-
-/* Белый кружок со знаком внутри — ниже середины, ровно как на образце (69%) */
-.story__plus {
-  position: absolute;
-  top: 69%;
-  left: 50%;
-  z-index: 1;
-  display: grid;
-  place-items: center;
-  width: 1.75rem;
-  height: 1.75rem;
-  border-radius: 50%;
-  background: var(--surface);
-  color: var(--accent);
-  font-size: 1rem;
-  transform: translate(-50%, -50%);
 }
 
 .story--add:disabled {

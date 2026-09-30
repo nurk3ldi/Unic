@@ -1,0 +1,8 @@
+/* Лента под историями: тот же зазор, что между колонками, — все карточки
+   стоят на одной сетке */
+.feed {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  margin-top: var(--space-4);
+}
