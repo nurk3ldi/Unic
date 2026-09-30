@@ -7,13 +7,23 @@
      их ширина та же, воздух берётся у середины */
   grid-template-columns:
     calc(var(--side) + var(--gutter) - var(--space-4))
+    minmax(0, 1fr);
+  grid-template-rows: auto minmax(0, 1fr);
+  grid-template-areas:
+    'head head'
+    'side content';
+  height: 100dvh;
+}
+
+/* Главная: справа ещё столбец — приглашения и чаты */
+.app--home {
+  grid-template-columns:
+    calc(var(--side) + var(--gutter) - var(--space-4))
     minmax(0, 1fr)
     calc(var(--aside) + var(--gutter) - var(--space-4));
-  grid-template-rows: auto minmax(0, 1fr);
   grid-template-areas:
     'head head head'
     'side content aside';
-  height: 100dvh;
 }
 
 .header {
@@ -53,7 +63,8 @@
 /* Узкий экран: столбцы забрали бы всю ширину — они встают над содержимым
    и под ним, строками */
 @media (max-width: 64rem) {
-  .app {
+  .app,
+  .app--home {
     grid-template-columns: none;
     grid-template-rows: auto auto minmax(0, 1fr) auto;
     grid-template-areas:

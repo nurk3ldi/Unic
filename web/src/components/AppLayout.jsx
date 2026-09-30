@@ -1,4 +1,4 @@
-import { Outlet } from 'react-router-dom';
+import { Outlet, useLocation } from 'react-router-dom';
 import ChatNotifier from './ChatNotifier.jsx';
 import Header from './Header.jsx';
 import AsideChats from './AsideChats.jsx';
@@ -12,12 +12,14 @@ import './AppLayout.css';
  * уведомления — тоже. Высота, которая остаётся странице, лежит в `--screen` —
  * считать «минус шапка» в каждом файле не нужно.
  *
- * Панель разделов (`Sidebar`) временно убрана по просьбе: сам компонент и его
- * стили на месте, вернуть — снова отрисовать его здесь и вернуть колонку в сетке.
+ * Правый столбец (приглашения и чаты) — только на главной: к клубам, событиям
+ * и профилю он отношения не имеет, там его место отдаётся самой странице.
  */
 export default function AppLayout() {
+  const home = useLocation().pathname === '/';
+
   return (
-    <div className="app">
+    <div className={home ? 'app app--home' : 'app'}>
       <Header />
 
       {/* Левый столбец: визитка и разделы — двумя карточками на общем полотне */}
@@ -33,10 +35,12 @@ export default function AppLayout() {
       </div>
 
       {/* Правый столбец: то, что ждёт ответа, и переписки под ним */}
-      <aside className="app__aside">
-        <Requests />
-        <AsideChats />
-      </aside>
+      {home && (
+        <aside className="app__aside">
+          <Requests />
+          <AsideChats />
+        </aside>
+      )}
 
       <ChatNotifier />
     </div>
