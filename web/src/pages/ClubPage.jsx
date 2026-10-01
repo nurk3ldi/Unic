@@ -33,6 +33,7 @@ export default function ClubPage() {
   const { id } = useParams();
   const { user } = useAuth();
   const fileRef = useRef(null);
+  const nameRef = useRef(null);
 
   const [club, setClub] = useState(null);
   const [error, setError] = useState('');
@@ -55,6 +56,10 @@ export default function ClubPage() {
   useEffect(() => {
     setForm(formOf(club));
   }, [club]);
+
+  useEffect(() => {
+    if (editing) nameRef.current?.focus();
+  }, [editing]);
 
   const mayEdit = club && CAN_EDIT.includes(user?.role);
 
@@ -143,6 +148,34 @@ export default function ClubPage() {
             <div className="club-card">
               {club && (
                 <div className="club-hero">
+                  {mayEdit && (
+                    <div className="card-header__actions club-hero__actions">
+                      <div className={`reveal-x${editing ? ' reveal-x--open' : ''}`}>
+                        <div className="reveal-x__clip">
+                          <button
+                            className="card-header__action"
+                            type="button"
+                            onClick={cancel}
+                            disabled={saving}
+                            tabIndex={editing ? undefined : -1}
+                          >
+                            Отмена
+                          </button>
+                        </div>
+                      </div>
+
+                      <button
+                        className={`card-header__action${editing ? ' card-header__action--primary' : ''}`}
+                        type="button"
+                        onClick={() => (editing ? done() : setEditing(true))}
+                        disabled={saving}
+                      >
+                        {saving ? 'Сохраняем…' : editing ? 'Готово' : 'Редактировать'}
+                      </button>
+                    </div>
+                  )}
+
+                  <div className="club-hero__body">
                   {/* Фото остаётся на месте, меняется только то, что оно кликабельно */}
                   <button
                     className={`club-hero__photo${editing ? ' club-hero__photo--editing' : ''}`}
@@ -175,6 +208,7 @@ export default function ClubPage() {
                       Название клуба
                     </label>
                     <input
+                      ref={nameRef}
                       id="club-name"
                       className={`club-field club-field--name${editing ? ' club-field--editing' : ''}`}
                       value={form.name}
@@ -183,6 +217,12 @@ export default function ClubPage() {
                       onChange={(event) => {
                         setForm((was) => ({ ...was, name: event.target.value }));
                         setFormError('');
+                      }}
+                      onKeyDown={(event) => {
+                        if (event.key === 'Enter' && editing && !saving && !event.nativeEvent.isComposing) {
+                          event.preventDefault();
+                          done();
+                        }
                       }}
                     />
 
@@ -198,6 +238,7 @@ export default function ClubPage() {
                       className={`club-field club-field--about${editing ? ' club-field--editing' : ''}`}
                       value={form.description}
                       placeholder={editing ? 'Информация о клубе' : ''}
+                      maxLength={2000}
                       readOnly={!editing}
                       tabIndex={editing ? undefined : -1}
                       onChange={(event) =>
@@ -213,36 +254,7 @@ export default function ClubPage() {
                       </div>
                     </div>
 
-                    {/* Шапки у карточки нет — правка стоит под сведениями, тихим действием */}
-                    {mayEdit && (
-                      <div className="card-header__actions club-hero__actions">
-                        {/* Ряд раскрывается, чтобы впустить «Отмену»: она — прямое
-                            следствие нажатия «Редактировать», поэтому должна откуда-то
-                            приехать, а не оказаться на месте следующим кадром */}
-                        <div className={`reveal-x${editing ? ' reveal-x--open' : ''}`}>
-                          <div className="reveal-x__clip">
-                            <button
-                              className="card-header__action"
-                              type="button"
-                              onClick={cancel}
-                              disabled={saving}
-                              tabIndex={editing ? undefined : -1}
-                            >
-                              Отмена
-                            </button>
-                          </div>
-                        </div>
-
-                        <button
-                          className={`card-header__action${editing ? ' card-header__action--primary' : ''}`}
-                          type="button"
-                          onClick={() => (editing ? done() : setEditing(true))}
-                          disabled={saving}
-                        >
-                          {saving ? 'Сохраняем…' : editing ? 'Готово' : 'Редактировать'}
-                        </button>
-                      </div>
-                    )}
+                  </div>
                   </div>
 
                   <input

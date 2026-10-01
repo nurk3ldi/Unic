@@ -333,13 +333,22 @@
   }
 }
 
-/* Тело карточки делится надвое: слева фото, справа — кто это */
+/* Действия сверху, сведения ниже: кнопка не отнимает ширину у названия */
 .club-hero {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  flex: 1;
+  min-height: 0;
+  padding: var(--space-5);
+}
+
+/* Фото и текст делят оставшуюся высоту под действиями */
+.club-hero__body {
   display: flex;
   gap: var(--space-5);
   flex: 1;
   min-height: 0;
-  padding: var(--space-5);
   /* Контейнер по обеим осям: фото знает и ширину, и высоту карточки (cqw/cqh) */
   container-type: size;
 }
@@ -348,9 +357,8 @@
 .club-hero__photo {
   display: grid;
   place-items: center;
-  /* Всегда квадрат: во всю высоту, но не шире 45% карточки — иначе текст
-     не помещается, а просто max-width растянул бы квадрат в прямоугольник */
-  width: min(45cqw, 100cqh);
+  /* Фото занимает не больше 40% ширины и помещается под верхними действиями */
+  width: min(40cqw, 100cqh);
   aspect-ratio: 1;
   align-self: flex-start;
   flex: none;
@@ -394,7 +402,7 @@
 
 /* На узком экране фото уходит наверх */
 @media (max-width: 60rem) {
-  .club-hero {
+  .club-hero__body {
     flex-direction: column;
     container-type: normal;
   }
@@ -410,12 +418,11 @@
   }
 }
 
-/* «Редактировать» — под сведениями, по левому краю полей: шапки нет, а в углу
-   рядом с названием действие отнимало у текста половину ширины */
-.club-hero__actions {
-  align-self: flex-start;
-  margin-top: auto;
-  margin-right: 0;
+/* Действия в верхнем правом углу, отдельной строкой над фото и текстом */
+.card-header__actions.club-hero__actions {
+  flex: none;
+  justify-content: flex-end;
+  margin: 0 calc(var(--space-3) * -1) 0 0;
 }
 
 /* Группа действий справа в шапке карточки */
