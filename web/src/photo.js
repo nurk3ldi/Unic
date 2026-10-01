@@ -69,3 +69,22 @@ export async function chatPhoto(file) {
   }
   throw new Error('too large');
 }
+
+/** Сторис — только 9:16: фото кадрируется по центру и уходит готовым JPEG. */
+export async function storyPhoto(file) {
+  let image;
+  try { image = await loadImage(file); }
+  catch { throw new Error('Не удалось открыть фото. Выберите JPEG, PNG или WebP.'); }
+  const width = 720;
+  const height = 1280;
+  const canvas = document.createElement('canvas');
+  canvas.width = width;
+  canvas.height = height;
+  const scale = Math.max(width / image.width, height / image.height);
+  canvas.getContext('2d').drawImage(image,
+    (width - image.width * scale) / 2, (height - image.height * scale) / 2,
+    image.width * scale, image.height * scale);
+  const blob = await new Promise((resolve) => canvas.toBlob(resolve, 'image/jpeg', 0.88));
+  if (!blob) throw new Error('Не удалось подготовить фото');
+  return { file: new File([blob], 'story.jpg', { type: 'image/jpeg' }), width, height };
+}

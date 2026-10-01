@@ -244,3 +244,19 @@ create table if not exists stories (
 
 -- Лента всегда читается «свежие сверху» и за последние сутки
 create index if not exists stories_fresh on stories (created_at desc);
+
+-- Лайки и личные ответы автору истории; уходят вместе с самой историей.
+create table if not exists story_likes (
+  story_id uuid not null references stories (id) on delete cascade,
+  user_id uuid not null references users (id) on delete cascade,
+  primary key (story_id, user_id)
+);
+
+create table if not exists story_replies (
+  id uuid primary key default gen_random_uuid(),
+  story_id uuid not null references stories (id) on delete cascade,
+  author_id uuid not null references users (id) on delete cascade,
+  text text not null check (length(text) between 1 and 2000),
+  created_at timestamptz not null default now()
+);
+create index if not exists story_replies_story on story_replies (story_id, created_at);

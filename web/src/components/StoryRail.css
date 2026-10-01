@@ -98,7 +98,7 @@
   /* Ширину даёт колонка сетки, а «Добавить» — своя обёртка вокруг меню */
   width: 100%;
   /* Высота идёт от ширины: пропорция кадра та же, что на образце */
-  aspect-ratio: 3 / 5;
+  aspect-ratio: 9 / 16;
   overflow: hidden;
   border-radius: var(--radius-control);
   background: var(--fill);

@@ -56,6 +56,15 @@
   padding-left: var(--gutter);
 }
 
+/* Пустая карточка под разделами: ширина и материал общие с навигацией */
+.app__side-card {
+  flex: none;
+  min-height: 12rem;
+  padding: var(--space-4);
+  border-radius: var(--radius-control);
+  background: var(--surface);
+}
+
 /* Правый столбец уходит вместе со страницей. Не короче экрана — карточка чатов
    тянется до низа, как раньше, но и не растягивается на всю длину ленты */
 .app__aside {

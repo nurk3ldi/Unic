@@ -322,3 +322,215 @@
 .photo-viewer__turn:disabled {
   opacity: 0.3;
 }
+
+/* ── Истории: единый портретный кадр ─────────────────────── */
+.story-player {
+  position: relative;
+  width: min(calc((100dvh - var(--space-4)) * 9 / 16), calc(100vw - var(--space-4)));
+  aspect-ratio: 9 / 16;
+  overflow: hidden;
+  border-radius: var(--radius-control);
+  background: var(--viewer-bg);
+  color: var(--viewer-fg);
+  isolation: isolate;
+}
+
+.story-player__media {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.story-player__top,
+.story-player__bottom {
+  position: absolute;
+  left: 0;
+  right: 0;
+  z-index: 2;
+  padding: var(--space-4);
+}
+
+.story-player__top {
+  top: 0;
+  background: linear-gradient(to bottom, var(--viewer-material), transparent);
+}
+
+.story-player__bottom {
+  bottom: 0;
+  background: linear-gradient(to top, var(--viewer-material), transparent);
+}
+
+.story-player__progress {
+  display: flex;
+  gap: var(--space-1);
+  margin-bottom: var(--space-2);
+}
+
+.story-player__step {
+  flex: 1;
+  height: 0.1875rem;
+  overflow: hidden;
+  border-radius: var(--radius-pill);
+  background: var(--viewer-track);
+}
+
+.story-player__fill {
+  display: block;
+  width: 100%;
+  height: 100%;
+  background: var(--viewer-fg);
+  transform: scaleX(0);
+  transform-origin: left;
+}
+
+.story-player__fill--done {
+  transform: scaleX(1);
+}
+
+.story-player__header,
+.story-player__actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.story-player__actions {
+  justify-content: flex-end;
+}
+
+.story-player__avatar {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 2rem;
+  height: 2rem;
+  overflow: hidden;
+  border-radius: 50%;
+  background: var(--viewer-material);
+  font-size: 0.875rem;
+}
+
+.story-player__avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.story-player__author {
+  display: flex;
+  align-items: baseline;
+  flex: 1;
+  min-width: 0;
+  gap: var(--space-2);
+  font-size: 0.875rem;
+}
+
+.story-player__author strong {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-weight: 600;
+}
+
+.story-player__author time {
+  flex: none;
+  font-size: 0.75rem;
+  color: var(--on-accent-secondary);
+}
+
+.story-player__button {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 2.75rem;
+  height: 2.75rem;
+  color: inherit;
+  font-size: 1.5rem;
+  transition: transform var(--duration-press) var(--ease-out), opacity var(--duration-fast) var(--ease-out);
+}
+
+.story-player__button:active {
+  transform: scale(0.9);
+}
+
+.story-player__button:disabled {
+  opacity: 0.6;
+}
+
+.story-player__button--liked {
+  color: var(--red);
+}
+
+.story-player__button--liked svg {
+  fill: currentColor;
+}
+
+.story-player__tap {
+  position: absolute;
+  top: 6rem;
+  bottom: 6rem;
+  z-index: 1;
+  width: 50%;
+  touch-action: none;
+}
+
+.story-player__tap--prev { left: 0; }
+.story-player__tap--next { right: 0; }
+
+.story-player__notice {
+  margin-bottom: var(--space-2);
+  font-size: 0.8125rem;
+  overflow-wrap: anywhere;
+}
+
+.story-player__menu-dismiss {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+}
+
+.story-player__menu {
+  position: absolute;
+  top: 5.5rem;
+  right: var(--space-4);
+  z-index: 4;
+  display: flex;
+  flex-direction: column;
+  width: min(17rem, calc(100% - var(--space-8)));
+  padding: var(--space-1);
+  border: 1px solid var(--viewer-track);
+  border-radius: var(--radius-control);
+  background: var(--viewer-material);
+  backdrop-filter: var(--material-blur);
+}
+
+.story-player__menu button {
+  display: grid;
+  grid-template-columns: 1.25rem minmax(0, 1fr);
+  align-items: center;
+  gap: var(--space-3);
+  width: 100%;
+  min-height: 3rem;
+  padding: var(--space-3);
+  border-radius: var(--radius-control);
+  font-size: 0.875rem;
+  line-height: 1.4;
+  text-align: left;
+  color: var(--viewer-fg);
+}
+
+.story-player__menu svg { width: 1.25rem; height: 1.25rem; }
+.story-player__menu span { min-width: 0; overflow-wrap: anywhere; }
+.story-player__menu button:hover { background: var(--viewer-track); }
+.story-player__menu .story-player__delete { color: var(--red); }
+
+@media (max-width: 34rem) {
+  .story-player__top,
+  .story-player__bottom { padding: var(--space-3); }
+  .story-player__header { gap: var(--space-1); }
+  .story-player__author { flex-direction: column; gap: 0; }
+  .story-player__author strong { max-width: 100%; }
+}

@@ -1,7 +1,9 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { api } from '../api.js';
 import { IconChevronLeft, IconChevronRight, IconPlus } from '../icons.jsx';
 import { initial } from '../people.js';
+import { storyPhoto } from '../photo.js';
 import PhotoViewer from './PhotoViewer.jsx';
 import './StoryRail.css';
 
@@ -14,15 +16,27 @@ const CARDS = 5;
 async function videoMeta(file) {
   if (!file.type.startsWith('video/')) return {};
 
-  return new Promise((resolve) => {
+  return new Promise((resolve, reject) => {
     const video = document.createElement('video');
+    const url = URL.createObjectURL(file);
+    const finish = (result, error) => {
+      clearTimeout(timer);
+      URL.revokeObjectURL(url);
+      if (error) reject(new Error(error));
+      else resolve(result);
+    };
+    const timer = setTimeout(() => finish(null, 'Не удалось прочитать видео'), 10_000);
     video.preload = 'metadata';
     video.onloadedmetadata = () => {
-      URL.revokeObjectURL(video.src);
-      resolve({ width: video.videoWidth, height: video.videoHeight, duration: video.duration });
+      const { videoWidth: width, videoHeight: height, duration } = video;
+      if (!width || !height || Math.abs(width / height - 9 / 16) > 0.001) {
+        finish(null, 'Для истории выберите видео в формате 9:16');
+        return;
+      }
+      finish({ width, height, duration: Number.isFinite(duration) ? duration : undefined });
     };
-    video.onerror = () => resolve({});
-    video.src = URL.createObjectURL(file);
+    video.onerror = () => finish(null, 'Не удалось открыть видео. Выберите MP4 или WebM.');
+    video.src = url;
   });
 }
 
@@ -45,12 +59,15 @@ function Cover({ item }) {
  * на плюс — выкладываешь ещё.
  */
 export default function StoryRail() {
+  const [searchParams, setSearchParams] = useSearchParams();
+  const followedLink = useRef(null);
   const [tellers, setTellers] = useState([]);
   const [targets, setTargets] = useState([]);
   // Что открыто: индексы рассказчика в `order` и истории у него
   const [open, setOpen] = useState(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
+  const [loaded, setLoaded] = useState(false);
   const fileRef = useRef(null);
   const railRef = useRef(null);
   // Есть ли куда листать — стрелка показывается только в ту сторону, где что-то есть
@@ -65,6 +82,7 @@ export default function StoryRail() {
       .then(({ tellers, targets }) => {
         setTellers(tellers);
         setTargets(targets);
+        setLoaded(true);
       })
       .catch(() => {
         // Молча: ряд историй — не место для ошибок сети
@@ -83,6 +101,37 @@ export default function StoryRail() {
 
   const current = open && order[open.teller];
   const shown = current?.items[open.item] ?? null;
+
+  useEffect(() => {
+    const id = searchParams.get('story');
+    if (!id || !loaded || followedLink.current === id) return;
+    followedLink.current = id;
+    const teller = order.findIndex((entry) => entry.items.some((item) => item.id === id));
+    if (teller >= 0) setOpen({ teller, item: order[teller].items.findIndex((item) => item.id === id) });
+    else setError('История недоступна: она удалена или прошло 24 часа');
+  }, [searchParams, order, loaded]);
+
+  function close() {
+    setOpen(null);
+    if (searchParams.has('story')) {
+      const params = new URLSearchParams(searchParams);
+      params.delete('story');
+      setSearchParams(params, { replace: true });
+    }
+  }
+
+  async function removeStory(id) {
+    await api.deleteStory(id);
+    close();
+    load();
+  }
+
+  function markLiked(id, liked) {
+    setTellers((entries) => entries.map((entry) => ({
+      ...entry,
+      items: entry.items.map((item) => item.id === id ? { ...item, liked } : item),
+    })));
+  }
 
   // Шаги серии для окна: вперёд — следующая история, потом следующий рассказчик,
   // за последним — выход. Назад — так же, до самой первой
@@ -161,7 +210,12 @@ export default function StoryRail() {
 
     setBusy(true);
     try {
-      await api.uploadStory(file, target.current?.club ?? null, await videoMeta(file));
+      const image = file.type.startsWith('image/');
+      if (file.size > (image ? 25 : 100) * 1024 * 1024) {
+        throw new Error(image ? 'Фото больше 25 МБ' : 'Видео больше 100 МБ');
+      }
+      const prepared = image ? await storyPhoto(file) : { file, ...await videoMeta(file) };
+      await api.uploadStory(prepared.file, target.current?.club ?? null, prepared);
       load();
     } catch (failure) {
       setError(failure.message);
@@ -171,7 +225,9 @@ export default function StoryRail() {
   }
 
   // Ни историй, ни права публиковать — ряда нет совсем
-  if (!tellers.length && !targets.length) return null;
+  if (!tellers.length && !targets.length) {
+    return error ? <p className="stories__error" role="alert">{error}</p> : null;
+  }
 
   const canAdd = targets.length > 0;
 
@@ -288,7 +344,7 @@ export default function StoryRail() {
         onChange={send}
       />
 
-      <PhotoViewer photo={shown} steps={steps} onClose={() => setOpen(null)} />
+      <PhotoViewer photo={shown} teller={current} steps={steps} onClose={close} onDelete={removeStory} onLike={markLiked} />
     </>
   );
 }

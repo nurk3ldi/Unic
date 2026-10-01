@@ -3,13 +3,20 @@ import {
   IconChevronLeft,
   IconChevronRight,
   IconClose,
+  IconChats,
+  IconCopy,
   IconDownload,
+  IconDots,
+  IconHeart,
   IconPause,
   IconPlay,
+  IconTrash,
   IconVolume,
   IconVolumeOff,
 } from '../icons.jsx';
 import { formatDuration } from '../chat.js';
+import { initial } from '../people.js';
+import { api } from '../api.js';
 import './PhotoViewer.css';
 
 // Скорости по кругу — как в плеере iOS: одна кнопка, нажатие даёт следующую
@@ -30,12 +37,31 @@ const STEP_MS = 5000;
  * сверху полоски «который из скольких», по бокам ‹ ›; у снимка листают и ← →.
  * Серия идёт сама: снимок — через 5 секунд, видео — когда доиграло.
  */
-export default function PhotoViewer({ photo, onClose, steps }) {
+export default function PhotoViewer({ photo, onClose, steps, teller, onDelete, onLike }) {
   const dialogRef = useRef(null);
   const videoRef = useRef(null);
   // Окно держит последний снимок, пока растворяется, — иначе он пропал бы раньше окна
   const shown = useRef(null);
-  if (photo) shown.current = photo;
+  const series = useRef(null);
+  const wasOpen = useRef(false);
+  const session = useRef(0);
+  const [storyMuted, setStoryMuted] = useState(true);
+  if (photo && !wasOpen.current) session.current += 1;
+  wasOpen.current = Boolean(photo);
+  if (photo) {
+    shown.current = photo;
+    series.current = { teller, steps };
+  }
+  const storyMode = Boolean(series.current?.teller);
+  const isOpen = Boolean(photo);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    const root = document.documentElement;
+    const previous = root.style.overflow;
+    root.style.overflow = 'hidden';
+    return () => { root.style.overflow = previous; };
+  }, [isOpen]);
 
   useEffect(() => {
     const dialog = dialogRef.current;
@@ -51,32 +77,44 @@ export default function PhotoViewer({ photo, onClose, steps }) {
 
   // ← → листают серию, но только у снимка: у видео эти клавиши перематывают
   useEffect(() => {
-    if (!photo || !steps || photo.kind === 'video') return;
+    if (!photo || !steps || teller || photo.kind === 'video') return;
     function onKey(event) {
       if (event.key === 'ArrowLeft') steps.onPrev?.();
       else if (event.key === 'ArrowRight') steps.onNext?.();
     }
     document.addEventListener('keydown', onKey);
     return () => document.removeEventListener('keydown', onKey);
-  }, [photo, steps]);
+  }, [photo, steps, teller]);
 
   // Снимок в серии уходит сам. Таймер в JS, а не конец CSS-анимации: при
   // «Уменьшить движение» анимации сжимаются до нуля — серия пролетела бы разом
   useEffect(() => {
-    if (!photo || !steps?.onNext || photo.kind === 'video') return;
+    if (!photo || !steps?.onNext || teller || photo.kind === 'video') return;
     const timer = setTimeout(steps.onNext, STEP_MS);
     return () => clearTimeout(timer);
-  }, [photo, steps]);
+  }, [photo, steps, teller]);
 
   return (
     <dialog
-      className="photo-viewer"
+      className={`photo-viewer${storyMode ? ' photo-viewer--story' : ''}`}
       ref={dialogRef}
-      aria-label={shown.current?.kind === 'video' ? 'Просмотр видео' : 'Просмотр фото'}
+      aria-label={storyMode ? 'Просмотр истории' : shown.current?.kind === 'video' ? 'Просмотр видео' : 'Просмотр фото'}
       onClose={onClose}
       onClick={(event) => event.target === event.currentTarget && onClose()}
     >
-      {shown.current?.kind === 'video' ? (
+      {storyMode ? (
+        <StoryPlayer
+          key={`${shown.current.id}:${session.current}`}
+          media={shown.current}
+          teller={series.current.teller}
+          steps={series.current.steps}
+          active={Boolean(photo)}
+          muted={storyMuted}
+          onMute={() => setStoryMuted((value) => !value)}
+          onDelete={onDelete}
+          onLike={onLike}
+        />
+      ) : shown.current?.kind === 'video' ? (
         // Ключ — адрес: другое видео начинается с нуля, а не с чужой позиции
         <VideoPlayer
           key={shown.current.url}
@@ -88,7 +126,7 @@ export default function PhotoViewer({ photo, onClose, steps }) {
         shown.current && <img className="photo-viewer__image" src={shown.current.url} alt="" />
       )}
 
-      {steps && (
+      {steps && !storyMode && (
         <>
           {/* Идущая полоска заполняется за время кадра: снимок — 5 секунд, видео —
               его длина. Ключ — адрес: новый кадр начинает полоску с нуля */}
@@ -144,6 +182,249 @@ export default function PhotoViewer({ photo, onClose, steps }) {
         <IconClose aria-hidden="true" />
       </button>
     </dialog>
+  );
+}
+
+function storyAge(iso) {
+  const minutes = Math.max(0, Math.floor((Date.now() - new Date(iso).getTime()) / 60_000));
+  return minutes < 1 ? 'Только что' : minutes < 60 ? `${minutes} мин` : `${Math.floor(minutes / 60)} ч`;
+}
+
+/** История всегда в кадре 9:16. Прогресс идёт по реальному времени медиа,
+ * а пауза, меню и скрытая вкладка останавливают и кадр, и полоску. */
+function StoryPlayer({ media, teller, steps, active, muted, onMute, onDelete, onLike }) {
+  const videoRef = useRef(null);
+  const fillRef = useRef(null);
+  const elapsed = useRef(0);
+  const next = useRef(steps.onNext);
+  next.current = steps.onNext;
+  const pressAt = useRef(0);
+  const menuRef = useRef(null);
+  const menuButtonRef = useRef(null);
+  const [ready, setReady] = useState(false);
+  const [paused, setPaused] = useState(false);
+  const [holding, setHolding] = useState(false);
+  const [hidden, setHidden] = useState(document.hidden);
+  const [buffering, setBuffering] = useState(false);
+  const [menu, setMenu] = useState(false);
+  const [liked, setLiked] = useState(Boolean(media.liked));
+  const [liking, setLiking] = useState(false);
+  const [notice, setNotice] = useState('');
+  const [failure, setFailure] = useState('');
+  const isVideo = media.kind === 'video';
+  const stopped = !active || paused || holding || hidden || menu;
+
+  function closeMenu() {
+    setMenu(false);
+    menuButtonRef.current?.focus();
+  }
+
+  useEffect(() => {
+    if (menu) menuRef.current?.querySelector('button')?.focus();
+  }, [menu]);
+
+  useEffect(() => {
+    const update = () => setHidden(document.hidden);
+    document.addEventListener('visibilitychange', update);
+    return () => document.removeEventListener('visibilitychange', update);
+  }, []);
+
+  useEffect(() => {
+    if (!active) return;
+    function onKey(event) {
+      if (menu) {
+        if (event.key === 'Escape') {
+          event.preventDefault();
+          closeMenu();
+        }
+        return;
+      }
+      if (event.target.closest?.('input, textarea')) return;
+      if (event.key === 'ArrowLeft') { event.preventDefault(); steps.onPrev?.(); }
+      else if (event.key === 'ArrowRight') { event.preventDefault(); steps.onNext?.(); }
+      else if (event.code === 'Space' && !event.target.closest?.('button, a')) { event.preventDefault(); setPaused((value) => !value); }
+    }
+    document.addEventListener('keydown', onKey);
+    return () => document.removeEventListener('keydown', onKey);
+  }, [active, steps, menu]);
+
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video) return;
+    if (stopped || !ready) video.pause();
+    else video.play().catch((error) => {
+      if (error.name === 'NotAllowedError') setPaused(true);
+    });
+  }, [stopped, ready]);
+
+  useEffect(() => {
+    if (stopped || !ready || buffering) return;
+    let frame;
+    let previous = performance.now();
+    const tick = (now) => {
+      let progress;
+      if (isVideo) {
+        const video = videoRef.current;
+        if (!video) return; // Кадр сменился до очистки эффекта.
+        const duration = Number.isFinite(video?.duration) ? video.duration : media.duration;
+        progress = duration > 0 ? video.currentTime / duration : 0;
+      } else {
+        elapsed.current += now - previous;
+        progress = elapsed.current / STEP_MS;
+      }
+      previous = now;
+      if (fillRef.current) fillRef.current.style.transform = `scaleX(${Math.min(1, progress)})`;
+      if (!isVideo && progress >= 1) next.current?.();
+      else frame = requestAnimationFrame(tick);
+    };
+    frame = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(frame);
+  }, [stopped, ready, buffering, isVideo, media.duration]);
+
+  function mediaError() {
+    setPaused(true);
+    setFailure('Не удалось открыть историю. Попробуйте следующую.');
+  }
+
+  async function like() {
+    if (liking) return;
+    setLiking(true);
+    setFailure('');
+    try {
+      const result = await api.likeStory(media.id, !liked);
+      setLiked(result.liked);
+      onLike?.(media.id, result.liked);
+    } catch (error) { setFailure(error.message); }
+    finally { setLiking(false); }
+  }
+
+  async function copyLink() {
+    closeMenu();
+    setPaused(true);
+    setFailure('');
+    setNotice('');
+    const url = new URL(`/?story=${media.id}`, location.origin).href;
+    try {
+      await navigator.clipboard.writeText(url);
+      setNotice('Ссылка скопирована');
+    } catch {
+      setFailure('Не удалось скопировать ссылку');
+    }
+  }
+
+  async function share() {
+    if (!navigator.share) return copyLink();
+    closeMenu();
+    setPaused(true);
+    setFailure('');
+    setNotice('');
+    try {
+      await navigator.share({ title: `История: ${teller.name}`, url: new URL(`/?story=${media.id}`, location.origin).href });
+    } catch (error) {
+      if (error.name !== 'AbortError') setFailure('Не удалось поделиться ссылкой');
+    }
+  }
+
+  function menuKeys(event) {
+    const buttons = [...menuRef.current.querySelectorAll('button')];
+    const index = buttons.indexOf(document.activeElement);
+    let next;
+    if (event.key === 'ArrowDown') next = (index + 1) % buttons.length;
+    else if (event.key === 'ArrowUp') next = (index - 1 + buttons.length) % buttons.length;
+    else if (event.key === 'Home') next = 0;
+    else if (event.key === 'End') next = buttons.length - 1;
+    else return;
+    event.preventDefault();
+    buttons[next].focus();
+  }
+
+  async function remove() {
+    if (!window.confirm('Удалить эту историю?')) return;
+    setFailure('');
+    try { await onDelete(media.id); }
+    catch (error) { setFailure(error.message); }
+  }
+
+  const press = (event) => {
+    pressAt.current = performance.now();
+    event.currentTarget.setPointerCapture(event.pointerId);
+    setHolding(true);
+  };
+  const release = (turn) => () => {
+    setHolding(false);
+    if (performance.now() - pressAt.current < 250) turn?.();
+  };
+
+  return (
+    <div className="story-player">
+      {isVideo ? (
+        <video className="story-player__media" src={media.url} ref={videoRef} playsInline muted={muted}
+          onLoadedMetadata={() => setReady(true)} onCanPlay={() => setBuffering(false)}
+          onWaiting={() => setBuffering(true)} onPlaying={() => setBuffering(false)}
+          onEnded={() => !stopped && next.current?.()} onError={mediaError} />
+      ) : (
+        <img className="story-player__media" src={media.url} alt={`История: ${teller.name}`}
+          onLoad={() => setReady(true)} onError={mediaError} />
+      )}
+
+      <button className="story-player__tap story-player__tap--prev" type="button"
+        aria-label="Предыдущая история" aria-disabled={!steps.onPrev}
+        onPointerDown={press} onPointerUp={release(steps.onPrev)} onPointerCancel={() => setHolding(false)}
+        onClick={(event) => event.detail === 0 && steps.onPrev?.()} />
+      <button className="story-player__tap story-player__tap--next" type="button"
+        aria-label="Следующая история" onPointerDown={press} onPointerUp={release(steps.onNext)}
+        onPointerCancel={() => setHolding(false)} onClick={(event) => event.detail === 0 && steps.onNext?.()} />
+
+      <div className="story-player__top">
+        <div className="story-player__progress" aria-label={`${steps.index + 1} из ${steps.count}`}>
+          {Array.from({ length: steps.count }, (_, index) => (
+            <span className="story-player__step" key={index}>
+              <span className={`story-player__fill${index < steps.index ? ' story-player__fill--done' : ''}`}
+                ref={index === steps.index ? fillRef : null} />
+            </span>
+          ))}
+        </div>
+        <div className="story-player__header">
+          <span className="story-player__avatar">
+            {teller.photo ? <img src={teller.photo} alt="" /> : initial(teller.name)}
+          </span>
+          <div className="story-player__author">
+            <strong>{teller.name}</strong>
+            <time dateTime={media.createdAt}>{storyAge(media.createdAt)}</time>
+          </div>
+          {isVideo && <button className="story-player__button" type="button" onClick={onMute}
+            aria-label={muted ? 'Включить звук' : 'Выключить звук'}>
+            {muted ? <IconVolumeOff /> : <IconVolume />}
+          </button>}
+          <button className="story-player__button" type="button" onClick={() => setPaused((value) => !value)}
+            aria-label={paused ? 'Продолжить историю' : 'Пауза'}>
+            {paused ? <IconPlay /> : <IconPause />}
+          </button>
+          <button className="story-player__button" ref={menuButtonRef} type="button" onClick={() => setMenu((value) => !value)}
+            aria-label="Действия с историей" aria-haspopup="menu" aria-expanded={menu}><IconDots /></button>
+        </div>
+      </div>
+
+      {menu && <>
+        <button className="story-player__menu-dismiss" type="button" tabIndex={-1}
+          aria-label="Закрыть меню истории" onClick={closeMenu} />
+        <div className="story-player__menu" ref={menuRef} role="menu" aria-label="Действия с историей" onKeyDown={menuKeys}>
+          <button type="button" role="menuitem" onClick={share}><IconChats aria-hidden="true" /><span>Поделиться</span></button>
+          <button type="button" role="menuitem" onClick={copyLink}><IconCopy aria-hidden="true" /><span>Копировать ссылку</span></button>
+          {media.canDelete && <button className="story-player__delete" type="button" role="menuitem" onClick={remove}>
+            <IconTrash aria-hidden="true" /><span>Удалить историю</span>
+          </button>}
+        </div>
+      </>}
+
+      <div className="story-player__bottom">
+        {(failure || notice) && <p className="story-player__notice" role={failure ? 'alert' : 'status'}>{failure || notice}</p>}
+        <div className="story-player__actions">
+          <button className={`story-player__button${liked ? ' story-player__button--liked' : ''}`}
+            type="button" aria-label={liked ? 'Убрать лайк' : 'Нравится'} aria-pressed={liked} disabled={liking} onClick={like}><IconHeart /></button>
+        </div>
+      </div>
+    </div>
   );
 }
 

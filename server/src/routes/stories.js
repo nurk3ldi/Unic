@@ -81,12 +81,14 @@ router.get('/', requireAuth, async (req, res) => {
   const { rows } = await query(
     `select s.id, s.club_id, s.author_id, s.kind, s.width, s.height, s.duration, s.created_at,
             c.name as club_name, c.photo_url as club_photo,
-            u.full_name as author_name, u.photo as author_photo
+            u.full_name as author_name, u.photo as author_photo,
+            exists(select 1 from story_likes l where l.story_id = s.id and l.user_id = $1) as liked
        from stories s
        left join clubs c on c.id = s.club_id
        join users u on u.id = s.author_id
       where s.created_at > now() - interval '${LIFETIME}'
       order by s.created_at`,
+    [req.user.id],
   );
 
   // Рассказчики идут в порядке первой истории — кто начал раньше, тот и левее
@@ -109,6 +111,8 @@ router.get('/', requireAuth, async (req, res) => {
       height: row.height,
       duration: row.duration,
       createdAt: row.created_at,
+      liked: row.liked,
+      canDelete: row.author_id === req.user.id || req.user.role === 'university' || req.user.role === 'admin',
     });
   }
 
@@ -170,6 +174,14 @@ router.post('/', requireAuth, async (req, res) => {
     );
   }
 
+  const width = videoNumber(req.get('X-Video-Width'), 8192);
+  const height = videoNumber(req.get('X-Video-Height'), 8192);
+  if (type.kind === 'video' && (!width || !height || Math.abs(width / height - 9 / 16) > 0.001)) {
+    return rejectAfterBody(req, () =>
+      res.status(400).json({ error: 'Для истории выберите видео в формате 9:16' }),
+    );
+  }
+
   const tooLarge = type.kind === 'video' ? 'Видео больше 100 МБ' : 'Фото больше 25 МБ';
   const declared = Number(req.get('Content-Length'));
   if (declared > type.limit) {
@@ -202,14 +214,66 @@ router.post('/', requireAuth, async (req, res) => {
       type.kind,
       type.mime,
       size,
-      video ? videoNumber(req.get('X-Video-Width'), 8192) : null,
-      video ? videoNumber(req.get('X-Video-Height'), 8192) : null,
+      width,
+      height,
       video ? videoNumber(req.get('X-Video-Duration'), 86400) : null,
     ],
   );
 
   await sweep();
   res.status(201).json({ id });
+});
+
+async function liveStory(id) {
+  if (!UUID.test(id)) return null;
+  const { rows } = await query(
+    `select id, author_id from stories where id = $1 and created_at > now() - interval '${LIFETIME}'`,
+    [id],
+  );
+  return rows[0] ?? null;
+}
+
+/** Один человек — один лайк; повтор того же запроса не меняет результат. */
+router.put('/:id/like', requireAuth, async (req, res) => {
+  if (typeof req.body?.liked !== 'boolean') return res.status(400).json({ error: 'Укажите состояние лайка' });
+  if (!(await liveStory(req.params.id))) return res.status(404).json({ error: 'История недоступна' });
+  if (req.body.liked) {
+    await query('insert into story_likes (story_id, user_id) values ($1, $2) on conflict do nothing',
+      [req.params.id, req.user.id]);
+  } else {
+    await query('delete from story_likes where story_id = $1 and user_id = $2', [req.params.id, req.user.id]);
+  }
+  res.json({ liked: req.body.liked });
+});
+
+/** Ответ хранится отдельно от общего чата: его видит автор и модератор. */
+router.post('/:id/replies', requireAuth, async (req, res) => {
+  const text = typeof req.body?.text === 'string' ? req.body.text.trim() : '';
+  if (!text || text.length > 2000) return res.status(400).json({ error: 'Ответ должен содержать от 1 до 2000 символов' });
+  if (!(await liveStory(req.params.id))) return res.status(404).json({ error: 'История недоступна' });
+  const { rows } = await query(
+    'insert into story_replies (story_id, author_id, text) values ($1, $2, $3) returning id',
+    [req.params.id, req.user.id, text],
+  );
+  res.status(201).json({ id: rows[0].id });
+});
+
+router.get('/:id/replies', requireAuth, async (req, res) => {
+  const story = await liveStory(req.params.id);
+  if (!story) return res.status(404).json({ error: 'История недоступна' });
+  if (story.author_id !== req.user.id && req.user.role !== 'university' && req.user.role !== 'admin') {
+    return res.status(403).json({ error: 'Ответы доступны только автору истории' });
+  }
+  const { rows } = await query(
+    `select r.id, r.text, r.created_at, u.full_name, u.username
+       from story_replies r join users u on u.id = r.author_id
+      where r.story_id = $1 order by r.created_at`,
+    [req.params.id],
+  );
+  res.json({ replies: rows.map((row) => ({
+    id: row.id, text: row.text, createdAt: row.created_at,
+    author: { name: row.full_name, username: row.username },
+  })) });
 });
 
 /** Сам файл. История живёт сутки, но за эти сутки не меняется — можно кэшировать. */
