@@ -418,7 +418,16 @@
   }
 }
 
-/* Действия в верхнем правом углу, отдельной строкой над фото и текстом */
+/* Возврат слева, правка справа — одной строкой над фото и текстом */
+.club-hero__toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+  flex: none;
+  min-height: 2.75rem;
+}
+
 .card-header__actions.club-hero__actions {
   flex: none;
   justify-content: flex-end;

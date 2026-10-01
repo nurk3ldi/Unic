@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import {
   IconCamera,
+  IconChevronLeft,
   IconChevronRight,
 } from '../icons.jsx';
 import { api } from '../api.js';
@@ -143,37 +144,43 @@ export default function ClubPage() {
 
           {/* Верхний ряд делится по ширине на две отдельные карточки */}
           <div className="club-top">
-            {/* Фото, название и сведения о клубе. Возврата нет: «Клубы» слева в
-                навигации подсвечен и ведёт обратно */}
+            {/* Фото, название и сведения о клубе */}
             <div className="club-card">
               {club && (
                 <div className="club-hero">
-                  {mayEdit && (
-                    <div className="card-header__actions club-hero__actions">
-                      <div className={`reveal-x${editing ? ' reveal-x--open' : ''}`}>
-                        <div className="reveal-x__clip">
-                          <button
-                            className="card-header__action"
-                            type="button"
-                            onClick={cancel}
-                            disabled={saving}
-                            tabIndex={editing ? undefined : -1}
-                          >
-                            Отмена
-                          </button>
-                        </div>
-                      </div>
+                  <div className="club-hero__toolbar">
+                    <Link className="card-header__back" to="/clubs" viewTransition>
+                      <IconChevronLeft aria-hidden="true" />
+                      Клубы
+                    </Link>
 
-                      <button
-                        className={`card-header__action${editing ? ' card-header__action--primary' : ''}`}
-                        type="button"
-                        onClick={() => (editing ? done() : setEditing(true))}
-                        disabled={saving}
-                      >
-                        {saving ? 'Сохраняем…' : editing ? 'Готово' : 'Редактировать'}
-                      </button>
-                    </div>
-                  )}
+                    {mayEdit && (
+                      <div className="card-header__actions club-hero__actions">
+                        <div className={`reveal-x${editing ? ' reveal-x--open' : ''}`}>
+                          <div className="reveal-x__clip">
+                            <button
+                              className="card-header__action"
+                              type="button"
+                              onClick={cancel}
+                              disabled={saving}
+                              tabIndex={editing ? undefined : -1}
+                            >
+                              Отмена
+                            </button>
+                          </div>
+                        </div>
+
+                        <button
+                          className={`card-header__action${editing ? ' card-header__action--primary' : ''}`}
+                          type="button"
+                          onClick={() => (editing ? done() : setEditing(true))}
+                          disabled={saving}
+                        >
+                          {saving ? 'Сохраняем…' : editing ? 'Готово' : 'Редактировать'}
+                        </button>
+                      </div>
+                    )}
+                  </div>
 
                   <div className="club-hero__body">
                     {/* Фото остаётся на месте, меняется только то, что оно кликабельно */}
