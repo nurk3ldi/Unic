@@ -4,10 +4,12 @@
   flex-direction: column;
   flex: 1;
   min-height: 0;
+  /* Обои лежат под лентой: её маска растворяет реплики, а не фон карточки */
+  background: var(--bg-secondary) url('../assets/chat-background.webp') center / cover;
+  background-blend-mode: multiply;
 }
 
-/* Те же обои, что в чате (и тот же multiply с серой подложкой: белый фон
-   рисунка иначе слился бы с белыми пузырями) — карточка узнаётся как чат */
+/* Лента поверх обоев: старые реплики растворяются, фон остаётся сплошным */
 .chat-card__feed {
   display: flex;
   flex-direction: column;
@@ -18,8 +20,6 @@
   overflow: hidden;
   /* По бокам 20px — как поля остальных карточек страницы клуба */
   padding: var(--space-3) var(--space-5);
-  background: var(--bg-secondary) url('../assets/chat-background.webp') center / cover;
-  background-blend-mode: multiply;
   /* Старые реплики не обрезаются по линейке, а растворяются под верхним краем.
      У маски важна только прозрачность, цвет не виден — поэтому просто black */
   mask-image: linear-gradient(to bottom, transparent, black var(--space-8));
@@ -74,6 +74,9 @@
 }
 
 /* Полоса «Открыть чат» — общая .card-more (ClubPage.css) */
+.chat-card > .card-more {
+  background: var(--surface);
+}
 
 .chat-card__empty {
   margin: auto;

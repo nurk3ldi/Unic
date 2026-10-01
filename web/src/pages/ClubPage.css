@@ -5,9 +5,9 @@
 .club-page {
   --gap: var(--space-4);
   display: grid;
-  /* Состав — не уже 26rem: иначе вкладки «Участники · Приглашены · Заявки»
-     сокращаются многоточием на обычном ноутбуке */
-  grid-template-columns: minmax(0, 1fr) clamp(26rem, 32%, 30rem);
+  /* Более узкий состав отдаёт место сведениям и событиям.
+     Размер квадратных карточек по-прежнему задаёт высота ряда (--square) */
+  grid-template-columns: minmax(0, 1fr) clamp(22rem, 26%, 26rem);
   gap: var(--gap);
   /* Экран минус поля страницы сверху и снизу */
   height: calc(var(--screen) - var(--space-4) * 2);
