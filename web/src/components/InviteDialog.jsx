@@ -36,8 +36,9 @@ export default function InviteDialog({ clubId, open, session, onClose, onInvited
 
   return (
     <dialog
-      className="modal invite"
+      className="modal invite-dialog"
       ref={dialogRef}
+      inert={!open || undefined}
       // Эхо прошлого закрытия не принимаем за новое (см. AccountSecurity)
       onClose={() => !dialogRef.current?.open && onClose()}
       aria-label="Пригласить в клуб"

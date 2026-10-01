@@ -544,6 +544,10 @@
   color: var(--text-tertiary);
 }
 
+.club-field:focus-visible {
+  box-shadow: none;
+}
+
 .club-field--editing {
   background: var(--surface);
   border-color: var(--separator-strong);

@@ -1,5 +1,5 @@
 /* Окно приглашения шире обычного: в нём список людей с полными именами и никами */
-.modal.invite {
+.modal.invite-dialog {
   width: min(36rem, calc(100vw - 2rem));
 }
 

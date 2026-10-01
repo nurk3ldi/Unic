@@ -176,85 +176,87 @@ export default function ClubPage() {
                   )}
 
                   <div className="club-hero__body">
-                  {/* Фото остаётся на месте, меняется только то, что оно кликабельно */}
-                  <button
-                    className={`club-hero__photo${editing ? ' club-hero__photo--editing' : ''}`}
-                    type="button"
-                    onClick={() => fileRef.current?.click()}
-                    aria-label="Изменить фото клуба"
-                    /* Вне правки снимок — просто снимок: inert убирает его
-                       и из фокуса, и из дерева доступности, и из-под курсора */
-                    inert={!editing || undefined}
-                  >
-                    {form.photo ? (
-                      <img className="club-hero__image" src={form.photo} alt="" />
-                    ) : (
-                      <span className="club-hero__letter" aria-hidden="true">
-                        {(form.name.trim()[0] ?? '?').toUpperCase()}
+                    {/* Фото остаётся на месте, меняется только то, что оно кликабельно */}
+                    <button
+                      className={`club-hero__photo${editing ? ' club-hero__photo--editing' : ''}`}
+                      type="button"
+                      onClick={() => fileRef.current?.click()}
+                      aria-label="Изменить фото клуба"
+                      /* Вне правки снимок — просто снимок: inert убирает его
+                         и из фокуса, и из дерева доступности, и из-под курсора */
+                      inert={!editing || undefined}
+                    >
+                      {form.photo ? (
+                        <img className="club-hero__image" src={form.photo} alt="" />
+                      ) : (
+                        <span className="club-hero__letter" aria-hidden="true">
+                          {(form.name.trim()[0] ?? '?').toUpperCase()}
+                        </span>
+                      )}
+
+                      <span className="club-hero__change">
+                        <IconCamera aria-hidden="true" />
+                        Изменить фото
                       </span>
-                    )}
+                    </button>
 
-                    <span className="club-hero__change">
-                      <IconCamera aria-hidden="true" />
-                      Изменить фото
-                    </span>
-                  </button>
+                    <div className="club-hero__info">
+                      {/* Поля не подменяются на текст и обратно: значение видно всегда,
+                          а правка снимает с них только запрет на ввод (readOnly, не disabled —
+                          disabled гасит ровно то, что пришли прочитать) */}
+                      <label className="visually-hidden" htmlFor="club-name">
+                        Название клуба
+                      </label>
+                      <input
+                        ref={nameRef}
+                        id="club-name"
+                        className={`club-field club-field--name${editing ? ' club-field--editing' : ''}`}
+                        value={form.name}
+                        readOnly={!editing}
+                        tabIndex={editing ? undefined : -1}
+                        onChange={(event) => {
+                          setForm((was) => ({ ...was, name: event.target.value }));
+                          setFormError('');
+                        }}
+                        onKeyDown={(event) => {
+                          if (
+                            event.key === 'Enter' && editing && !saving &&
+                            !event.nativeEvent.isComposing
+                          ) {
+                            event.preventDefault();
+                            done();
+                          }
+                        }}
+                      />
 
-                  <div className="club-hero__info">
-                    {/* Поля не подменяются на текст и обратно: значение видно всегда,
-                        а правка снимает с них только запрет на ввод (readOnly, не disabled —
-                        disabled гасит ровно то, что пришли прочитать) */}
-                    <label className="visually-hidden" htmlFor="club-name">
-                      Название клуба
-                    </label>
-                    <input
-                      ref={nameRef}
-                      id="club-name"
-                      className={`club-field club-field--name${editing ? ' club-field--editing' : ''}`}
-                      value={form.name}
-                      readOnly={!editing}
-                      tabIndex={editing ? undefined : -1}
-                      onChange={(event) => {
-                        setForm((was) => ({ ...was, name: event.target.value }));
-                        setFormError('');
-                      }}
-                      onKeyDown={(event) => {
-                        if (event.key === 'Enter' && editing && !saving && !event.nativeEvent.isComposing) {
-                          event.preventDefault();
-                          done();
+                      {/* Состояние клуба живёт в «Управлении клубом» рядом с тем, что
+                          его меняет; здесь — только сколько людей */}
+                      <p className="club-hero__status">{membersLabel(club.members)}</p>
+
+                      <label className="visually-hidden" htmlFor="club-about">
+                        Информация о клубе
+                      </label>
+                      <textarea
+                        id="club-about"
+                        className={`club-field club-field--about${editing ? ' club-field--editing' : ''}`}
+                        value={form.description}
+                        placeholder={editing ? 'Информация о клубе' : ''}
+                        maxLength={2000}
+                        readOnly={!editing}
+                        tabIndex={editing ? undefined : -1}
+                        onChange={(event) =>
+                          setForm((was) => ({ ...was, description: event.target.value }))
                         }
-                      }}
-                    />
+                      />
 
-                    {/* Состояние клуба живёт в «Управлении клубом» рядом с тем, что
-                        его меняет; здесь — только сколько людей */}
-                    <p className="club-hero__status">{membersLabel(club.members)}</p>
-
-                    <label className="visually-hidden" htmlFor="club-about">
-                      Информация о клубе
-                    </label>
-                    <textarea
-                      id="club-about"
-                      className={`club-field club-field--about${editing ? ' club-field--editing' : ''}`}
-                      value={form.description}
-                      placeholder={editing ? 'Информация о клубе' : ''}
-                      maxLength={2000}
-                      readOnly={!editing}
-                      tabIndex={editing ? undefined : -1}
-                      onChange={(event) =>
-                        setForm((was) => ({ ...was, description: event.target.value }))
-                      }
-                    />
-
-                    <div className={`reveal-y${formError ? ' reveal-y--open' : ''}`}>
-                      <div className="reveal-y__clip">
-                        <p className="club-hero__error" role="alert">
-                          {formError}
-                        </p>
+                      <div className={`reveal-y${formError ? ' reveal-y--open' : ''}`}>
+                        <div className="reveal-y__clip">
+                          <p className="club-hero__error" role="alert">
+                            {formError}
+                          </p>
+                        </div>
                       </div>
                     </div>
-
-                  </div>
                   </div>
 
                   <input
