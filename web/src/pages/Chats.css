@@ -16,7 +16,7 @@
   display: grid;
   /* Третья колонка закрыта нулевой шириной, а не убрана: так ширины
      интерполируются и панель выезжает, а не появляется рывком */
-  grid-template-columns: minmax(16rem, 22rem) 1fr 0;
+  grid-template-columns: minmax(14rem, 18rem) 1fr 0;
   transition: grid-template-columns var(--duration-base) var(--ease-out);
   height: calc(var(--screen) - var(--space-4) * 2);
   border-radius: var(--radius-control);
@@ -28,7 +28,7 @@
 
 .chats--info {
   /* Сведения шире списка: в них состав с никами и сетка снимков */
-  grid-template-columns: minmax(16rem, 22rem) 1fr 26rem;
+  grid-template-columns: minmax(14rem, 18rem) 1fr 26rem;
 }
 
 .chats--info .chats__info,
@@ -38,7 +38,7 @@
 
 /* Поиск занимает ту же колонку, что и сведения, — они не открываются вместе */
 .chats--find {
-  grid-template-columns: minmax(16rem, 22rem) 1fr 26rem;
+  grid-template-columns: minmax(14rem, 18rem) 1fr 26rem;
 }
 
 /* Лупа уходит к правому краю шапки — там же, откуда выедет панель */
