@@ -39,7 +39,7 @@ const MENU_OUT_MS = 150;
  * Замена руководителя делается на строке нужного участника
  * («Сделать руководителем») — сервер снимает прежнего в той же транзакции.
  */
-export default function MembersPanel({ clubId, onCountChange }) {
+export default function MembersPanel({ clubId, onMembersChange }) {
   const [members, setMembers] = useState([]);
   const [requests, setRequests] = useState([]);
   const [invites, setInvites] = useState([]);
@@ -70,14 +70,14 @@ export default function MembersPanel({ clubId, onCountChange }) {
       setRequests(data.requests);
       setInvites(data.invites ?? []);
       setCanManage(data.canManage);
-      onCountChange?.(data.members.length);
+      onMembersChange?.(data.members);
       setError('');
     } catch (failure) {
       setError(failure.message);
     } finally {
       setLoading(false);
     }
-  }, [clubId, onCountChange]);
+  }, [clubId, onMembersChange]);
 
   useEffect(() => {
     load();

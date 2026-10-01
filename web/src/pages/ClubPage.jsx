@@ -4,6 +4,7 @@ import {
   IconCamera,
   IconChevronLeft,
   IconChevronRight,
+  IconClubs,
 } from '../icons.jsx';
 import { api } from '../api.js';
 import { useAuth } from '../AuthContext.jsx';
@@ -13,6 +14,7 @@ import { eventDay, eventMonth, eventTime } from '../events.js';
 import ClubChatCard from '../components/ClubChatCard.jsx';
 import ClubControls from '../components/ClubControls.jsx';
 import MembersPanel from '../components/MembersPanel.jsx';
+import Person from '../components/Person.jsx';
 import './Page.css';
 import './ClubPage.css';
 
@@ -21,6 +23,9 @@ const SHOWN_EVENTS = 4;
 
 // Правят клуб те же роли, что и создают его
 const CAN_EDIT = ['university', 'admin'];
+const CLUB_DATE = new Intl.DateTimeFormat('ru-RU', {
+  day: 'numeric', month: 'long', year: 'numeric',
+});
 
 /** Что держит форма, прочитанное из записи клуба. */
 const formOf = (club) => ({
@@ -37,6 +42,7 @@ export default function ClubPage() {
   const nameRef = useRef(null);
 
   const [club, setClub] = useState(null);
+  const [lead, setLead] = useState(null);
   const [error, setError] = useState('');
 
   const [form, setForm] = useState(() => formOf(null));
@@ -63,6 +69,8 @@ export default function ClubPage() {
   }, [editing]);
 
   const mayEdit = club && CAN_EDIT.includes(user?.role);
+  const description = form.description.trim();
+  const summary = description.toLowerCase() === form.name.trim().toLowerCase() ? '' : description;
 
   // Сравнение с записью, а не отдельный флаг: флаг надо гасить в каждом пути,
   // который сохраняет или откатывает, а сравнение не может устареть.
@@ -114,9 +122,16 @@ export default function ClubPage() {
     }
   }
 
-  // Панель сама знает состав; страница держит только число рядом с названием
+  // Состав уже загружен панелью: берём из него число участников и руководителя
   const syncMembers = useCallback(
-    (count) => setClub((current) => (current ? { ...current, members: count } : current)),
+    (members) => {
+      setLead(members.find((member) => member.role === 'lead') ?? null);
+      setClub((current) => (
+        current && current.members !== members.length
+          ? { ...current, members: members.length }
+          : current
+      ));
+    },
     [],
   );
 
@@ -207,7 +222,7 @@ export default function ClubPage() {
                       </span>
                     </button>
 
-                    <div className="club-hero__info">
+                    <div className={`club-hero__info${editing ? ' club-hero__info--editing' : ''}`}>
                       {/* Поля не подменяются на текст и обратно: значение видно всегда,
                           а правка снимает с них только запрет на ввод (readOnly, не disabled —
                           disabled гасит ровно то, что пришли прочитать) */}
@@ -236,25 +251,52 @@ export default function ClubPage() {
                         }}
                       />
 
-                      {/* Состояние клуба живёт в «Управлении клубом» рядом с тем, что
-                          его меняет; здесь — только сколько людей */}
-                      <p className="club-hero__status">{membersLabel(club.members)}</p>
+                      {editing ? (
+                        <>
+                          <label className="visually-hidden" htmlFor="club-about">
+                            Информация о клубе
+                          </label>
+                          <textarea
+                            id="club-about"
+                            className="club-field club-field--about club-field--editing"
+                            value={form.description}
+                            placeholder="Информация о клубе"
+                            rows={3}
+                            maxLength={2000}
+                            onChange={(event) =>
+                              setForm((was) => ({ ...was, description: event.target.value }))
+                            }
+                          />
+                        </>
+                      ) : (
+                        <p className={`club-hero__description${summary ? '' : ' club-hero__description--empty'}`}>
+                          {summary || 'Описание клуба пока не добавлено.'}
+                        </p>
+                      )}
 
-                      <label className="visually-hidden" htmlFor="club-about">
-                        Информация о клубе
-                      </label>
-                      <textarea
-                        id="club-about"
-                        className={`club-field club-field--about${editing ? ' club-field--editing' : ''}`}
-                        value={form.description}
-                        placeholder={editing ? 'Информация о клубе' : ''}
-                        maxLength={2000}
-                        readOnly={!editing}
-                        tabIndex={editing ? undefined : -1}
-                        onChange={(event) =>
-                          setForm((was) => ({ ...was, description: event.target.value }))
-                        }
-                      />
+                      <p className="club-hero__status">
+                        <IconClubs aria-hidden="true" />
+                        {membersLabel(club.members)}
+                      </p>
+
+                      <dl className="club-hero__details">
+                        <div>
+                          <dt>Руководитель</dt>
+                          <dd className="club-hero__lead">
+                            {lead ? <Person person={lead} /> : 'Не назначен'}
+                          </dd>
+                        </div>
+                        {club.createdAt && (
+                          <div>
+                            <dt>Дата создания</dt>
+                            <dd>
+                              <time dateTime={club.createdAt}>
+                                {CLUB_DATE.format(new Date(club.createdAt))}
+                              </time>
+                            </dd>
+                          </div>
+                        )}
+                      </dl>
 
                       <div className={`reveal-y${formError ? ' reveal-y--open' : ''}`}>
                         <div className="reveal-y__clip">
@@ -299,7 +341,7 @@ export default function ClubPage() {
         </div>
 
         <aside className="club-page__side">
-          <MembersPanel clubId={id} onCountChange={syncMembers} />
+          <MembersPanel clubId={id} onMembersChange={syncMembers} />
         </aside>
       </div>
     </main>
