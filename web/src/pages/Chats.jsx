@@ -243,9 +243,9 @@ export default function Chats() {
   }, [chats, search]);
 
   return (
-    <main className="page page--flush">
-      {/* Чат — рабочее место, а не страница для чтения: он встаёт вплотную
-          к краям экрана, без полей и рамки карточки */}
+    <main className="page page--grouped page--chats">
+      {/* Список, разговор и сведения — панели одной карточки на общем
+          сером фоне, с теми же полями и радиусом, что у навигации */}
       {/* На узком экране видно что-то одно: список либо разговор */}
       <div
         className={`chats${id ? ' chats--open' : ''}${info ? ' chats--info' : ''}${
