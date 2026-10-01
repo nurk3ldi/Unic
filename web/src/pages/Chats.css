@@ -28,7 +28,7 @@
 
 .chats--info {
   /* Сведения шире списка: в них состав с никами и сетка снимков */
-  grid-template-columns: minmax(14rem, 18rem) 1fr 26rem;
+  grid-template-columns: minmax(14rem, 18rem) 1fr 22rem;
 }
 
 .chats--info .chats__info,
@@ -38,7 +38,7 @@
 
 /* Поиск занимает ту же колонку, что и сведения, — они не открываются вместе */
 .chats--find {
-  grid-template-columns: minmax(14rem, 18rem) 1fr 26rem;
+  grid-template-columns: minmax(14rem, 18rem) 1fr 22rem;
 }
 
 /* Лупа уходит к правому краю шапки — там же, откуда выедет панель */
