@@ -381,14 +381,13 @@
   color: var(--accent);
 }
 
-/* Разделитель отделяет фото от сведений */
+/* Сведения рядом с фото, без разделительной линии */
 .club-hero__info {
   display: flex;
   flex-direction: column;
   min-width: 0;
   flex: 1;
   padding-left: var(--space-5);
-  border-left: 1px solid var(--separator);
 }
 
 /* Сколько людей в клубе — тихой строкой под названием */
@@ -414,7 +413,6 @@
 
   .club-hero__info {
     padding-left: 0;
-    border-left: none;
   }
 }
 
@@ -426,6 +424,9 @@
   gap: var(--space-4);
   flex: none;
   min-height: 2.75rem;
+  /* Поднимаем действия, сохраняя положение фото и сведений под ними */
+  margin-top: calc(var(--space-3) * -1);
+  margin-bottom: var(--space-3);
 }
 
 .card-header__actions.club-hero__actions {
