@@ -256,6 +256,47 @@ router.put('/:id/like', requireAuth, async (req, res) => {
   res.json({ liked: req.body.liked });
 });
 
+/**
+ * Своя ли это история: у клуба — для его руководителя, у аккаунта — для автора.
+ * Себе не отвечают, зато только свои видят, кто их историю смотрел.
+ */
+const owns = (story, user) =>
+  story.club_id ? leads(story.club_id, user.id) : story.author_id === user.id;
+
+/**
+ * Кто смотрел историю и кому она понравилась — только её хозяину. Сам он в
+ * список не входит. Последние просмотры сверху.
+ */
+router.get('/:id/views', requireAuth, async (req, res) => {
+  const story = await liveStory(req.params.id);
+  if (!story) return res.status(404).json({ error: 'История недоступна' });
+  if (!(await owns(story, req.user))) {
+    return res.status(403).json({ error: 'Просмотры видит только автор истории' });
+  }
+
+  // Лайк без отметки о просмотре тоже считается: поставить его можно, только открыв историю
+  const { rows } = await query(
+    `select u.id, u.full_name, u.username, u.photo is not null as has_photo,
+            l.user_id is not null as liked
+       from users u
+       left join story_views v on v.user_id = u.id and v.story_id = $1
+       left join story_likes l on l.user_id = u.id and l.story_id = $1
+      where (v.user_id is not null or l.user_id is not null) and u.id <> $2
+      order by v.viewed_at desc nulls last, u.full_name`,
+    [story.id, req.user.id],
+  );
+
+  res.json({
+    viewers: rows.map((row) => ({
+      id: row.id,
+      name: row.full_name,
+      username: row.username,
+      photo: row.has_photo ? `/api/users/${row.id}/photo` : null,
+      liked: row.liked,
+    })),
+  });
+});
+
 /** Историю открыли. Повторный просмотр ничего не меняет — отметка одна. */
 router.put('/:id/view', requireAuth, async (req, res) => {
   if (!(await liveStory(req.params.id))) return res.status(404).json({ error: 'История недоступна' });
@@ -277,10 +318,7 @@ router.post('/:id/replies', requireAuth, async (req, res) => {
   if (!story) return res.status(404).json({ error: 'История недоступна' });
 
   // Себе не отвечают: поля под своей историей нет, но проверяет это сервер
-  const own = story.club_id
-    ? await leads(story.club_id, req.user.id)
-    : story.author_id === req.user.id;
-  if (own) return res.status(400).json({ error: 'Это ваша история' });
+  if (await owns(story, req.user)) return res.status(400).json({ error: 'Это ваша история' });
 
   const chatId = await directRoom(
     req.user.id,

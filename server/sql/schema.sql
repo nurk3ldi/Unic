@@ -278,6 +278,8 @@ create table if not exists story_views (
   user_id uuid not null references users (id) on delete cascade,
   primary key (story_id, user_id)
 );
+-- Когда открыл: автор истории видит список смотревших, последние — сверху
+alter table story_views add column if not exists viewed_at timestamptz not null default now();
 
 -- Ответ на историю — обычное сообщение в личном чате с рассказчиком. Ссылка
 -- без внешнего ключа: история живёт сутки, а ответ остаётся — по пустой ссылке

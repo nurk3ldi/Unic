@@ -247,6 +247,15 @@ function storyAge(iso) {
   return minutes < 1 ? 'Только что' : minutes < 60 ? `${minutes} мин` : `${Math.floor(minutes / 60)} ч`;
 }
 
+/** Кружок человека в списке смотревших: снимок или первая буква имени. */
+function Face({ person }) {
+  return (
+    <span className="story-player__face">
+      {person.photo ? <img src={person.photo} alt="" /> : initial(person.name)}
+    </span>
+  );
+}
+
 /** История всегда в кадре 9:16. Прогресс идёт по реальному времени медиа,
  * а пауза, меню и скрытая вкладка останавливают и кадр, и полоску. */
 function StoryPlayer({ media, teller, steps, active, muted, onMute, onDelete, onLike, onReply }) {
@@ -269,11 +278,14 @@ function StoryPlayer({ media, teller, steps, active, muted, onMute, onDelete, on
   const [reply, setReply] = useState('');
   const [writing, setWriting] = useState(false);
   const [sending, setSending] = useState(false);
+  // Своя история: кто её смотрел (null — список ещё не пришёл) и открыт ли он
+  const [viewers, setViewers] = useState(null);
+  const [sheet, setSheet] = useState(false);
   const [notice, setNotice] = useState('');
   const [failure, setFailure] = useState('');
   const isVideo = media.kind === 'video';
   // Пока человек пишет ответ, история ждёт: иначе она ушла бы из-под рук
-  const stopped = !active || paused || holding || hidden || menu || writing || reply !== '';
+  const stopped = !active || paused || holding || hidden || menu || sheet || writing || reply !== '';
 
   function closeMenu() {
     setMenu(false);
@@ -283,6 +295,19 @@ function StoryPlayer({ media, teller, steps, active, muted, onMute, onDelete, on
   useEffect(() => {
     if (menu) menuRef.current?.querySelector('button')?.focus();
   }, [menu]);
+
+  // Плеер живёт один кадр (ключ — история), поэтому список читается раз на кадр
+  useEffect(() => {
+    if (!teller.own) return undefined;
+    let alive = true;
+    api
+      .storyViews(media.id)
+      .then((data) => alive && setViewers(data.viewers))
+      .catch(() => alive && setViewers([]));
+    return () => {
+      alive = false;
+    };
+  }, [teller.own, media.id]);
 
   useEffect(() => {
     const update = () => setHidden(document.hidden);
@@ -300,6 +325,14 @@ function StoryPlayer({ media, teller, steps, active, muted, onMute, onDelete, on
         }
         return;
       }
+      // Esc закрывает список смотревших, а не всё окно — как и меню
+      if (sheet) {
+        if (event.key === 'Escape') {
+          event.preventDefault();
+          setSheet(false);
+        }
+        return;
+      }
       if (event.target.closest?.('input, textarea')) return;
       if (event.key === 'ArrowLeft') { event.preventDefault(); steps.onPrev?.(); }
       else if (event.key === 'ArrowRight') { event.preventDefault(); steps.onNext?.(); }
@@ -307,7 +340,7 @@ function StoryPlayer({ media, teller, steps, active, muted, onMute, onDelete, on
     }
     document.addEventListener('keydown', onKey);
     return () => document.removeEventListener('keydown', onKey);
-  }, [active, steps, menu]);
+  }, [active, steps, menu, sheet]);
 
   useEffect(() => {
     const video = videoRef.current;
@@ -493,9 +526,78 @@ function StoryPlayer({ media, teller, steps, active, muted, onMute, onDelete, on
         </div>
       </>}
 
+      {teller.own && (
+        <>
+          {sheet && (
+            <button className="story-player__menu-dismiss" type="button" tabIndex={-1}
+              aria-label="Закрыть список просмотров" onClick={() => setSheet(false)} />
+          )}
+          {/* Лист остаётся в разметке и закрытым: иначе уезжать вниз было бы нечему.
+              inert — закрытый не ловит ни Tab, ни нажатия */}
+          <div
+            className={`story-player__sheet${sheet ? ' story-player__sheet--open' : ''}`}
+            role="dialog"
+            aria-label="Просмотры истории"
+            inert={!sheet}
+          >
+            <div className="story-player__sheet-head">
+              <strong>Просмотры · {viewers?.length ?? 0}</strong>
+              <button className="story-player__button" type="button" aria-label="Закрыть список"
+                onClick={() => setSheet(false)}>
+                <IconClose aria-hidden="true" />
+              </button>
+            </div>
+
+            {viewers?.length ? (
+              <ul className="story-player__viewers">
+                {viewers.map((viewer) => (
+                  <li className="story-player__viewer" key={viewer.id}>
+                    <Face person={viewer} />
+                    <span className="story-player__viewer-body">
+                      <strong>{viewer.name}</strong>
+                      {viewer.username && <span>@{viewer.username}</span>}
+                    </span>
+                    {viewer.liked && (
+                      <span className="story-player__viewer-like" role="img" aria-label="Нравится">
+                        <IconHeart aria-hidden="true" />
+                      </span>
+                    )}
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p className="story-player__sheet-empty">
+                {viewers ? 'Историю пока никто не посмотрел' : 'Загружаем…'}
+              </p>
+            )}
+          </div>
+        </>
+      )}
+
       <div className="story-player__bottom">
         {(failure || notice) && <p className="story-player__notice" role={failure ? 'alert' : 'status'}>{failure || notice}</p>}
         <div className="story-player__actions">
+          {/* Своя история: вместо поля ответа — сколько человек её посмотрели.
+              Нажатие поднимает список снизу, как в Instagram */}
+          {teller.own && viewers && (
+            <button
+              className="story-player__views"
+              type="button"
+              aria-haspopup="dialog"
+              aria-expanded={sheet}
+              onClick={() => setSheet(true)}
+            >
+              {viewers.length > 0 && (
+                <span className="story-player__faces" aria-hidden="true">
+                  {viewers.slice(0, 3).map((viewer) => (
+                    <Face key={viewer.id} person={viewer} />
+                  ))}
+                </span>
+              )}
+              Просмотрено: {viewers.length}
+            </button>
+          )}
+
           {/* Под своей историей поля нет: себе не пишут */}
           {!teller.own && onReply && (
             <form className="story-player__reply" onSubmit={sendReply}>

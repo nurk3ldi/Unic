@@ -611,6 +611,153 @@
   justify-content: flex-end;
 }
 
+/* ── Своя история: кто смотрел ───────────────────────────── */
+/* Слева внизу — кружки последних смотревших и счёт; сердце остаётся справа */
+.story-player__views {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-1);
+  min-height: 2.75rem;
+  margin-right: auto;
+  justify-content: center;
+  color: inherit;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  letter-spacing: var(--tracking-caption);
+  transition: opacity var(--duration-fast) var(--ease-out);
+}
+
+.story-player__views:hover {
+  opacity: 0.8;
+}
+
+.story-player__views:active {
+  opacity: 0.6;
+}
+
+.story-player__faces {
+  display: flex;
+}
+
+.story-player__face {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 2rem;
+  height: 2rem;
+  overflow: hidden;
+  border-radius: 50%;
+  background: var(--viewer-track);
+  color: var(--viewer-fg);
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
+.story-player__face img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* В счётчике кружки мельче и идут внахлёст; тёмный ободок отделяет соседей */
+.story-player__faces .story-player__face {
+  width: 1.5rem;
+  height: 1.5rem;
+  outline: 2px solid var(--viewer-material);
+  font-size: 0.6875rem;
+}
+
+.story-player__faces .story-player__face + .story-player__face {
+  margin-left: calc(-1 * var(--space-2));
+}
+
+/* Лист со списком поднимается снизу и уходит туда же (§4.3: только transform).
+   Тёмный материал — как у меню истории: кадр под ним просвечивает размытым */
+.story-player__sheet {
+  position: absolute;
+  inset: auto 0 0;
+  z-index: 4;
+  display: flex;
+  flex-direction: column;
+  max-height: 62%;
+  border-radius: var(--radius-card) var(--radius-card) 0 0;
+  background: var(--viewer-material);
+  backdrop-filter: var(--material-blur);
+  transform: translateY(100%);
+  transition: transform var(--duration-base) var(--ease-out);
+}
+
+.story-player__sheet--open {
+  transform: none;
+}
+
+.story-player__sheet-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex: none;
+  padding: var(--space-2) var(--space-2) var(--space-2) var(--space-4);
+  border-bottom: 1px solid var(--viewer-track);
+  font-size: 0.9375rem;
+}
+
+.story-player__sheet-head strong {
+  font-weight: 600;
+}
+
+.story-player__viewers {
+  margin: 0;
+  padding: var(--space-2) 0;
+  overflow-y: auto;
+  list-style: none;
+}
+
+.story-player__viewer {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  min-height: 3.25rem;
+  padding: var(--space-2) var(--space-4);
+}
+
+.story-player__viewer-body {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-width: 0;
+  font-size: 0.8125rem;
+  color: var(--on-accent-secondary);
+}
+
+.story-player__viewer-body strong {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 0.9375rem;
+  font-weight: 500;
+  color: var(--viewer-fg);
+}
+
+/* Кому понравилось — красное сердце в конце строки */
+.story-player__viewer-like {
+  display: grid;
+  flex: none;
+  color: var(--red);
+  font-size: 1.25rem;
+}
+
+.story-player__viewer-like svg {
+  fill: currentColor;
+}
+
+.story-player__sheet-empty {
+  padding: var(--space-8) var(--space-4);
+  text-align: center;
+  font-size: 0.875rem;
+  color: var(--on-accent-secondary);
+}
+
 /* Ответ рассказчику — капсула во всю строку, сердце остаётся справа от неё.
    Фона у поля нет: оно лежит на затемнённом низе кадра, границы хватает */
 .story-player__reply {
