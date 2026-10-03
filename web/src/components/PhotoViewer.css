@@ -340,9 +340,194 @@
 }
 
 /* ── Истории: единый портретный кадр ─────────────────────── */
+/* Ширина кадра — в одном месте: по ней же встают стрелки и соседи по бокам.
+   Округлена до пикселя: дробный кадр размывает текст внутри */
+.photo-viewer--story {
+  --story-width: round(down, min(calc((100dvh - var(--space-4)) * 9 / 16), calc(100vw - var(--space-4))), 1px);
+  --turn: 1.75rem;
+  /* Сосед — тот же кадр, сжатый до 40%, как в Instagram */
+  --preview: 0.4;
+  /* Зазор между кадрами: в ближнем помещается стрелка с воздухом по бокам */
+  --slide-gap: calc(var(--turn) + 2 * var(--space-4));
+  /* Соседи, уехавшие за край окна, не должны давать ему прокрутку */
+  overflow: clip;
+}
+
+/* ── Кадры рассказчиков ───────────────────────────────────── */
+/* Все кадры одного размера и стоят в центре окна; на своё место каждый уезжает
+   сдвигом и сжатием (только transform, §4.3). Смена рассказчика — это новые
+   --side и --far: кадр едет от текущего положения, поэтому быстрые нажатия
+   подряд не дёргают его, а перенаправляют на ходу */
+.story-slide {
+  /* От центра открытого кадра до центра ближнего соседа и шаг между соседями */
+  --near: calc(var(--story-width) * (1 + var(--preview)) / 2 + var(--slide-gap));
+  --step: calc(var(--story-width) * var(--preview) + var(--slide-gap));
+  position: absolute;
+  inset: 0;
+  width: var(--story-width);
+  height: calc(var(--story-width) * 16 / 9);
+  margin: auto;
+  overflow: hidden;
+  border-radius: var(--radius-control);
+  background: var(--viewer-bg);
+  color: var(--viewer-fg);
+  transform: translateX(calc(var(--side) * (var(--near) + var(--far) * var(--step)))) scale(var(--preview));
+  transition:
+    transform var(--duration-slow) var(--ease-out),
+    opacity var(--duration-base) var(--ease-out);
+}
+
+.story-slide--open {
+  transform: none;
+}
+
+/* Третий от центра — уже за сценой: уезжая туда, сосед тает, приезжая — проявляется */
+.story-slide--away {
+  opacity: 0;
+}
+
+/* Кадр, которого не было на сцене (перешли сразу через несколько), проявляется */
+@starting-style {
+  .story-slide {
+    opacity: 0;
+  }
+}
+
+.story-slide__cover {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* Вуаль — и кнопка «открыть этого рассказчика». Размеры внутри поделены на
+   --preview: кадр сжат, а фото и имя должны читаться в обычную величину */
+.story-slide__veil {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: calc(var(--space-1) / var(--preview));
+  padding: calc(var(--space-3) / var(--preview));
+  background: var(--viewer-material);
+  color: inherit;
+  transition: opacity var(--duration-base) var(--ease-out);
+}
+
+.story-slide--open .story-slide__veil {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.story-slide__avatar {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: calc(3.5rem / var(--preview));
+  height: calc(3.5rem / var(--preview));
+  margin-bottom: calc(var(--space-2) / var(--preview));
+  overflow: hidden;
+  border-radius: 50%;
+  background: var(--viewer-material);
+  font-size: calc(1.5rem / var(--preview));
+  font-weight: 600;
+}
+
+.story-slide__avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.story-slide__veil strong {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: calc(1rem / var(--preview));
+  font-weight: 600;
+  line-height: 1.25;
+}
+
+.story-slide__veil time {
+  font-size: calc(0.875rem / var(--preview));
+  line-height: 1.25;
+  color: var(--on-accent-secondary);
+}
+
+/* Сосед отзывается на курсор и на нажатие — вуаль светлеет, кадр не двигается */
+.story-slide__veil:hover {
+  opacity: 0.85;
+}
+
+.story-slide__veil:active {
+  opacity: 0.7;
+}
+
+/* На узком экране открытый кадр занимает всю ширину — соседям негде встать */
+@media (max-width: 48rem) {
+  .story-slide:not(.story-slide--open) {
+    display: none;
+  }
+}
+
+/* «Уменьшить движение»: кадры встают на место сразу, а вуаль коротко растворяется */
+@media (prefers-reduced-motion: reduce) {
+  .story-slide {
+    transition: none;
+  }
+
+  .story-slide__veil {
+    transition-duration: 160ms !important;
+  }
+}
+
+/* ‹ › стоят вплотную к кадру, как в Instagram. Тёмный материал на чёрном фоне
+   не виден — здесь кружок светлый */
+.photo-viewer--story .photo-viewer__turn {
+  width: var(--turn);
+  height: var(--turn);
+  background: var(--viewer-track);
+  font-size: 1.125rem;
+  /* Вместо сдвига на -50%: при нечётной высоте окна он ставит кружок на полпикселя */
+  top: round(50% - var(--turn) / 2, 1px);
+  transform: none;
+}
+
+.photo-viewer--story .photo-viewer__turn:active {
+  transform: scale(0.92);
+}
+
+/* Сам кружок мал, а зона нажатия — 44px, как у всех кнопок */
+.photo-viewer--story .photo-viewer__turn::before {
+  content: '';
+  position: absolute;
+  inset: calc((var(--turn) - 2.75rem) / 2);
+}
+
+/* Ширина кадра дробная (из высоты окна) — место кружка округляется до целого
+   пикселя, иначе знак внутри рисуется на полпикселя мимо центра */
+.photo-viewer--story .photo-viewer__turn--prev {
+  left: round(50% - var(--story-width) / 2 - var(--turn) - var(--space-4), 1px);
+}
+
+.photo-viewer--story .photo-viewer__turn--next {
+  right: round(50% - var(--story-width) / 2 - var(--turn) - var(--space-4), 1px);
+}
+
+/* На узком экране кадр во всю ширину — листают касанием по его краям */
+@media (max-width: 48rem) {
+  .photo-viewer--story .photo-viewer__turn {
+    display: none;
+  }
+}
+
 .story-player {
   position: relative;
-  width: min(calc((100dvh - var(--space-4)) * 9 / 16), calc(100vw - var(--space-4)));
+  width: var(--story-width);
   aspect-ratio: 9 / 16;
   overflow: hidden;
   border-radius: var(--radius-control);

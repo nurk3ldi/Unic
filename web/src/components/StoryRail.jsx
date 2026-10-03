@@ -344,7 +344,14 @@ export default function StoryRail() {
         onChange={send}
       />
 
-      <PhotoViewer photo={shown} teller={current} steps={steps} onClose={close} onDelete={removeStory} onLike={markLiked} />
+      <PhotoViewer
+        photo={shown}
+        tellers={open && { list: order, index: open.teller, onPick: (teller) => setOpen({ teller, item: 0 }) }}
+        steps={steps}
+        onClose={close}
+        onDelete={removeStory}
+        onLike={markLiked}
+      />
     </>
   );
 }

@@ -28,6 +28,9 @@ const IDLE_MS = 2500;
 const SEEK_STEP = 5;
 // Сколько стоит снимок в серии, прежде чем уйти к следующему — как в Instagram
 const STEP_MS = 5000;
+// Сколько рассказчиков рисуем в каждую сторону от открытого. Видно двоих, третий
+// невидим: он нужен, чтобы въезжающий сосед приехал из-за края, а не возник на месте
+const REACH = 3;
 
 /**
  * Снимок или видео на весь экран поверх страницы. Нативный <dialog>: Esc, фокус и
@@ -37,8 +40,11 @@ const STEP_MS = 5000;
  * `steps` — необязательно, для серии (истории): { index, count, onPrev, onNext } —
  * сверху полоски «который из скольких», по бокам ‹ ›; у снимка листают и ← →.
  * Серия идёт сама: снимок — через 5 секунд, видео — когда доиграло.
+ * `tellers` — только у историй: { list, index, onPick } — все рассказчики, открытый
+ * и переход к другому. Открытый кадр стоит в центре, соседи — уменьшенными по бокам.
  */
-export default function PhotoViewer({ photo, onClose, steps, teller, onDelete, onLike }) {
+export default function PhotoViewer({ photo, onClose, steps, tellers, onDelete, onLike }) {
+  const teller = tellers?.list[tellers.index];
   const dialogRef = useRef(null);
   const videoRef = useRef(null);
   // Окно держит последний снимок, пока растворяется, — иначе он пропал бы раньше окна
@@ -51,10 +57,13 @@ export default function PhotoViewer({ photo, onClose, steps, teller, onDelete, o
   wasOpen.current = Boolean(photo);
   if (photo) {
     shown.current = photo;
-    series.current = { teller, steps };
+    series.current = { tellers, steps };
   }
-  const storyMode = Boolean(series.current?.teller);
+  const stage = series.current?.tellers;
+  const storyMode = Boolean(stage);
   const isOpen = Boolean(photo);
+  // У историй шаги держатся и пока окно растворяется — стрелки уходят вместе с ним
+  const turns = storyMode ? series.current.steps : steps;
 
   useEffect(() => {
     if (!isOpen) return;
@@ -104,17 +113,57 @@ export default function PhotoViewer({ photo, onClose, steps, teller, onDelete, o
       onClick={(event) => event.target === event.currentTarget && onClose()}
     >
       {storyMode ? (
-        <StoryPlayer
-          key={`${shown.current.id}:${session.current}`}
-          media={shown.current}
-          teller={series.current.teller}
-          steps={series.current.steps}
-          active={Boolean(photo)}
-          muted={storyMuted}
-          onMute={() => setStoryMuted((value) => !value)}
-          onDelete={onDelete}
-          onLike={onLike}
-        />
+        // Каждый рассказчик — один кадр на всё время окна (ключ — он сам): при смене
+        // кадр не подменяется, а едет на новое место и растёт или сжимается
+        stage.list.map((entry, index) => {
+          const offset = index - stage.index;
+          if (Math.abs(offset) > REACH) return null;
+          const open = offset === 0;
+          const cover = entry.items[0];
+          return (
+            <div
+              key={entry.key}
+              className={`story-slide${open ? ' story-slide--open' : ''}${Math.abs(offset) === REACH ? ' story-slide--away' : ''}`}
+              style={{ '--side': Math.sign(offset), '--far': Math.abs(offset) - 1 }}
+            >
+              {/* Обложка лежит под плеером всегда: кадр, уходя в сторону, не моргает чёрным */}
+              {cover.kind === 'video' ? (
+                <video className="story-slide__cover" src={`${cover.url}#t=0.1`} preload="metadata" muted playsInline />
+              ) : (
+                <img className="story-slide__cover" src={cover.url} alt="" />
+              )}
+
+              {open && (
+                <StoryPlayer
+                  key={`${shown.current.id}:${session.current}`}
+                  media={shown.current}
+                  teller={entry}
+                  steps={series.current.steps}
+                  active={Boolean(photo)}
+                  muted={storyMuted}
+                  onMute={() => setStoryMuted((value) => !value)}
+                  onDelete={onDelete}
+                  onLike={onLike}
+                />
+              )}
+
+              {/* Вуаль соседа: затемнение, фото и имя. У открытого кадра она тает */}
+              <button
+                className="story-slide__veil"
+                type="button"
+                inert={open || Math.abs(offset) === REACH}
+                aria-label={`Истории: ${entry.name}`}
+                onClick={() => stage.onPick(index)}
+              >
+                <span className="story-slide__avatar">
+                  {entry.photo ? <img src={entry.photo} alt="" /> : initial(entry.name)}
+                </span>
+                <strong>{entry.name}</strong>
+                <time dateTime={cover.createdAt}>{storyAge(cover.createdAt)}</time>
+              </button>
+            </div>
+          );
+        })
       ) : shown.current?.kind === 'video' ? (
         // Ключ — адрес: другое видео начинается с нуля, а не с чужой позиции
         <VideoPlayer
@@ -128,41 +177,44 @@ export default function PhotoViewer({ photo, onClose, steps, teller, onDelete, o
       )}
 
       {steps && !storyMode && (
-        <>
-          {/* Идущая полоска заполняется за время кадра: снимок — 5 секунд, видео —
-              его длина. Ключ — адрес: новый кадр начинает полоску с нуля */}
-          <div className="photo-viewer__steps" aria-label={`${steps.index + 1} из ${steps.count}`}>
-            {Array.from({ length: steps.count }, (_, index) => (
-              <span
-                key={index === steps.index ? shown.current?.url : index}
-                className={`photo-viewer__step${
-                  index < steps.index
-                    ? ' photo-viewer__step--done'
-                    : index === steps.index
-                      ? ' photo-viewer__step--now'
-                      : ''
-                }`}
-                style={
-                  index === steps.index
-                    ? {
-                        '--step-time':
-                          shown.current?.kind === 'video' && shown.current.duration
-                            ? `${shown.current.duration}s`
-                            : `${STEP_MS}ms`,
-                      }
-                    : undefined
-                }
-              />
-            ))}
-          </div>
+        /* Идущая полоска заполняется за время кадра: снимок — 5 секунд, видео —
+            его длина. Ключ — адрес: новый кадр начинает полоску с нуля */
+        <div className="photo-viewer__steps" aria-label={`${steps.index + 1} из ${steps.count}`}>
+          {Array.from({ length: steps.count }, (_, index) => (
+            <span
+              key={index === steps.index ? shown.current?.url : index}
+              className={`photo-viewer__step${
+                index < steps.index
+                  ? ' photo-viewer__step--done'
+                  : index === steps.index
+                    ? ' photo-viewer__step--now'
+                    : ''
+              }`}
+              style={
+                index === steps.index
+                  ? {
+                      '--step-time':
+                        shown.current?.kind === 'video' && shown.current.duration
+                          ? `${shown.current.duration}s`
+                          : `${STEP_MS}ms`,
+                    }
+                  : undefined
+              }
+            />
+          ))}
+        </div>
+      )}
 
-          {/* Крайняя стрелка не пропадает, а гаснет — ряд не прыгает */}
+      {/* ‹ › — и у серии, и у историй (там они стоят по бокам кадра).
+          Крайняя стрелка не пропадает, а гаснет — ряд не прыгает */}
+      {turns && (
+        <>
           <button
             className="photo-viewer__turn photo-viewer__turn--prev"
             type="button"
             aria-label="Предыдущая"
-            disabled={!steps.onPrev}
-            onClick={steps.onPrev}
+            disabled={!turns.onPrev}
+            onClick={turns.onPrev}
           >
             <IconChevronLeft aria-hidden="true" />
           </button>
@@ -170,8 +222,8 @@ export default function PhotoViewer({ photo, onClose, steps, teller, onDelete, o
             className="photo-viewer__turn photo-viewer__turn--next"
             type="button"
             aria-label="Следующая"
-            disabled={!steps.onNext}
-            onClick={steps.onNext}
+            disabled={!turns.onNext}
+            onClick={turns.onNext}
           >
             <IconChevronRight aria-hidden="true" />
           </button>
