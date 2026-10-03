@@ -208,7 +208,11 @@ export default function PostCard({ post, teller, onOpen, onDelete, onLike }) {
 
       {text && (
         <p className={`post__text${open ? '' : ' post__text--clamp'}`} ref={textRef}>
-          <strong>{teller.name}</strong> {text}
+          {/* Между именем и текстом — неразрывный пробел: иначе длинное слово без
+              пробелов целиком уходило бы на следующую строку, оставляя имя одно */}
+          <strong>{teller.name}</strong>
+          {' '}
+          {text}
         </p>
       )}
       {long && !open && (
