@@ -40,12 +40,21 @@ async function videoMeta(file) {
   });
 }
 
-/** Обложка карточки: у видео — первый кадр, его же берёт и лента чата. */
+/**
+ * Обложка карточки: у видео — первый кадр, его же берёт и лента чата.
+ * Кадр лежит в обёртке: на карточке он размыт, и обёртка обрезает
+ * размытие по своим углам — иначе оно расплывалось бы за край карточки.
+ */
 function Cover({ item }) {
-  if (item.kind === 'video') {
-    return <video className="story__cover" src={`${item.url}#t=0.1`} muted playsInline />;
-  }
-  return <img className="story__cover" src={item.url} alt="" />;
+  return (
+    <span className="story__cover">
+      {item.kind === 'video' ? (
+        <video src={`${item.url}#t=0.1`} muted playsInline />
+      ) : (
+        <img src={item.url} alt="" />
+      )}
+    </span>
+  );
 }
 
 /** Есть ли у рассказчика история, которую этот человек ещё не открывал. */
