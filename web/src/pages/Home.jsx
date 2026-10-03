@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { api } from '../api.js';
 import PhotoViewer from '../components/PhotoViewer.jsx';
 import PostCard from '../components/PostCard.jsx';
@@ -11,6 +12,8 @@ export default function Home() {
   const [feed, setFeed] = useState({ posts: [], tellers: {} });
   // Снимки публикации, открытые на весь экран: { photos, index }
   const [viewing, setViewing] = useState(null);
+  const [searchParams] = useSearchParams();
+  const linked = searchParams.get('post');
 
   useEffect(() => {
     let alive = true;
@@ -34,6 +37,28 @@ export default function Home() {
     }
   }
 
+  // Пришли по ссылке на публикацию («Отправить») — лента встаёт на ней
+  useEffect(() => {
+    if (linked) document.getElementById(`post-${linked}`)?.scrollIntoView({ block: 'center' });
+  }, [linked, feed]);
+
+  // Лайк виден сразу, сервер догоняет и отдаёт точное число; не вышло — возвращаем как было
+  async function like(post) {
+    const patch = (change) =>
+      setFeed((was) => ({
+        ...was,
+        posts: was.posts.map((item) => (item.id === post.id ? { ...item, ...change } : item)),
+      }));
+
+    const liked = !post.liked;
+    patch({ liked, likes: post.likes + (liked ? 1 : -1) });
+    try {
+      patch(await api.likePost(post.id, liked));
+    } catch {
+      patch({ liked: post.liked, likes: post.likes });
+    }
+  }
+
   const step = (by) => () => setViewing((was) => ({ ...was, index: was.index + by }));
 
   return (
@@ -49,6 +74,7 @@ export default function Home() {
               teller={feed.tellers[post.teller]}
               onOpen={(index) => setViewing({ photos: post.photos, index })}
               onDelete={() => remove(post.id)}
+              onLike={() => like(post)}
             />
           ))}
         </div>

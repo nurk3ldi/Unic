@@ -182,7 +182,7 @@
   display: flex;
   justify-content: center;
   gap: 0.375rem;
-  margin-top: var(--space-3);
+  margin-top: var(--space-2);
 }
 
 .post__dot {
@@ -197,13 +197,92 @@
   background: var(--accent);
 }
 
-/* Текст — под снимками */
-.post__text {
-  margin-top: var(--space-3);
+/* ── Лайк и «отправить» ──────────────────────────────────── */
+/* Два знака по краям строки. Поля кнопок шире и выше знаков (44px под палец),
+   поэтому строка вынесена наружу на эту разницу: по бокам знаки встают на линию
+   снимка и текста, а сверху и снизу поля не раздвигают соседей — до точек 8px,
+   до подписи 4px */
+.post__actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin: -0.125rem -0.625rem -0.375rem;
+}
+
+.post__action {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-width: 2.75rem;
+  min-height: 2.75rem;
+  padding: 0 0.625rem;
+  color: var(--text);
+  font-size: 1.5rem;
+  transition:
+    opacity var(--duration-fast) var(--ease-out),
+    transform var(--duration-press) var(--ease-out);
+}
+
+.post__action:hover {
+  opacity: 0.6;
+}
+
+/* Отклик наступает на нажатии, а не на отпускании */
+.post__action:active {
+  transform: scale(0.92);
+}
+
+/* Понравилось — сердце залито красным */
+.post__action--liked {
+  color: var(--red);
+}
+
+.post__action--liked svg {
+  fill: currentColor;
+}
+
+.post__count {
   font-size: 0.9375rem;
-  line-height: 1.6;
+  font-weight: 600;
+  color: var(--text);
+  font-variant-numeric: tabular-nums;
+}
+
+.post__copied {
+  font-size: 0.8125rem;
+  color: var(--text-secondary);
+}
+
+/* ── Подпись ─────────────────────────────────────────────── */
+/* Имя и текст одной строкой, под действиями */
+.post__text {
+  font-size: 0.9375rem;
+  line-height: 1.5;
   color: var(--text);
   overflow-wrap: break-word;
   /* Абзацы автора сохраняются: текст пишут в поле с переносами строк */
   white-space: pre-wrap;
+}
+
+.post__text strong {
+  font-weight: 600;
+}
+
+/* Свёрнутая подпись — две строки; остальное открывает «ещё» */
+.post__text--clamp {
+  display: -webkit-box;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+}
+
+.post__expand {
+  font-size: 0.9375rem;
+  line-height: 1.5;
+  color: var(--text-tertiary);
+}
+
+.post__expand:hover {
+  color: var(--text-secondary);
 }

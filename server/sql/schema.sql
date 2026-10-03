@@ -293,6 +293,13 @@ create table if not exists post_photos (
   primary key (post_id, position)
 );
 
+-- Кому публикация понравилась: один человек — один лайк
+create table if not exists post_likes (
+  post_id uuid not null references posts (id) on delete cascade,
+  user_id uuid not null references users (id) on delete cascade,
+  primary key (post_id, user_id)
+);
+
 -- Кто какую историю открыл. По нему карточка рассказчика обведена, пока у него
 -- есть несмотренное; у каждого человека отметки свои
 create table if not exists story_views (

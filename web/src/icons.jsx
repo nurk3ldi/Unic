@@ -89,6 +89,8 @@ export const IconBulb = icon(Idea01Icon);
 export const IconCalendar = icon(Calendar04Icon);
 export const IconCamera = icon(Camera01Icon);
 export const IconChats = icon(SendIcon);
+// Тот же бумажный самолёт: в навигации он значит «Чаты», под публикацией — «Отправить»
+export const IconSend = IconChats;
 export const IconCheck = icon(Tick02Icon);
 export const IconCheckDouble = icon(TickDouble01Icon);
 export const IconChevronDown = icon(ArrowDown01Icon);

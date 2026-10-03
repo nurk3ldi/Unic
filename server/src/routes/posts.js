@@ -28,6 +28,10 @@ router.get('/', requireAuth, async (req, res) => {
     `select p.id, p.club_id, p.author_id, p.body, p.created_at,
             c.name as club_name, c.photo_url as club_photo,
             u.full_name as author_name, u.photo is not null as author_has_photo,
+            (select count(*)::int from post_likes l where l.post_id = p.id) as likes,
+            exists (
+              select 1 from post_likes l where l.post_id = p.id and l.user_id = $2
+            ) as liked,
             coalesce((
               select json_agg(json_build_object('n', ph.position, 'w', ph.width, 'h', ph.height)
                               order by ph.position)
@@ -38,7 +42,7 @@ router.get('/', requireAuth, async (req, res) => {
        join users u on u.id = p.author_id
       order by p.created_at desc
       limit $1`,
-    [FEED_PAGE],
+    [FEED_PAGE, req.user.id],
   );
 
   const boss = req.user.role === 'university' || req.user.role === 'admin';
@@ -62,6 +66,8 @@ router.get('/', requireAuth, async (req, res) => {
         width: photo.w,
         height: photo.h,
       })),
+      likes: row.likes,
+      liked: row.liked,
       canDelete: boss || row.author_id === req.user.id,
     };
   });
@@ -156,6 +162,38 @@ router.get('/:id/photos/:position', requireAuth, async (req, res) => {
     .set('Cache-Control', 'private, max-age=31536000, immutable')
     .type(photo.slice('data:'.length, photo.indexOf(';')))
     .send(Buffer.from(photo.slice(photo.indexOf(',') + 1), 'base64'));
+});
+
+/**
+ * Лайк: один человек — один лайк, повтор того же запроса ничего не меняет.
+ * В ответ — сколько их стало: карточка показывает число рядом с сердцем.
+ */
+router.put('/:id/like', requireAuth, async (req, res) => {
+  if (typeof req.body?.liked !== 'boolean') {
+    return res.status(400).json({ error: 'Укажите состояние лайка' });
+  }
+  const { rows: found } = UUID.test(req.params.id)
+    ? await query('select 1 from posts where id = $1', [req.params.id])
+    : { rows: [] };
+  if (!found[0]) return res.status(404).json({ error: 'Публикация не найдена' });
+
+  if (req.body.liked) {
+    await query(
+      'insert into post_likes (post_id, user_id) values ($1, $2) on conflict do nothing',
+      [req.params.id, req.user.id],
+    );
+  } else {
+    await query('delete from post_likes where post_id = $1 and user_id = $2', [
+      req.params.id,
+      req.user.id,
+    ]);
+  }
+
+  const { rows } = await query(
+    'select count(*)::int as likes from post_likes where post_id = $1',
+    [req.params.id],
+  );
+  res.json({ liked: req.body.liked, likes: rows[0].likes });
 });
 
 /** Убрать свою публикацию; университет и админ убирают любую. Снимки уходят каскадом. */

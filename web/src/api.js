@@ -134,6 +134,7 @@ export const api = {
   postTargets: () => request('/posts/targets'),
   createPost: (body) => request('/posts', { method: 'POST', body }),
   deletePost: (id) => request(`/posts/${id}`, { method: 'DELETE' }),
+  likePost: (id, liked) => request(`/posts/${id}/like`, { method: 'PUT', body: { liked } }),
   stories: () => request('/stories'),
   deleteStory: (id) => request(`/stories/${id}`, { method: 'DELETE' }),
   viewStory: (id) => request(`/stories/${id}/view`, { method: 'PUT' }),

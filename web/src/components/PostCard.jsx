@@ -1,6 +1,13 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { ago } from '../chat.js';
-import { IconChevronLeft, IconChevronRight, IconDots, IconTrash } from '../icons.jsx';
+import {
+  IconChevronLeft,
+  IconChevronRight,
+  IconDots,
+  IconHeart,
+  IconSend,
+  IconTrash,
+} from '../icons.jsx';
 import { initial } from '../people.js';
 import './PostCard.css';
 
@@ -10,18 +17,45 @@ const RATIO_MAX = 1.91;
 
 /**
  * Публикация в ленте — по образцу Instagram: строка «кто · когда», под ней снимки
- * по одному, текст — внизу.
+ * по одному, ниже — лайк слева и «отправить» справа, в самом низу подпись: имя
+ * и текст одной строкой, длинный свёрнут до двух строк.
  *
  * Снимки — лента с прилипанием (`scroll-snap`): листают стрелками, пальцем или
  * тачпадом, точки под кадром показывают, который сейчас. Нажатие на снимок
  * открывает его в окне на весь экран.
  */
-export default function PostCard({ post, teller, onOpen, onDelete }) {
+export default function PostCard({ post, teller, onOpen, onDelete, onLike }) {
   const { text, photos } = post;
   const trackRef = useRef(null);
   const menuRef = useRef(null);
+  const textRef = useRef(null);
   const [at, setAt] = useState(0);
   const [menu, setMenu] = useState(false);
+  const [long, setLong] = useState(false); // подпись не влезла в две строки
+  const [open, setOpen] = useState(false); // «ещё» нажато — подпись целиком
+  const [copied, setCopied] = useState(false);
+
+  // Влезла ли подпись, знает только раскладка: сравниваем высоту текста и коробки
+  useLayoutEffect(() => {
+    const node = textRef.current;
+    if (node) setLong(node.scrollHeight > node.clientHeight + 1);
+  }, [text]);
+
+  /**
+   * «Отправить»: ссылка на публикацию — системным окном «Поделиться», а где его
+   * нет, в буфер обмена. По ссылке главная открывается на этой публикации.
+   */
+  async function send() {
+    const url = new URL(`/?post=${post.id}`, location.origin).href;
+    try {
+      if (navigator.share) return await navigator.share({ title: teller.name, url });
+      await navigator.clipboard.writeText(url);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1500);
+    } catch {
+      // Окно «Поделиться» закрыли или буфер недоступен — ничего не случилось
+    }
+  }
 
   // Меню закрывает нажатие мимо него и Esc — как остальные меню проекта
   useEffect(() => {
@@ -48,7 +82,7 @@ export default function PostCard({ post, teller, onOpen, onDelete }) {
     : 1;
 
   return (
-    <article className="post">
+    <article className="post" id={`post-${post.id}`}>
       <header className="post__head">
         <span className="post__avatar">
           {teller.photo ? <img src={teller.photo} alt="" /> : initial(teller.name)}
@@ -153,7 +187,35 @@ export default function PostCard({ post, teller, onOpen, onDelete }) {
         </div>
       )}
 
-      {text && <p className="post__text">{text}</p>}
+      {/* Лайк и «отправить» — по краям строки. Число рядом с сердцем — когда есть что считать */}
+      <div className="post__actions">
+        <button
+          className={`post__action${post.liked ? ' post__action--liked' : ''}`}
+          type="button"
+          aria-label={post.liked ? 'Убрать лайк' : 'Нравится'}
+          aria-pressed={post.liked}
+          onClick={onLike}
+        >
+          <IconHeart aria-hidden="true" />
+          {post.likes > 0 && <span className="post__count">{post.likes}</span>}
+        </button>
+
+        <button className="post__action" type="button" aria-label="Отправить" onClick={send}>
+          {copied && <span className="post__copied">Ссылка скопирована</span>}
+          <IconSend aria-hidden="true" />
+        </button>
+      </div>
+
+      {text && (
+        <p className={`post__text${open ? '' : ' post__text--clamp'}`} ref={textRef}>
+          <strong>{teller.name}</strong> {text}
+        </p>
+      )}
+      {long && !open && (
+        <button className="post__expand" type="button" onClick={() => setOpen(true)}>
+          ещё
+        </button>
+      )}
     </article>
   );
 }
