@@ -552,16 +552,20 @@ function StoryPlayer({ media, teller, steps, active, muted, onMute, onDelete, on
               <ul className="story-player__viewers">
                 {viewers.map((viewer) => (
                   <li className="story-player__viewer" key={viewer.id}>
-                    <Face person={viewer} />
+                    {/* Лайк — сердце на углу кружка, как в Instagram: видно сразу,
+                        кто не только посмотрел */}
+                    <span className="story-player__viewer-face">
+                      <Face person={viewer} />
+                      {viewer.liked && (
+                        <span className="story-player__viewer-like" role="img" aria-label="Нравится">
+                          <IconHeart aria-hidden="true" />
+                        </span>
+                      )}
+                    </span>
                     <span className="story-player__viewer-body">
                       <strong>{viewer.name}</strong>
                       {viewer.username && <span>@{viewer.username}</span>}
                     </span>
-                    {viewer.liked && (
-                      <span className="story-player__viewer-like" role="img" aria-label="Нравится">
-                        <IconHeart aria-hidden="true" />
-                      </span>
-                    )}
                   </li>
                 ))}
               </ul>

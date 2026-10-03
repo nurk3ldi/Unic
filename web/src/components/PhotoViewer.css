@@ -739,12 +739,20 @@
   color: var(--viewer-fg);
 }
 
-/* Кому понравилось — красное сердце в конце строки */
-.story-player__viewer-like {
-  display: grid;
+/* Кому понравилось — красное сердце на правом нижнем углу кружка. Кружок
+   обрезает своё содержимое, поэтому сердце лежит рядом с ним, в общей обёртке */
+.story-player__viewer-face {
+  position: relative;
   flex: none;
+}
+
+.story-player__viewer-like {
+  position: absolute;
+  right: calc(-1 * var(--space-1));
+  bottom: calc(-1 * var(--space-1));
+  display: grid;
   color: var(--red);
-  font-size: 1.25rem;
+  font-size: 1rem;
 }
 
 .story-player__viewer-like svg {
