@@ -671,6 +671,32 @@
   opacity: 0.6;
 }
 
+/* Кнопки шапки стоят вплотную: знак 24px в поле 36px — между знаками 12px,
+   а не 28px, как было при полях 44px с зазором строки. Высота поля — прежние 44px */
+.story-player__header .story-player__button {
+  width: 2.25rem;
+}
+
+.story-player__header .story-player__button + .story-player__button {
+  margin-left: calc(-1 * var(--space-2));
+}
+
+/* Крайний знак встаёт на линию полосок прогресса: поле кнопки шире знака,
+   и без сдвига «···» и сердце висели бы левее края на половину этой разницы */
+.story-player__header .story-player__button:last-child {
+  margin-right: -0.375rem;
+}
+
+.story-player__actions .story-player__button:last-child {
+  margin-right: -0.625rem;
+}
+
+/* Три точки в своём поле мельче, чем полоски паузы в своём: при равном размере
+   значка «···» терялось рядом. Крупнее — и знаки одного веса */
+.story-player__button[aria-haspopup='menu'] {
+  font-size: 2rem;
+}
+
 .story-player__button--liked {
   color: var(--red);
 }
