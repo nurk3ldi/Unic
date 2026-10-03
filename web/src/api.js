@@ -130,6 +130,10 @@ export const api = {
       xhr.send(file);
     }),
 
+  posts: () => request('/posts'),
+  postTargets: () => request('/posts/targets'),
+  createPost: (body) => request('/posts', { method: 'POST', body }),
+  deletePost: (id) => request(`/posts/${id}`, { method: 'DELETE' }),
   stories: () => request('/stories'),
   deleteStory: (id) => request(`/stories/${id}`, { method: 'DELETE' }),
   viewStory: (id) => request(`/stories/${id}/view`, { method: 'PUT' }),

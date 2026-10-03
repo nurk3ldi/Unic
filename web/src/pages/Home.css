@@ -3,3 +3,11 @@
   max-width: var(--feed);
   margin-inline: auto;
 }
+
+/* Публикации под историями — на том же шаге, что между столбцами */
+.feed {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  margin-top: var(--space-4);
+}

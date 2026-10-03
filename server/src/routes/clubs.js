@@ -53,9 +53,10 @@ const STATUSES = ['active', 'pending', 'suspended'];
 const MESSAGE_LIMIT = 2000;
 // Снимок сжимает браузер (длинная сторона ≤ 1280px), здесь — только проверка.
 // Предел ниже 1 MB у express.json: рядом в теле ещё подпись
-const CHAT_PHOTO_LIMIT = 900_000;
-const PHOTO_SIDE_LIMIT = 4096;
-const CHAT_PHOTO_RE = /^data:image\/(jpeg|png|webp);base64,[A-Za-z0-9+/]+=*$/;
+// Те же правила у снимков публикации (routes/posts.js) — поэтому наружу
+export const CHAT_PHOTO_LIMIT = 900_000;
+export const PHOTO_SIDE_LIMIT = 4096;
+export const CHAT_PHOTO_RE = /^data:image\/(jpeg|png|webp);base64,[A-Za-z0-9+/]+=*$/;
 // Сколько сообщений отдаём за раз: чат клуба читают с конца
 const MESSAGE_PAGE = 50;
 

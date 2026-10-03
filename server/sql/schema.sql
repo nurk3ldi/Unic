@@ -271,6 +271,28 @@ create table if not exists story_likes (
   primary key (story_id, user_id)
 );
 
+-- Публикации в ленте главной. Публикует тот же круг, что и истории: клуб (club_id)
+-- либо сам аккаунт, если клуба нет, — университет
+create table if not exists posts (
+  id uuid primary key default gen_random_uuid(),
+  club_id uuid references clubs (id) on delete cascade,
+  author_id uuid not null references users (id) on delete cascade,
+  body text not null default '',
+  created_at timestamptz not null default now()
+);
+create index if not exists posts_created on posts (created_at desc);
+
+-- Снимки публикации, до десяти; position — порядок показа. Хранятся строкой
+-- data URL, как фото в чате: их уже ужал браузер
+create table if not exists post_photos (
+  post_id uuid not null references posts (id) on delete cascade,
+  position smallint not null,
+  photo text not null,
+  width int not null,
+  height int not null,
+  primary key (post_id, position)
+);
+
 -- Кто какую историю открыл. По нему карточка рассказчика обведена, пока у него
 -- есть несмотренное; у каждого человека отметки свои
 create table if not exists story_views (

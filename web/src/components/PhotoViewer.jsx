@@ -14,7 +14,7 @@ import {
   IconVolume,
   IconVolumeOff,
 } from '../icons.jsx';
-import { formatDuration } from '../chat.js';
+import { ago, formatDuration } from '../chat.js';
 import { initial } from '../people.js';
 import { api } from '../api.js';
 import logo from '../assets/logo.png';
@@ -37,9 +37,9 @@ const REACH = 3;
  * верхний слой даёт платформа. Клик мимо — тоже выход: так закрывают любое окно.
  * Нужен и ленте, и разделу «Медиа», поэтому живёт отдельно.
  * `photo` — { url } снимка или { url, kind: 'video', name? } видео.
- * `steps` — необязательно, для серии (истории): { index, count, onPrev, onNext } —
+ * `steps` — необязательно, для серии снимков (публикация): { index, count, onPrev, onNext } —
  * сверху полоски «который из скольких», по бокам ‹ ›; у снимка листают и ← →.
- * Серия идёт сама: снимок — через 5 секунд, видео — когда доиграло.
+ * Истории (`tellers`) идут сами: снимок — через 5 секунд, видео — когда доиграло.
  * `tellers` — только у историй: { list, index, onPick } — все рассказчики, открытый
  * и переход к другому. Открытый кадр стоит в центре, соседи — уменьшенными по бокам.
  */
@@ -94,14 +94,6 @@ export default function PhotoViewer({ photo, onClose, steps, tellers, onDelete, 
     }
     document.addEventListener('keydown', onKey);
     return () => document.removeEventListener('keydown', onKey);
-  }, [photo, steps, teller]);
-
-  // Снимок в серии уходит сам. Таймер в JS, а не конец CSS-анимации: при
-  // «Уменьшить движение» анимации сжимаются до нуля — серия пролетела бы разом
-  useEffect(() => {
-    if (!photo || !steps?.onNext || teller || photo.kind === 'video') return;
-    const timer = setTimeout(steps.onNext, STEP_MS);
-    return () => clearTimeout(timer);
   }, [photo, steps, teller]);
 
   return (
@@ -160,7 +152,7 @@ export default function PhotoViewer({ photo, onClose, steps, tellers, onDelete, 
                   {entry.photo ? <img src={entry.photo} alt="" /> : initial(entry.name)}
                 </span>
                 <strong>{entry.name}</strong>
-                <time dateTime={cover.createdAt}>{storyAge(cover.createdAt)}</time>
+                <time dateTime={cover.createdAt}>{ago(cover.createdAt)}</time>
               </button>
             </div>
           );
@@ -178,29 +170,13 @@ export default function PhotoViewer({ photo, onClose, steps, tellers, onDelete, 
       )}
 
       {steps && !storyMode && (
-        /* Идущая полоска заполняется за время кадра: снимок — 5 секунд, видео —
-            его длина. Ключ — адрес: новый кадр начинает полоску с нуля */
+        /* Полоски — который снимок из скольких. Листают сами: стрелками и ← →;
+            само, по таймеру, идут только истории */
         <div className="photo-viewer__steps" aria-label={`${steps.index + 1} из ${steps.count}`}>
           {Array.from({ length: steps.count }, (_, index) => (
             <span
-              key={index === steps.index ? shown.current?.url : index}
-              className={`photo-viewer__step${
-                index < steps.index
-                  ? ' photo-viewer__step--done'
-                  : index === steps.index
-                    ? ' photo-viewer__step--now'
-                    : ''
-              }`}
-              style={
-                index === steps.index
-                  ? {
-                      '--step-time':
-                        shown.current?.kind === 'video' && shown.current.duration
-                          ? `${shown.current.duration}s`
-                          : `${STEP_MS}ms`,
-                    }
-                  : undefined
-              }
+              key={index}
+              className={`photo-viewer__step${index <= steps.index ? ' photo-viewer__step--done' : ''}`}
             />
           ))}
         </div>
@@ -240,11 +216,6 @@ export default function PhotoViewer({ photo, onClose, steps, tellers, onDelete, 
       </button>
     </dialog>
   );
-}
-
-function storyAge(iso) {
-  const minutes = Math.max(0, Math.floor((Date.now() - new Date(iso).getTime()) / 60_000));
-  return minutes < 1 ? 'Только что' : minutes < 60 ? `${minutes} мин` : `${Math.floor(minutes / 60)} ч`;
 }
 
 /** Кружок человека в списке смотревших: снимок или первая буква имени. */
@@ -499,7 +470,7 @@ function StoryPlayer({ media, teller, steps, active, muted, onMute, onDelete, on
           </span>
           <div className="story-player__author">
             <strong>{teller.name}</strong>
-            <time dateTime={media.createdAt}>{storyAge(media.createdAt)}</time>
+            <time dateTime={media.createdAt}>{ago(media.createdAt)}</time>
           </div>
           {isVideo && <button className="story-player__button" type="button" onClick={onMute}
             aria-label={muted ? 'Включить звук' : 'Выключить звук'}>

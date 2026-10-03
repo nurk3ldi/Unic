@@ -104,6 +104,20 @@ export function chatStamp(iso) {
 }
 
 /**
+ * Сколько прошло: «Только что», «5 мин», «3 ч», «2 дн.», а старше недели — дата.
+ * Так подписаны истории и публикации: там важна давность, а не час.
+ */
+export function ago(iso) {
+  const at = new Date(iso);
+  const minutes = Math.max(0, Math.floor((Date.now() - at.getTime()) / 60_000));
+  if (minutes < 1) return 'Только что';
+  if (minutes < 60) return `${minutes} мин`;
+  if (minutes < 24 * 60) return `${Math.floor(minutes / 60)} ч`;
+  if (minutes < 7 * 24 * 60) return `${Math.floor(minutes / (24 * 60))} дн.`;
+  return dayMonth.format(at);
+}
+
+/**
  * Число в круглой метке: больше 99 не показываем. Точное число там и не нужно —
  * важно «много», а три цифры растянули бы капсулу и сдвинули строку.
  * Правило одно на все метки: разделы, список чатов, правый столбец, приглашения.

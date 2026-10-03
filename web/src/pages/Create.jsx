@@ -1,31 +1,33 @@
+import { Link } from 'react-router-dom';
 import { IconCamera, IconImages } from '../icons.jsx';
 import './Page.css';
 import './Create.css';
 
 /**
- * «Создать»: что можно выложить. Пока это только выбор — две кнопки без действия;
- * сама публикация истории живёт в ряду историй на главной, а публикаций ещё нет.
+ * «Создать»: что можно выложить. «Публикация» ведёт на свою страницу; «История»
+ * пока без действия — истории выкладывают из их ряда на главной.
  */
-const KINDS = [
-  { key: 'story', title: 'История', note: 'Фото или видео на сутки', Icon: IconCamera },
-  { key: 'post', title: 'Публикация', note: 'Запись в ленте с текстом и фото', Icon: IconImages },
-];
-
 export default function Create() {
   return (
     <main className="page">
       <h1 className="page__title">Создать</h1>
 
       <div className="create">
-        {KINDS.map(({ key, title, note, Icon }) => (
-          <button key={key} className="create__kind" type="button">
-            <span className="create__icon">
-              <Icon aria-hidden="true" />
-            </span>
-            <span className="create__title">{title}</span>
-            <span className="create__note">{note}</span>
-          </button>
-        ))}
+        <button className="create__kind" type="button">
+          <span className="create__icon">
+            <IconCamera aria-hidden="true" />
+          </span>
+          <span className="create__title">История</span>
+          <span className="create__note">Фото или видео на сутки</span>
+        </button>
+
+        <Link className="create__kind" to="/create/post" viewTransition>
+          <span className="create__icon">
+            <IconImages aria-hidden="true" />
+          </span>
+          <span className="create__title">Публикация</span>
+          <span className="create__note">Запись в ленте с текстом и фото</span>
+        </Link>
       </div>
     </main>
   );

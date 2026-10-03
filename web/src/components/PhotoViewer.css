@@ -257,8 +257,8 @@
   }
 }
 
-/* ── Серия (истории) ────────────────────────────────────── */
-/* Полоски сверху — сколько всего и какая сейчас, как в историях Instagram */
+/* ── Серия снимков ──────────────────────────────────────── */
+/* Полоски сверху — сколько всего и до какого дошли */
 .photo-viewer__steps {
   position: absolute;
   top: var(--space-4);
@@ -279,30 +279,6 @@
 
 .photo-viewer__step--done {
   background: var(--viewer-fg);
-}
-
-/* Идущий кадр: белое заполняется слева направо за его время (scaleX, §4.3) */
-.photo-viewer__step--now {
-  position: relative;
-  overflow: hidden;
-}
-
-.photo-viewer__step--now::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background: var(--viewer-fg);
-  transform-origin: left;
-  animation: photo-viewer-step var(--step-time) linear forwards;
-}
-
-@keyframes photo-viewer-step {
-  from {
-    transform: scaleX(0);
-  }
-  to {
-    transform: scaleX(1);
-  }
 }
 
 /* ‹ › — кружок из тёмного материала у краёв окна, по центру высоты */

@@ -6,24 +6,24 @@
   background: var(--surface);
 }
 
+/* «Кто · когда» одной строкой: маленький кружок, имя, время */
 .post__head {
   display: flex;
   align-items: center;
-  gap: var(--space-3);
+  gap: var(--space-2);
 }
 
-/* Скруглённый квадрат, как аватары во всём приложении; без снимка — буква */
 .post__avatar {
   display: grid;
   place-items: center;
-  width: 2.5rem;
-  height: 2.5rem;
+  width: 2rem;
+  height: 2rem;
   flex: none;
   overflow: hidden;
-  border-radius: 0.625rem;
+  border-radius: 50%;
   background: var(--accent-soft);
   color: var(--accent);
-  font-size: 1rem;
+  font-size: 0.875rem;
   font-weight: 600;
 }
 
@@ -33,104 +33,177 @@
   object-fit: cover;
 }
 
-.post__who {
-  display: flex;
-  flex-direction: column;
-  gap: 0.125rem;
-  min-width: 0;
-}
-
 .post__name {
+  min-width: 0;
   overflow: hidden;
-  font-size: 0.9375rem;
+  font-size: 0.875rem;
   font-weight: 600;
-  line-height: 1.2;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
 .post__time {
-  font-size: 0.8125rem;
-  line-height: 1.2;
-  letter-spacing: var(--tracking-caption);
+  flex: none;
+  font-size: 0.875rem;
   color: var(--text-tertiary);
 }
 
-/* «···» — тихая кнопка в рамке, прижата вправо. Сама небольшая, а нажать можно
-   по всем 44px вокруг */
+/* Точка между именем и временем — у времени, чтобы уходила вместе с ним */
+.post__time::before {
+  content: '·';
+  margin-right: var(--space-2);
+}
+
+/* Кнопка и её меню — одна коробка у правого края: меню растёт из кнопки */
+.post__menu-box {
+  position: relative;
+  margin-left: auto;
+  flex: none;
+}
+
+.post .post__menu {
+  top: calc(100% + var(--space-2));
+  right: 0;
+  max-width: none;
+}
+
+/* «···» — просто знак, без рамки. Сам небольшой, а нажать можно по всем 44px вокруг */
 .post__more {
   position: relative;
   display: grid;
   place-items: center;
   width: 2rem;
-  height: 1.5rem;
-  margin-left: auto;
-  flex: none;
-  border: 1px solid var(--separator);
-  border-radius: 0.5rem;
-  color: var(--text-tertiary);
-  font-size: 1rem;
+  height: 2rem;
+  color: var(--text);
+  font-size: 1.375rem;
   transition:
-    color var(--duration-fast) var(--ease-out),
+    opacity var(--duration-fast) var(--ease-out),
     transform var(--duration-press) var(--ease-out);
 }
 
 .post__more::before {
   content: '';
   position: absolute;
-  inset: -0.625rem -0.375rem;
+  inset: -0.375rem;
 }
 
 .post__more:hover {
-  color: var(--text);
+  opacity: 0.6;
 }
 
 .post__more:active {
   transform: scale(0.94);
 }
 
+/* ── Снимки: по одному в кадре ───────────────────────────── */
+/* Кадр — пропорции первого снимка (--ratio). В высоту он не больше 70% окна:
+   тогда кадр становится уже и встаёт по центру, а не режет снимок */
+.post__gallery {
+  position: relative;
+  width: min(100%, calc(70dvh * var(--ratio)));
+  aspect-ratio: var(--ratio);
+  margin: var(--space-3) auto 0;
+  overflow: hidden;
+  border-radius: var(--radius-control);
+  background: var(--fill);
+}
+
+/* Лента снимков: всегда останавливается на целом кадре; полосы прокрутки нет */
+.post__track {
+  display: flex;
+  height: 100%;
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  scroll-snap-type: x mandatory;
+  scrollbar-width: none;
+}
+
+.post__track::-webkit-scrollbar {
+  display: none;
+}
+
+/* Снимок — кнопка: по нажатию он открывается в окне на весь экран */
+.post__photo {
+  flex: 0 0 100%;
+  height: 100%;
+  scroll-snap-align: start;
+}
+
+.post__photo img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* ‹ › поверх кадра у его краёв. Сам кружок мал, зона нажатия — 44px */
+.post__turn {
+  position: absolute;
+  top: calc(50% - 0.875rem);
+  display: grid;
+  place-items: center;
+  width: 1.75rem;
+  height: 1.75rem;
+  border-radius: 50%;
+  background: var(--material);
+  color: var(--text-secondary);
+  font-size: 1.125rem;
+  transition:
+    opacity var(--duration-fast) var(--ease-out),
+    transform var(--duration-press) var(--ease-out);
+}
+
+.post__turn::before {
+  content: '';
+  position: absolute;
+  inset: -0.5rem;
+}
+
+.post__turn--prev {
+  left: var(--space-3);
+}
+
+.post__turn--next {
+  right: var(--space-3);
+}
+
+.post__turn:active {
+  transform: scale(0.92);
+}
+
+/* Листать некуда — стрелки нет: не видна и не нажимается */
+.post__turn:disabled {
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* Точки под кадром: сколько снимков и который сейчас */
+.post__dots {
+  display: flex;
+  justify-content: center;
+  gap: 0.375rem;
+  margin-top: var(--space-3);
+}
+
+.post__dot {
+  width: 0.375rem;
+  height: 0.375rem;
+  border-radius: 50%;
+  background: var(--separator-strong);
+  transition: background-color var(--duration-fast) var(--ease-out);
+}
+
+.post__dot--on {
+  background: var(--accent);
+}
+
+/* Текст — под снимками */
 .post__text {
-  margin-top: var(--space-4);
+  margin-top: var(--space-3);
   font-size: 0.9375rem;
   line-height: 1.6;
   color: var(--text);
   overflow-wrap: break-word;
-}
-
-/* Снимки: высоту задаёт пропорция сетки, а каждый кадр режется по своей ячейке —
-   поэтому лента не прыгает, пока картинки грузятся */
-.post__photos {
-  display: grid;
-  gap: var(--space-3);
-  margin-top: var(--space-4);
-}
-
-.post__photos[data-count='1'] {
-  aspect-ratio: 16 / 9;
-}
-
-.post__photos[data-count='2'] {
-  grid-template-columns: 1fr 1fr;
-  aspect-ratio: 2 / 1;
-}
-
-/* Как на образце: большой слева во всю высоту, справа два друг над другом */
-.post__photos[data-count='3'] {
-  grid-template-columns: 1fr 1fr;
-  grid-template-rows: 1fr 1fr;
-  aspect-ratio: 7 / 5;
-}
-
-.post__photos[data-count='3'] .post__photo:first-child {
-  grid-row: span 2;
-}
-
-.post__photo {
-  display: block;
-  width: 100%;
-  height: 100%;
-  min-height: 0;
-  object-fit: cover;
-  border-radius: var(--radius-control);
-  background: var(--fill);
+  /* Абзацы автора сохраняются: текст пишут в поле с переносами строк */
+  white-space: pre-wrap;
 }

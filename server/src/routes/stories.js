@@ -35,7 +35,16 @@ function videoNumber(raw, max) {
  * Кто может публиковать: университет и админ — от себя или от любого клуба,
  * руководитель — только от своего. Студент не публикует вовсе.
  */
-async function canPost(clubId, user) {
+export async function canPost(clubId, user) {
+  if (clubId) {
+    // Личный чат лежит в той же таблице, что и клубы, но клубом не является —
+    // от его имени не публикуют; несуществующий клуб отсекается здесь же
+    const { rows } = await query(
+      'select 1 from clubs where id = $1 and direct_user_id is null',
+      [clubId],
+    );
+    if (!rows[0]) return false;
+  }
   if (user.role === 'university' || user.role === 'admin') return true;
   return Boolean(clubId) && leads(clubId, user.id);
 }
@@ -62,7 +71,7 @@ async function sweep() {
  * От чьего имени этот человек может публиковать: университет и админ — от себя,
  * руководитель — от каждого своего клуба. Пустой список значит «кнопки нет».
  */
-async function targetsFor(user) {
+export async function targetsFor(user) {
   if (user.role === 'university' || user.role === 'admin') {
     return [{ club: null, key: `user:${user.id}`, name: user.full_name }];
   }

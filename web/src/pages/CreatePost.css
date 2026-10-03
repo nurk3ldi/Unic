@@ -1,0 +1,214 @@
+/* ── Новая публикация ────────────────────────────────────── */
+/* Одна белая карточка на сером полотне — той же породы, что карточки слева */
+.new-post {
+  display: flex;
+  flex-direction: column;
+  max-width: 44rem;
+  padding: var(--space-6);
+  border-radius: var(--radius-control);
+  background: var(--surface);
+}
+
+.new-post__note,
+.new-post__from {
+  margin-top: var(--space-2);
+  font-size: 0.9375rem;
+  line-height: 1.45;
+  color: var(--text-secondary);
+}
+
+.new-post__from strong {
+  font-weight: 600;
+  color: var(--text);
+}
+
+/* Системный список: клавиатура и скринридер работают сами */
+.new-post__target {
+  padding: var(--space-1) var(--space-2);
+  border: 1px solid var(--separator-strong);
+  border-radius: var(--radius-control);
+  background: var(--surface);
+  color: var(--text);
+  font: inherit;
+  font-weight: 600;
+}
+
+.new-post__head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  margin-top: var(--space-6);
+}
+
+.new-post__label {
+  font-size: 0.9375rem;
+  font-weight: 600;
+}
+
+.new-post__count {
+  font-size: 0.8125rem;
+  letter-spacing: var(--tracking-caption);
+  color: var(--text-tertiary);
+  font-variant-numeric: tabular-nums;
+}
+
+.new-post__count--text {
+  align-self: flex-end;
+  margin-top: var(--space-1);
+}
+
+/* Пять квадратов в ряд: десять снимков — ровно два ряда */
+.new-post__photos {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: var(--space-2);
+  margin: var(--space-2) 0 var(--space-5);
+  padding: 0;
+  list-style: none;
+}
+
+.new-post__photo {
+  position: relative;
+  aspect-ratio: 1;
+  overflow: hidden;
+  border-radius: var(--radius-control);
+  background: var(--fill);
+}
+
+.new-post__photo img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* ✕ на тёмном кружке — читается на любом снимке. Сам небольшой, а нажать можно
+   по всем 44px вокруг */
+.new-post__remove {
+  position: absolute;
+  top: var(--space-1);
+  right: var(--space-1);
+  display: grid;
+  place-items: center;
+  width: 1.5rem;
+  height: 1.5rem;
+  border-radius: 50%;
+  background: var(--viewer-material);
+  color: var(--viewer-fg);
+  font-size: 0.875rem;
+  transition: transform var(--duration-press) var(--ease-out);
+}
+
+.new-post__remove::before {
+  content: '';
+  position: absolute;
+  inset: -0.625rem;
+}
+
+.new-post__remove:active {
+  transform: scale(0.9);
+}
+
+.new-post__add {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-1);
+  width: 100%;
+  aspect-ratio: 1;
+  border: 1px dashed var(--separator-strong);
+  border-radius: var(--radius-control);
+  color: var(--text-secondary);
+  font-size: 0.8125rem;
+  font-weight: 500;
+  transition:
+    border-color var(--duration-fast) var(--ease-out),
+    color var(--duration-fast) var(--ease-out),
+    transform var(--duration-press) var(--ease-out);
+}
+
+.new-post__add svg {
+  width: 1.25rem;
+  height: 1.25rem;
+}
+
+.new-post__add:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.new-post__add:active {
+  transform: scale(0.97);
+}
+
+.new-post__add:disabled {
+  opacity: 0.5;
+}
+
+/* Подпись — внутри поля; фокус показывает граница, кольца нет (§4.5) */
+.new-post__text {
+  width: 100%;
+  padding: var(--space-3) var(--space-4);
+  border: 1px solid var(--separator-strong);
+  border-radius: var(--radius-control);
+  background: var(--surface);
+  color: var(--text);
+  font: inherit;
+  font-size: 1rem;
+  line-height: 1.47;
+  resize: vertical;
+  outline: none;
+  transition: border-color 250ms var(--ease-out);
+}
+
+.new-post__text:focus {
+  border-color: var(--accent);
+}
+
+.new-post__error {
+  margin-top: var(--space-3);
+  font-size: 0.875rem;
+  color: var(--red);
+}
+
+.new-post__submit {
+  align-self: flex-start;
+  min-height: 3rem;
+  margin-top: var(--space-5);
+  padding: 0 var(--space-6);
+  border-radius: var(--radius-control);
+  background: var(--accent);
+  color: var(--text-on-accent);
+  font-size: 1rem;
+  font-weight: 600;
+  transition:
+    background-color var(--duration-fast) var(--ease-out),
+    transform var(--duration-press) var(--ease-out);
+}
+
+.new-post__submit:hover {
+  background: var(--accent-hover);
+}
+
+.new-post__submit:active {
+  background: var(--accent-active);
+  transform: scale(0.97);
+}
+
+/* Публиковать нечего или уже публикуем — кнопка есть, но не нажимается */
+.new-post__submit:disabled {
+  opacity: 0.5;
+  transform: none;
+}
+
+/* На телефоне пять квадратов слишком мелкие — по три */
+@media (max-width: 34rem) {
+  .new-post {
+    padding: var(--space-4);
+  }
+
+  .new-post__photos {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}

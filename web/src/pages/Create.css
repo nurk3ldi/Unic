@@ -20,6 +20,11 @@
   transition: transform var(--duration-press) var(--ease-out);
 }
 
+/* Карточка-ссылка не подчёркивается: это кнопка, а не строка текста */
+.create__kind:hover {
+  text-decoration: none;
+}
+
 /* Отклик наступает на нажатии, а не на отпускании */
 .create__kind:active {
   transform: scale(0.97);
