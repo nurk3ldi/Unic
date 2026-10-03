@@ -48,6 +48,22 @@
   }
 }
 
+/* Знак в углу напротив ✕, той же высоты, что его зона нажатия.
+   На узком экране кадр занимает всю ширину — знаку там негде встать */
+.photo-viewer__logo {
+  position: absolute;
+  top: var(--space-3);
+  left: var(--space-5);
+  height: 2.75rem;
+  width: auto;
+}
+
+@media (max-width: 48rem) {
+  .photo-viewer__logo {
+    display: none;
+  }
+}
+
 /* Просто знак ✕ без подложки: на чёрном фоне ему не нужна плашка.
    Сам знак крупный, а зона нажатия — 44px, как у всех кнопок */
 .photo-viewer__close {

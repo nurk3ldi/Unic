@@ -17,6 +17,7 @@ import {
 import { formatDuration } from '../chat.js';
 import { initial } from '../people.js';
 import { api } from '../api.js';
+import logo from '../assets/logo.png';
 import './PhotoViewer.css';
 
 // Скорости по кругу — как в плеере iOS: одна кнопка, нажатие даёт следующую
@@ -176,6 +177,9 @@ export default function PhotoViewer({ photo, onClose, steps, teller, onDelete, o
           </button>
         </>
       )}
+
+      {/* Знак из шапки: в историях видно, чьё это окно, — как у Instagram */}
+      {storyMode && <img className="photo-viewer__logo" src={logo} alt="Unic" />}
 
       <button className="photo-viewer__close" type="button" aria-label="Закрыть" onClick={onClose}>
         {/* Контурный знак, а не залитый: толщину штриха можно задать */}
