@@ -3,6 +3,8 @@ import { pool, query } from '../db.js';
 import { requireAuth, requireRole } from '../middleware/auth.js';
 import { announce } from './stream.js';
 import { readSince } from '../reads.js';
+import { audience, canRead } from '../rooms.js';
+import { LIFETIME } from './stories.js';
 import {
   TooLarge,
   classify,
@@ -113,16 +115,30 @@ function readClubFields(body) {
   return { fields };
 }
 
+// Личные чаты лежат в той же таблице, что и клубы (см. rooms.js), но клубами не
+// считаются: ни в каталоге, ни в составе, ни в событиях их нет
+const IS_CLUB = 'direct_user_id is null';
+
 /** Клуб существует? Без проверки Postgres ответит ошибкой синтаксиса на «кривом» id. */
 async function findClub(id) {
   if (!UUID_RE.test(id)) return null;
-  const { rows } = await query('select id from clubs where id = $1', [id]);
+  const { rows } = await query(`select id from clubs where id = $1 and ${IS_CLUB}`, [id]);
+  return rows[0] ?? null;
+}
+
+/** Комната чата — клуб или личный чат: всё, что про переписку, работает с обоими. */
+async function findRoom(id) {
+  if (!UUID_RE.test(id)) return null;
+  const { rows } = await query(
+    'select id, direct_user_id is not null as direct from clubs where id = $1',
+    [id],
+  );
   return rows[0] ?? null;
 }
 
 router.get('/', requireAuth, async (_req, res) => {
   const { rows } = await query(
-    `select *, ${MEMBERS_COUNT} as members from clubs order by created_at`,
+    `select *, ${MEMBERS_COUNT} as members from clubs where ${IS_CLUB} order by created_at`,
   );
   res.json({ clubs: rows.map(publicClub) });
 });
@@ -130,7 +146,7 @@ router.get('/', requireAuth, async (_req, res) => {
 /** Цифры для профиля университета. Путь стоит выше /:id, иначе 'stats' ушёл бы в id. */
 router.get('/stats', requireAuth, requireRole(...MANAGE_ROLES), async (_req, res) => {
   const { rows } = await query(
-    'select count(*)::int as clubs from clubs',
+    `select count(*)::int as clubs from clubs where ${IS_CLUB}`,
   );
   res.json({ stats: rows[0] });
 });
@@ -141,7 +157,7 @@ router.get('/:id', requireAuth, async (req, res) => {
   }
 
   const { rows } = await query(
-    `select *, ${MEMBERS_COUNT} as members from clubs where id = $1`,
+    `select *, ${MEMBERS_COUNT} as members from clubs where id = $1 and ${IS_CLUB}`,
     [req.params.id],
   );
   if (!rows[0]) return res.status(404).json({ error: 'Клуб не найден' });
@@ -181,7 +197,7 @@ router.patch('/:id', requireAuth, requireRole(...MANAGE_ROLES), async (req, res)
   const values = [...columns.map((column) => fields[column]), req.params.id];
 
   const { rows } = await query(
-    `update clubs set ${set} where id = $${values.length}
+    `update clubs set ${set} where id = $${values.length} and ${IS_CLUB}
      returning *, ${MEMBERS_COUNT} as members`,
     values,
   );
@@ -196,11 +212,17 @@ router.delete('/:id', requireAuth, requireRole(...MANAGE_ROLES), async (req, res
     return res.status(404).json({ error: 'Клуб не найден' });
   }
 
-  // Сведения о вложениях уйдут каскадом, а файлы с диска — только если стереть их самим
-  const { rows: files } = await query('select id from chat_files where club_id = $1', [
-    req.params.id,
-  ]);
-  const { rows } = await query('delete from clubs where id = $1 returning id', [req.params.id]);
+  // Сведения о вложениях уйдут каскадом, а файлы с диска — только если стереть их самим.
+  // Вместе с клубом уходят и личные чаты, где писали ему, — их файлы тоже
+  const { rows: files } = await query(
+    `select id from chat_files
+      where club_id = $1 or club_id in (select id from clubs where direct_club_id = $1)`,
+    [req.params.id],
+  );
+  const { rows } = await query(
+    `delete from clubs where id = $1 and ${IS_CLUB} returning id`,
+    [req.params.id],
+  );
   if (!rows[0]) return res.status(404).json({ error: 'Клуб не найден' });
 
   await Promise.all(files.map((file) => removeFile(file.id)));
@@ -244,7 +266,8 @@ router.get('/:id/members', requireAuth, async (req, res) => {
  */
 router.post('/:id/members/request', requireAuth, async (req, res) => {
   const club = UUID_RE.test(req.params.id)
-    ? (await query('select accepting from clubs where id = $1', [req.params.id])).rows[0]
+    ? (await query(`select accepting from clubs where id = $1 and ${IS_CLUB}`, [req.params.id]))
+        .rows[0]
     : null;
   if (!club) return res.status(404).json({ error: 'Клуб не найден' });
   if (!club.accepting) {
@@ -438,23 +461,29 @@ router.delete(
  * 'university' или 'lead' (лидер именно этого клуба). Иначе — null.
  */
 async function moderatorRole(clubId, user) {
-  if (user.role === 'admin' || user.role === 'university') return user.role;
   const { rows } = await query(
-    `select 1 from club_members
-      where club_id = $1 and user_id = $2 and role = 'lead' and status = 'active'`,
+    `select c.direct_user_id is not null as direct,
+            exists (
+              select 1 from club_members m
+               where m.club_id = c.id and m.user_id = $2 and m.role = 'lead' and m.status = 'active'
+            ) as lead
+       from clubs c where c.id = $1`,
     [clubId, user.id],
   );
-  return rows[0] ? 'lead' : null;
+  // В личном чате старших нет: каждый распоряжается только своими сообщениями
+  if (!rows[0] || rows[0].direct) return null;
+  if (user.role === 'admin' || user.role === 'university') return user.role;
+  return rows[0].lead ? 'lead' : null;
 }
 
-/** Состоит ли человек в клубе. Те, кто клубом управляет, проходят и без состава. */
+/**
+ * Видит ли человек этот чат. В клубе — участник или тот, кто клубами управляет;
+ * в личном чате — только двое собеседников (правило — в rooms.js).
+ */
 async function canReadChat(clubId, user) {
-  if (canManage(user)) return true;
-
   const { rows } = await query(
-    `select 1 from club_members
-      where club_id = $1 and user_id = $2 and status = 'active'`,
-    [clubId, user.id],
+    `select 1 from clubs c where c.id = $1 and ${canRead('$2', '$3')}`,
+    [clubId, user.id, canManage(user)],
   );
   return Boolean(rows[0]);
 }
@@ -550,6 +579,15 @@ const publicMessage = (row) => ({
         username: row.reply_username ?? null,
       }
     : null,
+  // Ответ на историю. Она живёт сутки, а ответ остаётся: без адреса кадра
+  // лента пишет «история недоступна»
+  story: row.story_id
+    ? {
+        id: row.story_id,
+        kind: row.story_kind ?? null,
+        url: row.story_kind ? `/api/stories/${row.story_id}/file` : null,
+      }
+    : null,
 });
 
 // Цитата берётся тем же запросом: лента и так читается целиком
@@ -564,14 +602,17 @@ const MESSAGE_FIELDS = `m.id, m.club_id, m.body, m.author_id, m.created_at,
           f.waveform as file_waveform,
           rf.kind as reply_file_kind, rf.name as reply_file_name,
           m.deleted_at, m.deleted_as, du.full_name as deleted_by_name,
-          r.deleted_at is not null as reply_deleted`;
+          r.deleted_at is not null as reply_deleted,
+          m.story_id, st.kind as story_kind`;
 
 const MESSAGE_JOINS = `left join users u on u.id = m.author_id
        left join club_messages r on r.id = m.reply_to
        left join users ru on ru.id = r.author_id
        left join chat_files f on f.id = m.file_id
        left join chat_files rf on rf.id = r.file_id
-       left join users du on du.id = m.deleted_by`;
+       left join users du on du.id = m.deleted_by
+       left join stories st on st.id = m.story_id
+                           and st.created_at > now() - interval '${LIFETIME}'`;
 
 /**
  * Лента чата: последние сообщения, в порядке чтения — сверху старые.
@@ -603,20 +644,22 @@ async function pinnedMessages(clubId) {
  * Одним числом, а не пометкой на каждом сообщении: отметка о чтении и так
  * одна на человека (`chat_reads`), а минимум по составу отвечает сразу за всю
  * страницу. Университет и админ в составе не числятся и в счёт не идут.
+ * В личном чате «все остальные» — это собеседник.
  */
 async function readByAll(clubId, userId) {
   const { rows } = await query(
-    `select min(${readSince('mm.user_id', '$1')}) as at
-       from club_members mm
-      where mm.club_id = $1 and mm.status = 'active' and mm.user_id <> $2`,
+    `select min(${readSince('p.id', '$1')}) as at
+       from (${audience('$1')}) p
+      where p.id <> $2`,
     [clubId, userId],
   );
   return rows[0]?.at ?? null;
 }
 
 router.get('/:id/messages', requireAuth, async (req, res) => {
-  if (!(await findClub(req.params.id))) {
-    return res.status(404).json({ error: 'Клуб не найден' });
+  const room = await findRoom(req.params.id);
+  if (!room) {
+    return res.status(404).json({ error: 'Чат не найден' });
   }
   if (!(await canReadChat(req.params.id, req.user))) {
     return res.status(403).json({ error: 'Чат доступен только участникам клуба' });
@@ -649,7 +692,11 @@ router.get('/:id/messages', requireAuth, async (req, res) => {
   ]);
 
   res.json({
-    messages: await withReactions(rows.reverse().map(publicMessage), req.user.id),
+    messages: await withReactions(
+      // Номер виден в клубе — там свои; в личном чате он собеседнику не раскрывается
+      rows.reverse().map((row) => publicMessage(room.direct ? { ...row, phone: null } : row)),
+      req.user.id,
+    ),
     // Полная страница — значит, раньше может быть ещё
     hasMore: rows.length === limit,
     lastReadAt: read[0]?.at ?? null,
@@ -672,7 +719,7 @@ router.get('/:id/messages', requireAuth, async (req, res) => {
  * его показывает чужая лента. Поэтому и ответ пустой — подтверждать нечего.
  */
 router.post('/:id/typing', requireAuth, async (req, res) => {
-  if (!(await findClub(req.params.id)) || !(await canReadChat(req.params.id, req.user))) {
+  if (!(await findRoom(req.params.id)) || !(await canReadChat(req.params.id, req.user))) {
     return res.status(204).end();
   }
 
@@ -686,8 +733,8 @@ router.post('/:id/typing', requireAuth, async (req, res) => {
 });
 
 router.get('/:id/messages/search', requireAuth, async (req, res) => {
-  if (!(await findClub(req.params.id))) {
-    return res.status(404).json({ error: 'Клуб не найден' });
+  if (!(await findRoom(req.params.id))) {
+    return res.status(404).json({ error: 'Чат не найден' });
   }
   if (!(await canReadChat(req.params.id, req.user))) {
     return res.status(403).json({ error: 'Чат доступен только участникам клуба' });
@@ -724,8 +771,8 @@ router.get('/:id/messages/search', requireAuth, async (req, res) => {
  * университет, админ: полоска висит у всех, это не личная заметка.
  */
 router.put('/:id/pin', requireAuth, async (req, res) => {
-  if (!(await findClub(req.params.id))) {
-    return res.status(404).json({ error: 'Клуб не найден' });
+  if (!(await findRoom(req.params.id))) {
+    return res.status(404).json({ error: 'Чат не найден' });
   }
   if (!(await moderatorRole(req.params.id, req.user))) {
     return res.status(403).json({ error: 'Закреплять сообщения может только руководство клуба' });
@@ -761,8 +808,8 @@ router.put('/:id/pin', requireAuth, async (req, res) => {
 });
 
 router.post('/:id/messages', requireAuth, async (req, res) => {
-  if (!(await findClub(req.params.id))) {
-    return res.status(404).json({ error: 'Клуб не найден' });
+  if (!(await findRoom(req.params.id))) {
+    return res.status(404).json({ error: 'Чат не найден' });
   }
   if (!(await canReadChat(req.params.id, req.user))) {
     return res.status(403).json({ error: 'Писать в чат могут только участники клуба' });
@@ -840,7 +887,7 @@ router.post('/:id/messages', requireAuth, async (req, res) => {
  */
 router.get('/:id/messages/:messageId/photo', requireAuth, async (req, res) => {
   const { id, messageId } = req.params;
-  if (!UUID_RE.test(messageId) || !(await findClub(id))) {
+  if (!UUID_RE.test(messageId) || !(await findRoom(id))) {
     return res.status(404).json({ error: 'Фото не найдено' });
   }
   if (!(await canReadChat(id, req.user))) {
@@ -890,8 +937,8 @@ const ORPHAN_AGE = '1 hour';
  * Файл сразу ложится на диск; сообщением он становится следующим запросом.
  */
 router.post('/:id/files', requireAuth, async (req, res) => {
-  if (!(await findClub(req.params.id))) {
-    return res.status(404).json({ error: 'Клуб не найден' });
+  if (!(await findRoom(req.params.id))) {
+    return res.status(404).json({ error: 'Чат не найден' });
   }
   if (!(await canReadChat(req.params.id, req.user))) {
     return res.status(403).json({ error: 'Писать в чат могут только участники клуба' });
@@ -985,7 +1032,7 @@ router.post('/:id/files', requireAuth, async (req, res) => {
  */
 router.get('/:id/files/:fileId', requireAuth, async (req, res) => {
   const { id, fileId } = req.params;
-  if (!UUID_RE.test(fileId) || !(await findClub(id))) {
+  if (!UUID_RE.test(fileId) || !(await findRoom(id))) {
     return res.status(404).json({ error: 'Файл не найден' });
   }
   if (!(await canReadChat(id, req.user))) {
@@ -1024,7 +1071,7 @@ const MEDIA_LIMIT = 200;
  */
 router.get('/:id/media', requireAuth, async (req, res) => {
   const { id } = req.params;
-  if (!(await findClub(id))) return res.status(404).json({ error: 'Клуб не найден' });
+  if (!(await findRoom(id))) return res.status(404).json({ error: 'Чат не найден' });
   if (!(await canReadChat(id, req.user))) {
     return res.status(403).json({ error: 'Чат доступен только участникам клуба' });
   }
@@ -1108,7 +1155,7 @@ router.get('/:id/media', requireAuth, async (req, res) => {
  */
 router.put('/:id/read', requireAuth, async (req, res) => {
   const { id } = req.params;
-  if (!(await findClub(id))) return res.status(404).json({ error: 'Клуб не найден' });
+  if (!(await findRoom(id))) return res.status(404).json({ error: 'Чат не найден' });
   if (!(await canReadChat(id, req.user))) {
     return res.status(403).json({ error: 'Чат доступен только участникам клуба' });
   }
@@ -1137,7 +1184,7 @@ router.put('/:id/read', requireAuth, async (req, res) => {
  */
 router.put('/:id/notifications', requireAuth, async (req, res) => {
   const { id } = req.params;
-  if (!(await findClub(id))) return res.status(404).json({ error: 'Клуб не найден' });
+  if (!(await findRoom(id))) return res.status(404).json({ error: 'Чат не найден' });
   if (!(await canReadChat(id, req.user))) {
     return res.status(403).json({ error: 'Чат доступен только участникам клуба' });
   }
@@ -1164,7 +1211,7 @@ router.put('/:id/notifications', requireAuth, async (req, res) => {
  */
 router.put('/:id/chat-pin', requireAuth, async (req, res) => {
   const { id } = req.params;
-  if (!(await findClub(id))) return res.status(404).json({ error: 'Клуб не найден' });
+  if (!(await findRoom(id))) return res.status(404).json({ error: 'Чат не найден' });
   if (!(await canReadChat(id, req.user))) {
     return res.status(403).json({ error: 'Чат доступен только участникам клуба' });
   }
@@ -1193,7 +1240,7 @@ router.put('/:id/chat-pin', requireAuth, async (req, res) => {
  */
 router.put('/:id/messages/:messageId/reaction', requireAuth, async (req, res) => {
   const { id, messageId } = req.params;
-  if (!UUID_RE.test(messageId) || !(await findClub(id))) {
+  if (!UUID_RE.test(messageId) || !(await findRoom(id))) {
     return res.status(404).json({ error: 'Сообщение не найдено' });
   }
   if (!(await canReadChat(id, req.user))) {
@@ -1233,7 +1280,7 @@ router.put('/:id/messages/:messageId/reaction', requireAuth, async (req, res) =>
  */
 router.delete('/:id/messages/:messageId', requireAuth, async (req, res) => {
   const { id, messageId } = req.params;
-  if (!UUID_RE.test(messageId) || !(await findClub(id))) {
+  if (!UUID_RE.test(messageId) || !(await findRoom(id))) {
     return res.status(404).json({ error: 'Сообщение не найдено' });
   }
   if (!(await canReadChat(id, req.user))) {

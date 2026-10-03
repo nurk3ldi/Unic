@@ -134,8 +134,8 @@ export const api = {
   deleteStory: (id) => request(`/stories/${id}`, { method: 'DELETE' }),
   viewStory: (id) => request(`/stories/${id}/view`, { method: 'PUT' }),
   likeStory: (id, liked) => request(`/stories/${id}/like`, { method: 'PUT', body: { liked } }),
+  // Ответ уходит в личный чат с рассказчиком; в ответе — id этого чата
   replyToStory: (id, text) => request(`/stories/${id}/replies`, { method: 'POST', body: { text } }),
-  storyReplies: (id) => request(`/stories/${id}/replies`),
 
   /** История уходит тем же путём, что и вложение чата: тело запроса — сам файл. */
   uploadStory: (file, clubId, meta = {}) =>

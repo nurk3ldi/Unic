@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { api } from '../api.js';
 import { IconChevronLeft, IconChevronRight, IconPlus } from '../icons.jsx';
 import { initial } from '../people.js';
@@ -72,6 +72,7 @@ const isNew = (teller) => teller.items.some((item) => !item.seen);
  */
 export default function StoryRail() {
   const [searchParams, setSearchParams] = useSearchParams();
+  const navigate = useNavigate();
   const followedLink = useRef(null);
   const [tellers, setTellers] = useState([]);
   const [targets, setTargets] = useState([]);
@@ -136,6 +137,13 @@ export default function StoryRail() {
     await api.deleteStory(id);
     close();
     load();
+  }
+
+  // Ответ на историю — сообщение в личном чате с рассказчиком; чат сразу и открываем,
+  // разговор продолжается уже там
+  async function reply(id, text) {
+    const { chatId } = await api.replyToStory(id, text);
+    navigate(`/chats/${chatId}`, { viewTransition: true });
   }
 
   // Лайк и «просмотрено» меняют одну историю на месте — без перезагрузки ряда
@@ -372,6 +380,7 @@ export default function StoryRail() {
         onClose={close}
         onDelete={removeStory}
         onLike={(id, liked) => patchItem(id, { liked })}
+        onReply={reply}
       />
     </>
   );

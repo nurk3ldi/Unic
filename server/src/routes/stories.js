@@ -1,6 +1,8 @@
 import { Router } from 'express';
 import { query } from '../db.js';
 import { requireAuth } from '../middleware/auth.js';
+import { directRoom } from '../rooms.js';
+import { announce } from './stream.js';
 import {
   TooLarge,
   classify,
@@ -15,7 +17,7 @@ const router = Router();
 
 // Сутки — столько живёт история. Срок один и тот же в трёх местах (выдача,
 // уборка, ответ), поэтому лежит здесь
-const LIFETIME = "24 hours";
+export const LIFETIME = "24 hours";
 
 // Сколько живых историй может быть у одного рассказчика (клуба или аккаунта) разом —
 // то есть за сутки: старше суток история и так уходит
@@ -35,12 +37,15 @@ function videoNumber(raw, max) {
  */
 async function canPost(clubId, user) {
   if (user.role === 'university' || user.role === 'admin') return true;
-  if (!clubId) return false;
+  return Boolean(clubId) && leads(clubId, user.id);
+}
 
+/** Руководит ли человек этим клубом. */
+async function leads(clubId, userId) {
   const { rows } = await query(
     `select 1 from club_members
       where club_id = $1 and user_id = $2 and role = 'lead' and status = 'active'`,
-    [clubId, user.id],
+    [clubId, userId],
   );
   return rows.length > 0;
 }
@@ -119,10 +124,12 @@ router.get('/', requireAuth, async (req, res) => {
   }
 
   // Сколько ещё можно выложить от каждого имени — чтобы не грузить файл впустую
-  const targets = (await targetsFor(req.user)).map((target) => ({
-    ...target,
-    left: Math.max(0, DAILY_LIMIT - (tellers.get(target.key)?.items.length ?? 0)),
-  }));
+  const targets = (await targetsFor(req.user)).map((target) => {
+    // Свой рассказчик: под его историями нет поля ответа — себе не пишут
+    const own = tellers.get(target.key);
+    if (own) own.own = true;
+    return { ...target, left: Math.max(0, DAILY_LIMIT - (own?.items.length ?? 0)) };
+  });
 
   res.json({ tellers: [...tellers.values()], targets });
 });
@@ -229,7 +236,8 @@ router.post('/', requireAuth, async (req, res) => {
 async function liveStory(id) {
   if (!UUID.test(id)) return null;
   const { rows } = await query(
-    `select id, author_id from stories where id = $1 and created_at > now() - interval '${LIFETIME}'`,
+    `select id, author_id, club_id from stories
+      where id = $1 and created_at > now() - interval '${LIFETIME}'`,
     [id],
   );
   return rows[0] ?? null;
@@ -256,34 +264,34 @@ router.put('/:id/view', requireAuth, async (req, res) => {
   res.json({ seen: true });
 });
 
-/** Ответ хранится отдельно от общего чата: его видит автор и модератор. */
+/**
+ * Ответ на историю — как в Instagram: уходит сообщением в личный чат с
+ * рассказчиком, и дальше разговор идёт уже там. История клуба — чат с клубом
+ * (отвечает его руководитель), история аккаунта — чат с этим человеком.
+ * В ответ — id чата: клиент сразу его открывает.
+ */
 router.post('/:id/replies', requireAuth, async (req, res) => {
   const text = typeof req.body?.text === 'string' ? req.body.text.trim() : '';
   if (!text || text.length > 2000) return res.status(400).json({ error: 'Ответ должен содержать от 1 до 2000 символов' });
-  if (!(await liveStory(req.params.id))) return res.status(404).json({ error: 'История недоступна' });
-  const { rows } = await query(
-    'insert into story_replies (story_id, author_id, text) values ($1, $2, $3) returning id',
-    [req.params.id, req.user.id, text],
-  );
-  res.status(201).json({ id: rows[0].id });
-});
-
-router.get('/:id/replies', requireAuth, async (req, res) => {
   const story = await liveStory(req.params.id);
   if (!story) return res.status(404).json({ error: 'История недоступна' });
-  if (story.author_id !== req.user.id && req.user.role !== 'university' && req.user.role !== 'admin') {
-    return res.status(403).json({ error: 'Ответы доступны только автору истории' });
-  }
-  const { rows } = await query(
-    `select r.id, r.text, r.created_at, u.full_name, u.username
-       from story_replies r join users u on u.id = r.author_id
-      where r.story_id = $1 order by r.created_at`,
-    [req.params.id],
+
+  // Себе не отвечают: поля под своей историей нет, но проверяет это сервер
+  const own = story.club_id
+    ? await leads(story.club_id, req.user.id)
+    : story.author_id === req.user.id;
+  if (own) return res.status(400).json({ error: 'Это ваша история' });
+
+  const chatId = await directRoom(
+    req.user.id,
+    story.club_id ? { clubId: story.club_id } : { peerId: story.author_id },
   );
-  res.json({ replies: rows.map((row) => ({
-    id: row.id, text: row.text, createdAt: row.created_at,
-    author: { name: row.full_name, username: row.username },
-  })) });
+  await query(
+    'insert into club_messages (club_id, author_id, body, story_id) values ($1, $2, $3, $4)',
+    [chatId, req.user.id, text, story.id],
+  );
+  announce(chatId, { type: 'message', clubId: chatId, userId: req.user.id });
+  res.status(201).json({ chatId });
 });
 
 /** Сам файл. История живёт сутки, но за эти сутки не меняется — можно кэшировать. */

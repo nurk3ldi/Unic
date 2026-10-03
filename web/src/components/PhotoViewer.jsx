@@ -43,7 +43,7 @@ const REACH = 3;
  * `tellers` — только у историй: { list, index, onPick } — все рассказчики, открытый
  * и переход к другому. Открытый кадр стоит в центре, соседи — уменьшенными по бокам.
  */
-export default function PhotoViewer({ photo, onClose, steps, tellers, onDelete, onLike }) {
+export default function PhotoViewer({ photo, onClose, steps, tellers, onDelete, onLike, onReply }) {
   const teller = tellers?.list[tellers.index];
   const dialogRef = useRef(null);
   const videoRef = useRef(null);
@@ -144,6 +144,7 @@ export default function PhotoViewer({ photo, onClose, steps, tellers, onDelete, 
                   onMute={() => setStoryMuted((value) => !value)}
                   onDelete={onDelete}
                   onLike={onLike}
+                  onReply={onReply}
                 />
               )}
 
@@ -248,7 +249,7 @@ function storyAge(iso) {
 
 /** История всегда в кадре 9:16. Прогресс идёт по реальному времени медиа,
  * а пауза, меню и скрытая вкладка останавливают и кадр, и полоску. */
-function StoryPlayer({ media, teller, steps, active, muted, onMute, onDelete, onLike }) {
+function StoryPlayer({ media, teller, steps, active, muted, onMute, onDelete, onLike, onReply }) {
   const videoRef = useRef(null);
   const fillRef = useRef(null);
   const elapsed = useRef(0);
@@ -265,10 +266,14 @@ function StoryPlayer({ media, teller, steps, active, muted, onMute, onDelete, on
   const [menu, setMenu] = useState(false);
   const [liked, setLiked] = useState(Boolean(media.liked));
   const [liking, setLiking] = useState(false);
+  const [reply, setReply] = useState('');
+  const [writing, setWriting] = useState(false);
+  const [sending, setSending] = useState(false);
   const [notice, setNotice] = useState('');
   const [failure, setFailure] = useState('');
   const isVideo = media.kind === 'video';
-  const stopped = !active || paused || holding || hidden || menu;
+  // Пока человек пишет ответ, история ждёт: иначе она ушла бы из-под рук
+  const stopped = !active || paused || holding || hidden || menu || writing || reply !== '';
 
   function closeMenu() {
     setMenu(false);
@@ -352,6 +357,21 @@ function StoryPlayer({ media, teller, steps, active, muted, onMute, onDelete, on
       onLike?.(media.id, result.liked);
     } catch (error) { setFailure(error.message); }
     finally { setLiking(false); }
+  }
+
+  async function sendReply(event) {
+    event.preventDefault();
+    const text = reply.trim();
+    if (!text || sending) return;
+    setSending(true);
+    setFailure('');
+    try {
+      // Удачный ответ уводит в чат — окно закроется вместе со страницей
+      await onReply(media.id, text);
+    } catch (error) {
+      setFailure(error.message);
+      setSending(false);
+    }
   }
 
   async function copyLink() {
@@ -476,6 +496,30 @@ function StoryPlayer({ media, teller, steps, active, muted, onMute, onDelete, on
       <div className="story-player__bottom">
         {(failure || notice) && <p className="story-player__notice" role={failure ? 'alert' : 'status'}>{failure || notice}</p>}
         <div className="story-player__actions">
+          {/* Под своей историей поля нет: себе не пишут */}
+          {!teller.own && onReply && (
+            <form className="story-player__reply" onSubmit={sendReply}>
+              <label className="visually-hidden" htmlFor="story-reply">Ответить на историю</label>
+              <input
+                id="story-reply"
+                className="story-player__reply-input"
+                value={reply}
+                maxLength={2000}
+                placeholder={`Ответить ${teller.name}…`}
+                autoComplete="off"
+                enterKeyHint="send"
+                disabled={sending}
+                onChange={(event) => setReply(event.target.value)}
+                onFocus={() => setWriting(true)}
+                onBlur={() => setWriting(false)}
+              />
+              {reply.trim() && (
+                <button className="story-player__reply-send" type="submit" disabled={sending}>
+                  {sending ? 'Отправляем…' : 'Отправить'}
+                </button>
+              )}
+            </form>
+          )}
           <button className={`story-player__button${liked ? ' story-player__button--liked' : ''}`}
             type="button" aria-label={liked ? 'Убрать лайк' : 'Нравится'} aria-pressed={liked} disabled={liking} onClick={like}><IconHeart /></button>
         </div>

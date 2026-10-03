@@ -611,6 +611,59 @@
   justify-content: flex-end;
 }
 
+/* Ответ рассказчику — капсула во всю строку, сердце остаётся справа от неё.
+   Фона у поля нет: оно лежит на затемнённом низе кадра, границы хватает */
+.story-player__reply {
+  position: relative;
+  display: flex;
+  flex: 1;
+  min-width: 0;
+}
+
+.story-player__reply-input {
+  flex: 1;
+  min-width: 0;
+  height: 2.75rem;
+  padding: 0 var(--space-4);
+  border: 1px solid var(--viewer-track);
+  border-radius: var(--radius-pill);
+  background: none;
+  color: inherit;
+  font: inherit;
+  font-size: 0.9375rem;
+  /* Фокус показывает граница, кольца нет (§4.5) */
+  outline: none;
+  transition: border-color var(--duration-base) var(--ease-out);
+}
+
+.story-player__reply-input::placeholder {
+  color: var(--on-accent-secondary);
+}
+
+.story-player__reply-input:focus {
+  border-color: var(--viewer-fg);
+}
+
+/* «Отправить» появляется, когда есть что отправлять, — внутри капсулы справа */
+.story-player__reply:has(.story-player__reply-send) .story-player__reply-input {
+  padding-right: 7.5rem;
+}
+
+.story-player__reply-send {
+  position: absolute;
+  inset: 0 0 0 auto;
+  padding: 0 var(--space-4);
+  color: inherit;
+  font-size: 0.9375rem;
+  font-weight: 600;
+  transition: opacity var(--duration-fast) var(--ease-out);
+}
+
+.story-player__reply-send:active,
+.story-player__reply-send:disabled {
+  opacity: 0.6;
+}
+
 .story-player__avatar {
   display: grid;
   place-items: center;

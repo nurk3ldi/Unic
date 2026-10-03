@@ -1,4 +1,5 @@
 import { Fragment, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { Link } from 'react-router-dom';
 import {
   IconArrowDown,
   IconArrowUp,
@@ -1477,6 +1478,8 @@ export default function ChatRoom({ clubId, members = [], jump = null }) {
             </button>
           )}
 
+          {message.story && <StoryQuote story={message.story} />}
+
           {message.photo && (
             /* Место под снимок известно заранее — лента не прыгает, пока он грузится.
                Целиком он открывается тут же, в окне поверх страницы */
@@ -2132,5 +2135,30 @@ export default function ChatRoom({ clubId, members = [], jump = null }) {
         </form>
       </div>
     </div>
+  );
+}
+
+/**
+ * Ответ на историю: кадр и подпись над текстом ответа. Пока история жива (сутки),
+ * цитата ведёт к ней; потом кадра уже нет — остаётся строка, что он был.
+ */
+function StoryQuote({ story }) {
+  if (!story.url) {
+    return (
+      <span className="msg__quote msg__quote--story">
+        <span className="msg__quote-text">История больше недоступна</span>
+      </span>
+    );
+  }
+
+  return (
+    <Link className="msg__quote msg__quote--story" to={`/?story=${story.id}`} viewTransition>
+      {story.kind === 'video' ? (
+        <video src={`${story.url}#t=0.1`} preload="metadata" muted playsInline />
+      ) : (
+        <img src={story.url} alt="" />
+      )}
+      <span className="msg__quote-text">Ответ на историю</span>
+    </Link>
   );
 }

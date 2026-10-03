@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { query } from '../db.js';
 import { requireAuth } from '../middleware/auth.js';
+import { audience } from '../rooms.js';
 
 const router = Router();
 
@@ -31,15 +32,18 @@ function deliver(userId, line) {
 }
 
 /**
- * Разослать событие всем, кому видно происходящее в клубе: его участникам и
- * тем, кто видит все клубы. Тот же круг, что и у чтения чата, — иначе о жизни
- * чужого клуба узнавал бы посторонний.
+ * Разослать событие всем, кому видно происходящее в чате: его собеседникам и —
+ * у клуба — тем, кто видит все клубы. Тот же круг, что и у чтения чата, — иначе
+ * о жизни чужого клуба узнавал бы посторонний. В личный чат управляющие роли
+ * не заглядывают, поэтому и события оттуда к ним не идут.
  */
 export async function publish(clubId, event) {
   const { rows } = await query(
-    `select user_id as id from club_members where club_id = $1 and status = 'active'
+    `${audience('$1')}
      union
-     select id from users where role in ('university', 'admin')`,
+     select u.id from users u
+      where u.role in ('university', 'admin')
+        and exists (select 1 from clubs c where c.id = $1 and c.direct_user_id is null)`,
     [clubId],
   );
 

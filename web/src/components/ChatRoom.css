@@ -579,6 +579,29 @@
   color: rgba(255, 255, 255, 0.78);
 }
 
+/* Цитата истории: маленький кадр 9:16 и подпись в строку. Полоса слева — цвета
+   бренда: это не чужая реплика, у неё нет «своего» цвета автора */
+.msg__quote--story {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  color: var(--accent);
+}
+
+.msg--own .msg__quote--story {
+  color: inherit;
+}
+
+.msg__quote--story img,
+.msg__quote--story video {
+  flex: none;
+  width: 2.25rem;
+  aspect-ratio: 9 / 16;
+  border-radius: calc(var(--radius-control) / 2);
+  object-fit: cover;
+  background: var(--fill);
+}
+
 /* Ник слева, номер и кнопка справа — строка шапки задаёт пузырю минимальную
    ширину. Ник отжимает остальных краем, поэтому номер и кнопка держатся вместе.
    Зазор задан отступами, а не gap: свёрнутая полоса кнопки не должна оставлять

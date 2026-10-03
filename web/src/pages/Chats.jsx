@@ -39,7 +39,8 @@ import './Chats.css';
  *
  * В списке — клубы, чьи чаты человеку доступны: участнику его клубы,
  * университету и админу все. Чат заводится вместе с клубом, отдельно его
- * создавать не нужно.
+ * создавать не нужно. Там же личные чаты: они заводятся ответом на историю и
+ * называются собеседником — клубом или человеком.
  *
  * Разговор живёт в адресе (`/chats/:id`): ссылку можно переслать, а «назад»
  * возвращает к списку, а не к предыдущему клубу.
@@ -369,9 +370,14 @@ export default function Chats() {
                   <span className="chat-head__body">
                     <span className="chat-head__name">{open?.name ?? 'Клуб'}</span>
                     <span className="chat-head__members">
-                      {members.length > 0
-                        ? members.map((member) => shortName(member.name)).join(', ')
-                        : 'Участников пока нет'}
+                      {/* В личном чате состава нет — строка говорит, что это за разговор */}
+                      {open?.direct
+                        ? open.via
+                          ? `Написал клубу «${open.via}»`
+                          : 'Личный чат'
+                        : members.length > 0
+                          ? members.map((member) => shortName(member.name)).join(', ')
+                          : 'Участников пока нет'}
                     </span>
                   </span>
 
@@ -622,7 +628,7 @@ export default function Chats() {
                   <IconClose aria-hidden="true" />
                 </button>
 
-                <h2 className="card-header__title">Данные клуба</h2>
+                <h2 className="card-header__title">{open?.direct ? 'Данные чата' : 'Данные клуба'}</h2>
               </div>
 
               <div className="chats__info-body">
@@ -637,7 +643,14 @@ export default function Chats() {
 
                 <h3 className="chats__info-name">{open?.name ?? 'Клуб'}</h3>
                 <p className="chats__info-meta">
-                  Клуб · <span className="chats__info-count">{membersLabel(members.length)}</span>
+                  {open?.direct ? (
+                    open.via ? `Написал клубу «${open.via}»` : 'Личный чат'
+                  ) : (
+                    <>
+                      Клуб ·{' '}
+                      <span className="chats__info-count">{membersLabel(members.length)}</span>
+                    </>
+                  )}
                 </p>
 
                 <div className="group chats__group">
@@ -668,7 +681,9 @@ export default function Chats() {
 
                 {notifyNote && <p className="chats__note">{notifyNote}</p>}
 
-                {/* Состав — как в сведениях группы: сколько, поиск, все поимённо */}
+                {/* Состав — как в сведениях группы: сколько, поиск, все поимённо.
+                    В личном чате его нет: собеседник один, и он уже назван сверху */}
+                {!open?.direct && (
                 <section className="chats__members">
                   <div className="chats__members-head">
                     <h3 className="chats__members-title">{membersLabel(members.length)}</h3>
@@ -734,6 +749,7 @@ export default function Chats() {
                     )}
                   </ul>
                 </section>
+                )}
               </div>
             </div>
           )}

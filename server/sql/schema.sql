@@ -41,6 +41,25 @@ alter table clubs add column if not exists description text;
 -- Принимает ли клуб заявки на вступление. По умолчанию — да: новый клуб открыт
 alter table clubs add column if not exists accepting boolean not null default true;
 
+-- Личный чат — строка в этой же таблице (см. server/src/rooms.js): всё устройство
+-- чата привязано к clubs.id. Человек (direct_user_id) пишет либо клубу
+-- (direct_club_id — отвечает его руководитель), либо другому человеку
+-- (direct_peer_id). У настоящего клуба все три пусты
+alter table clubs add column if not exists direct_user_id uuid references users (id) on delete cascade;
+alter table clubs add column if not exists direct_club_id uuid references clubs (id) on delete cascade;
+alter table clubs add column if not exists direct_peer_id uuid references users (id) on delete cascade;
+alter table clubs drop constraint if exists clubs_direct_check;
+alter table clubs add constraint clubs_direct_check check (
+  direct_user_id is null and direct_club_id is null and direct_peer_id is null
+  or direct_user_id is not null and ((direct_club_id is null) <> (direct_peer_id is null))
+);
+-- Один чат на пару. С человеком пара без порядка: кто бы ни написал первым, чат тот же
+create unique index if not exists clubs_direct_club
+  on clubs (direct_user_id, direct_club_id) where direct_club_id is not null;
+create unique index if not exists clubs_direct_peer
+  on clubs (least(direct_user_id, direct_peer_id), greatest(direct_user_id, direct_peer_id))
+  where direct_peer_id is not null;
+
 -- Руководитель хранится в club_members.role. Два места для одного факта
 -- рано или поздно расходятся, поэтому старый столбец убираем
 alter table clubs drop column if exists lead_id;
@@ -260,11 +279,8 @@ create table if not exists story_views (
   primary key (story_id, user_id)
 );
 
-create table if not exists story_replies (
-  id uuid primary key default gen_random_uuid(),
-  story_id uuid not null references stories (id) on delete cascade,
-  author_id uuid not null references users (id) on delete cascade,
-  text text not null check (length(text) between 1 and 2000),
-  created_at timestamptz not null default now()
-);
-create index if not exists story_replies_story on story_replies (story_id, created_at);
+-- Ответ на историю — обычное сообщение в личном чате с рассказчиком. Ссылка
+-- без внешнего ключа: история живёт сутки, а ответ остаётся — по пустой ссылке
+-- лента пишет «история недоступна». Прежняя таблица ответов больше не нужна
+alter table club_messages add column if not exists story_id uuid;
+drop table if exists story_replies;
