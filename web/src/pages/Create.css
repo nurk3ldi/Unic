@@ -1,0 +1,58 @@
+/* ── Создать ─────────────────────────────────────────────── */
+/* Две равные карточки-кнопки на сером полотне — той же породы, что карточки слева */
+.create {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-4);
+  max-width: 44rem;
+  margin-top: var(--space-4);
+}
+
+.create__kind {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-1);
+  padding: var(--space-5);
+  border-radius: var(--radius-control);
+  background: var(--surface);
+  text-align: left;
+  transition: transform var(--duration-press) var(--ease-out);
+}
+
+/* Отклик наступает на нажатии, а не на отпускании */
+.create__kind:active {
+  transform: scale(0.97);
+}
+
+.create__icon {
+  display: grid;
+  place-items: center;
+  width: 3rem;
+  height: 3rem;
+  margin-bottom: var(--space-3);
+  border-radius: var(--radius-control);
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-size: 1.5rem;
+}
+
+.create__title {
+  font-size: 1.0625rem;
+  font-weight: 600;
+  line-height: 1.3;
+  color: var(--text);
+}
+
+.create__note {
+  font-size: 0.875rem;
+  line-height: 1.45;
+  color: var(--text-secondary);
+}
+
+/* На телефоне рядом не помещаются — одна под другой */
+@media (max-width: 34rem) {
+  .create {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

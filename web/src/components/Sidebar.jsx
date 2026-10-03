@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
 import { api } from '../api.js';
 import { badgeCount } from '../chat.js';
-import { IconCalendar, IconChats, IconClubs, IconHome } from '../icons.jsx';
+import { IconCalendar, IconChats, IconClubs, IconHome, IconPlus } from '../icons.jsx';
 import './Sidebar.css';
 
 /**
@@ -14,6 +14,7 @@ const SECTIONS = [
   { to: '/clubs', label: 'Клубы', Icon: IconClubs },
   { to: '/chats', label: 'Чаты', Icon: IconChats },
   { to: '/events', label: 'События', Icon: IconCalendar },
+  { to: '/create', label: 'Создать', Icon: IconPlus },
 ];
 
 /**

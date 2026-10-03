@@ -2,7 +2,6 @@ import { Outlet, useLocation } from 'react-router-dom';
 import ChatNotifier from './ChatNotifier.jsx';
 import Header from './Header.jsx';
 import AsideChats from './AsideChats.jsx';
-import AsideHead from './AsideHead.jsx';
 import ProfileCard from './ProfileCard.jsx';
 import Requests from './Requests.jsx';
 import Sidebar from './Sidebar.jsx';
@@ -23,12 +22,10 @@ export default function AppLayout() {
     <div className={home ? 'app app--home' : 'app'}>
       <Header />
 
-      {/* Левый столбец: визитка, разделы и карточка для будущего содержимого */}
+      {/* Левый столбец: визитка и разделы */}
       <aside className="app__side">
         <ProfileCard />
         <Sidebar />
-        <AsideHead title="Карточка" value={0} />
-        <section className="app__side-card" aria-label="Карточка" />
       </aside>
 
       {/* Прокручивается окно; левый столбец прилипает и едет с лентой (AppLayout.css) */}

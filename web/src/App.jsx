@@ -4,6 +4,7 @@ import AppLayout from './components/AppLayout.jsx';
 import Chats from './pages/Chats.jsx';
 import ClubPage from './pages/ClubPage.jsx';
 import Clubs from './pages/Clubs.jsx';
+import Create from './pages/Create.jsx';
 import Events from './pages/Events.jsx';
 import Home from './pages/Home.jsx';
 import Login from './pages/Login.jsx';
@@ -29,6 +30,7 @@ export default function App() {
         <Route path="/chats" element={<Chats />} />
         <Route path="/chats/:id" element={<Chats />} />
         <Route path="/events" element={<Events />} />
+        <Route path="/create" element={<Create />} />
         <Route path="/profile" element={<Profile />} />
       </Route>
       <Route path="/login" element={guestOnly(<Login />)} />

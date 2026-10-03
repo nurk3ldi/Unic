@@ -18,29 +18,12 @@
   flex: none;
 }
 
-/* Поиск и фото держатся правого края */
-.header__end {
-  display: flex;
-  align-items: center;
-  gap: var(--space-4);
-  margin-left: auto;
-  min-width: 0;
-}
-
-/* Поле — то же, что в списках; здесь у него своя ширина и нет полей обёртки */
-.header__search {
-  width: min(20rem, 34vw);
-}
-
-.header__search .search {
-  padding: 0;
-}
-
-/* Колокольчик пришёл из панели разделов — здесь он меньше, вровень с полем,
-   а скругление то же, что у поля: в ряду одна форма */
-.header__end .bell {
+/* Колокольчик держится правого края. Он пришёл из панели разделов — здесь он
+   меньше, а скругление то же, что у карточек под полосой */
+.header .bell {
   width: 2.25rem;
   height: 2.25rem;
+  margin-left: auto;
   border-radius: var(--radius-control);
   font-size: 1.375rem;
 }
@@ -49,17 +32,5 @@
   .header {
     gap: var(--space-3);
     padding: 0 var(--space-4);
-  }
-
-  /* На узком экране поле забирает всё, что осталось от знака и фото */
-  .header__search {
-    width: auto;
-    flex: 1;
-    min-width: 0;
-  }
-
-  .header__end {
-    flex: 1;
-    gap: var(--space-3);
   }
 }
