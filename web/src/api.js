@@ -132,6 +132,7 @@ export const api = {
 
   stories: () => request('/stories'),
   deleteStory: (id) => request(`/stories/${id}`, { method: 'DELETE' }),
+  viewStory: (id) => request(`/stories/${id}/view`, { method: 'PUT' }),
   likeStory: (id, liked) => request(`/stories/${id}/like`, { method: 'PUT', body: { liked } }),
   replyToStory: (id, text) => request(`/stories/${id}/replies`, { method: 'POST', body: { text } }),
   storyReplies: (id) => request(`/stories/${id}/replies`),

@@ -82,7 +82,8 @@ router.get('/', requireAuth, async (req, res) => {
     `select s.id, s.club_id, s.author_id, s.kind, s.width, s.height, s.duration, s.created_at,
             c.name as club_name, c.photo_url as club_photo,
             u.full_name as author_name, u.photo as author_photo,
-            exists(select 1 from story_likes l where l.story_id = s.id and l.user_id = $1) as liked
+            exists(select 1 from story_likes l where l.story_id = s.id and l.user_id = $1) as liked,
+            exists(select 1 from story_views v where v.story_id = s.id and v.user_id = $1) as seen
        from stories s
        left join clubs c on c.id = s.club_id
        join users u on u.id = s.author_id
@@ -112,6 +113,7 @@ router.get('/', requireAuth, async (req, res) => {
       duration: row.duration,
       createdAt: row.created_at,
       liked: row.liked,
+      seen: row.seen,
       canDelete: row.author_id === req.user.id || req.user.role === 'university' || req.user.role === 'admin',
     });
   }
@@ -244,6 +246,14 @@ router.put('/:id/like', requireAuth, async (req, res) => {
     await query('delete from story_likes where story_id = $1 and user_id = $2', [req.params.id, req.user.id]);
   }
   res.json({ liked: req.body.liked });
+});
+
+/** Историю открыли. Повторный просмотр ничего не меняет — отметка одна. */
+router.put('/:id/view', requireAuth, async (req, res) => {
+  if (!(await liveStory(req.params.id))) return res.status(404).json({ error: 'История недоступна' });
+  await query('insert into story_views (story_id, user_id) values ($1, $2) on conflict do nothing',
+    [req.params.id, req.user.id]);
+  res.json({ seen: true });
 });
 
 /** Ответ хранится отдельно от общего чата: его видит автор и модератор. */

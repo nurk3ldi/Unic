@@ -48,6 +48,9 @@ function Cover({ item }) {
   return <img className="story__cover" src={item.url} alt="" />;
 }
 
+/** Есть ли у рассказчика история, которую этот человек ещё не открывал. */
+const isNew = (teller) => teller.items.some((item) => !item.seen);
+
 /**
  * Истории: ряд карточек над лентой. Публикуют только клуб (его руководитель) и
  * университет — у остальных карточки «Добавить» просто нет. История живёт сутки.
@@ -126,12 +129,21 @@ export default function StoryRail() {
     load();
   }
 
-  function markLiked(id, liked) {
+  // Лайк и «просмотрено» меняют одну историю на месте — без перезагрузки ряда
+  function patchItem(id, patch) {
     setTellers((entries) => entries.map((entry) => ({
       ...entry,
-      items: entry.items.map((item) => item.id === id ? { ...item, liked } : item),
+      items: entry.items.map((item) => item.id === id ? { ...item, ...patch } : item),
     })));
   }
+
+  // Открытая история — просмотренная. Отметка сразу и здесь: обводка карточки
+  // гаснет, как только у рассказчика не осталось несмотренного
+  useEffect(() => {
+    if (!shown || shown.seen) return;
+    patchItem(shown.id, { seen: true });
+    api.viewStory(shown.id).catch(() => {});
+  }, [shown]);
 
   // Шаги серии для окна: вперёд — следующая история, потом следующий рассказчик,
   // за последним — выход. Назад — так же, до самой первой
@@ -245,7 +257,7 @@ export default function StoryRail() {
           {canAdd && (
             <div className="stories__add-box">
               <div
-                className={`story story--add${mine ? ' story--mine' : ''}${busy ? ' story--busy' : ''}`}
+                className={`story story--add${mine ? ' story--mine' : ''}${mine && isNew(mine) ? ' story--new' : ''}${busy ? ' story--busy' : ''}`}
               >
                 {mine && <Cover item={mine.items.at(-1)} />}
 
@@ -297,7 +309,7 @@ export default function StoryRail() {
             .map((teller) => (
               <button
                 key={teller.key}
-                className="story"
+                className={`story${isNew(teller) ? ' story--new' : ''}`}
                 type="button"
                 onClick={() => watch(teller)}
               >
@@ -350,7 +362,7 @@ export default function StoryRail() {
         steps={steps}
         onClose={close}
         onDelete={removeStory}
-        onLike={markLiked}
+        onLike={(id, liked) => patchItem(id, { liked })}
       />
     </>
   );

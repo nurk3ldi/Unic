@@ -118,6 +118,47 @@
   object-fit: cover;
 }
 
+/* Несмотренное — карточка обведена цветом бренда, как кружок истории в Instagram:
+   кольцо по краю карточки, за ним пустой просвет (сквозь него видна страница),
+   и только потом снимок. Наружу кольцо не выходит — его обрезал бы прокручиваемый
+   ряд, — поэтому отступает снимок: место карточки в ряду не меняется.
+   Обрезку у карточки снимаем: у снимка и затемнения свои скругления, а кольцо,
+   обрезанное по тому же радиусу второй раз, на углах шло бы ступеньками */
+.story.story--new {
+  --ring: 0.1875rem;
+  /* Кольцо и просвет той же ширины */
+  --rim: calc(2 * var(--ring));
+  overflow: visible;
+  background: none;
+}
+
+/* Обычная рамка: её углы браузер сглаживает сам (маска с градиентом их рубила) */
+.story--new::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  border: var(--ring) solid var(--accent);
+  border-radius: inherit;
+  pointer-events: none;
+}
+
+/* Снимок и затемнение под именем отступают внутрь; углы — концентричны кольцу.
+   Подложка — пока снимок грузится, внутри кольца не пусто */
+.story.story--new .story__cover {
+  position: absolute;
+  inset: var(--rim);
+  width: calc(100% - 2 * var(--rim));
+  height: calc(100% - 2 * var(--rim));
+  border-radius: calc(var(--radius-control) - var(--rim));
+  background: var(--fill);
+}
+
+.story.story--new::after {
+  inset: 40% var(--rim) var(--rim);
+  border-radius: 0 0 calc(var(--radius-control) - var(--rim)) calc(var(--radius-control) - var(--rim));
+}
+
 /* Имя лежит на снимке — под ним затемнение, иначе на светлом кадре не прочесть */
 .story::after {
   content: '';

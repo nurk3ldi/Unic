@@ -252,6 +252,14 @@ create table if not exists story_likes (
   primary key (story_id, user_id)
 );
 
+-- Кто какую историю открыл. По нему карточка рассказчика обведена, пока у него
+-- есть несмотренное; у каждого человека отметки свои
+create table if not exists story_views (
+  story_id uuid not null references stories (id) on delete cascade,
+  user_id uuid not null references users (id) on delete cascade,
+  primary key (story_id, user_id)
+);
+
 create table if not exists story_replies (
   id uuid primary key default gen_random_uuid(),
   story_id uuid not null references stories (id) on delete cascade,
