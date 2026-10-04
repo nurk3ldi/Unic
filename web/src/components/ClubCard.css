@@ -86,15 +86,32 @@
   background: var(--orange);
 }
 
-/* «Создать клуб»: вместо снимка — плюс на сером поле. Под курсором поле и знак
-   берут акцент: это действие, а не ещё один клуб */
+/* «Создать клуб»: серое поле занимает карточку целиком — и место снимка, и место
+   подписи; плюс, название и пояснение стоят в его середине столбцом. Квадрат —
+   лишь наименьшая высота: рядом с клубами поле дорастает до их карточек.
+   Под курсором поле и знак берут акцент: это действие, а не ещё один клуб */
 .club__photo--add {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
   background: var(--bg-secondary);
   color: var(--text-secondary);
-  font-size: 2rem;
+  font-weight: 400;
   transition:
     background-color var(--duration-fast) var(--ease-out),
     color var(--duration-fast) var(--ease-out);
+}
+
+.club__photo--add svg {
+  font-size: 2rem;
+}
+
+/* Цвет поля — для плюса; название остаётся обычным текстом */
+.club__photo--add .club__name {
+  max-width: 100%;
+  color: var(--text);
 }
 
 .club:hover .club__photo--add {
