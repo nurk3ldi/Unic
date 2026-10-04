@@ -3,6 +3,7 @@ import { useSearchParams } from 'react-router-dom';
 import { api } from '../api.js';
 import PhotoViewer from '../components/PhotoViewer.jsx';
 import PostCard from '../components/PostCard.jsx';
+import PostDialog from '../components/PostDialog.jsx';
 import StoryRail from '../components/StoryRail.jsx';
 import './Page.css';
 import './Home.css';
@@ -12,6 +13,8 @@ export default function Home() {
   const [feed, setFeed] = useState({ posts: [], tellers: {} });
   // Снимки публикации, открытые на весь экран: { photos, index }
   const [viewing, setViewing] = useState(null);
+  // Публикация, открытая в окне с комментариями (её id)
+  const [talking, setTalking] = useState(null);
   const [searchParams] = useSearchParams();
   const linked = searchParams.get('post');
 
@@ -27,6 +30,13 @@ export default function Home() {
       alive = false;
     };
   }, []);
+
+  /** Меняет одну публикацию на месте: карточка в ленте и окно читают одну и ту же. */
+  const patch = (id, change) =>
+    setFeed((was) => ({
+      ...was,
+      posts: was.posts.map((item) => (item.id === id ? { ...item, ...change } : item)),
+    }));
 
   async function remove(id) {
     try {
@@ -44,22 +54,17 @@ export default function Home() {
 
   // Лайк виден сразу, сервер догоняет и отдаёт точное число; не вышло — возвращаем как было
   async function like(post) {
-    const patch = (change) =>
-      setFeed((was) => ({
-        ...was,
-        posts: was.posts.map((item) => (item.id === post.id ? { ...item, ...change } : item)),
-      }));
-
     const liked = !post.liked;
-    patch({ liked, likes: post.likes + (liked ? 1 : -1) });
+    patch(post.id, { liked, likes: post.likes + (liked ? 1 : -1) });
     try {
-      patch(await api.likePost(post.id, liked));
+      patch(post.id, await api.likePost(post.id, liked));
     } catch {
-      patch({ liked: post.liked, likes: post.likes });
+      patch(post.id, { liked: post.liked, likes: post.likes });
     }
   }
 
   const step = (by) => () => setViewing((was) => ({ ...was, index: was.index + by }));
+  const open = feed.posts.find((post) => post.id === talking) ?? null;
 
   return (
     <main className="page">
@@ -75,10 +80,19 @@ export default function Home() {
               onOpen={(index) => setViewing({ photos: post.photos, index })}
               onDelete={() => remove(post.id)}
               onLike={() => like(post)}
+              onTalk={() => setTalking(post.id)}
             />
           ))}
         </div>
       </div>
+
+      <PostDialog
+        post={open}
+        teller={open && feed.tellers[open.teller]}
+        onClose={() => setTalking(null)}
+        onLike={() => like(open)}
+        onCount={(comments) => patch(talking, { comments })}
+      />
 
       <PhotoViewer
         photo={viewing ? viewing.photos[viewing.index] : null}
