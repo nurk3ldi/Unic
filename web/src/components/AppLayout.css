@@ -6,9 +6,10 @@
 .app {
   display: grid;
   /* Поле у края окна прибавляется к столбцу, а не вычитается из карточек:
-     их ширина та же, воздух берётся у середины */
+     их ширина та же, воздух берётся у середины. Правого поля у левого столбца
+     нет (см. .app__side) — столбец уже на него */
   grid-template-columns:
-    calc(var(--side) + var(--gutter) - var(--space-4))
+    calc(var(--side) + var(--gutter) - var(--space-8))
     minmax(0, 1fr);
   grid-template-rows: auto 1fr;
   grid-template-areas:
@@ -23,7 +24,7 @@
 /* Главная: справа ещё столбец — приглашения и чаты */
 .app--home {
   grid-template-columns:
-    calc(var(--side) + var(--gutter) - var(--space-4))
+    calc(var(--side) + var(--gutter) - var(--space-8))
     minmax(0, 1fr)
     calc(var(--aside) + var(--gutter) - var(--space-4));
   grid-template-areas:
@@ -54,6 +55,9 @@
   max-height: 100dvh;
   overflow-y: auto;
   padding-left: var(--gutter);
+  /* До содержимого страницы — один шаг (её собственное поле), как между
+     карточками по вертикали: своё поле справа удвоило бы зазор */
+  padding-right: 0;
 }
 
 /* Правый столбец уходит вместе со страницей. Не короче экрана — карточка чатов
