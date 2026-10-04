@@ -1,77 +1,105 @@
+/* Карточка клуба и «Создать клуб» рядом с ней — одна форма: белая плашка без
+   рамки на сером полотне, как публикация в ленте. Синий остаётся действиям */
 .club {
-  color: inherit;
-  text-decoration: none;
   display: flex;
   flex-direction: column;
-  background: var(--surface);
+  min-width: 0;
+  padding: var(--space-4);
   border-radius: var(--radius-widget);
+  background: var(--surface);
+  color: inherit;
+  text-align: left;
+  text-decoration: none;
   /* Анимируем только transform — он не вызывает перерисовку макета */
-  transition: transform 250ms var(--ease-out);
+  transition: transform var(--duration-press) var(--ease-out);
 }
 
-/* Карточка чуть подаётся навстречу курсору */
 .club:hover {
-  transform: scale(1.02);
   text-decoration: none;
 }
 
-/* Шапка карточки — как у виджетов: своя полоса поверх содержимого */
-.club__header {
-  position: relative;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--space-3);
-  flex: none;
-  height: var(--club-header-height);
-  padding: 0 var(--space-5);
-  background: var(--accent);
-  color: var(--text-on-accent);
-  border-radius: var(--radius-widget) var(--radius-widget) 0 0;
+/* Отклик наступает на нажатии, а не на отпускании */
+.club:active {
+  transform: scale(0.97);
 }
 
-.club__title {
-  min-width: 0; /* иначе длинное название растянет шапку */
-}
-
-/* Название крупно и белым — шапка несёт фирменный фон */
-.club__name {
-  font-size: 1.375rem;
-  font-weight: 600;
-  line-height: 1.2;
-  letter-spacing: var(--tracking-title);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-/* Строка контекста: приглушена, но остаётся читаемой на синем */
-.club__meta {
-  margin-top: 0.125rem;
-  font-size: 0.8125rem;
-  line-height: 1.4;
-  letter-spacing: var(--tracking-caption);
-  color: rgba(255, 255, 255, 0.78);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.club__body {
-  display: flex;
-  flex-direction: column;
-  flex: none;
-  aspect-ratio: 1; /* область фото всегда квадратная; шапка идёт сверх неё */
-  /* нижние углы режет само тело */
-  overflow: hidden;
-  border-radius: 0 0 var(--radius-widget) var(--radius-widget);
-}
-
-/* Фото клуба заполняет свободную часть карточки */
+/* Снимок — квадрат внутри полей карточки, со своими скруглениями, как снимок
+   публикации. Пока клуб без снимка, на его месте буква на мягком акценте */
 .club__photo {
+  display: grid;
+  place-items: center;
+  aspect-ratio: 1;
+  overflow: hidden;
+  border-radius: var(--radius-control);
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-size: 4rem;
+  font-weight: 600;
+}
+
+.club__photo img {
   width: 100%;
   height: 100%;
   object-fit: cover;
+}
+
+/* Длинное название не растягивает карточку — обрезается многоточием */
+.club__name {
+  margin-top: var(--space-3);
+  overflow: hidden;
+  font-size: 1.0625rem;
+  font-weight: 600;
+  line-height: 1.3;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Строка контекста: состояние и сколько людей. Цвет несёт точка, текст серый —
+   цветной мелкий текст на белом читался бы хуже */
+.club__meta {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin-top: 0.125rem;
+  overflow: hidden;
+  font-size: 0.8125rem;
+  line-height: 1.4;
+  letter-spacing: var(--tracking-caption);
+  color: var(--text-secondary);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.club__dot {
+  flex: none;
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 50%;
+  background: var(--text-tertiary);
+}
+
+.club__dot--active {
+  background: var(--green);
+}
+
+.club__dot--pending {
+  background: var(--orange);
+}
+
+/* «Создать клуб»: вместо снимка — плюс на сером поле. Под курсором поле и знак
+   берут акцент: это действие, а не ещё один клуб */
+.club__photo--add {
+  background: var(--bg-secondary);
+  color: var(--text-secondary);
+  font-size: 2rem;
+  transition:
+    background-color var(--duration-fast) var(--ease-out),
+    color var(--duration-fast) var(--ease-out);
+}
+
+.club:hover .club__photo--add {
+  background: var(--accent-soft);
+  color: var(--accent);
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -79,7 +107,7 @@
     transition: none;
   }
 
-  .club:hover {
+  .club:active {
     transform: none;
   }
 }

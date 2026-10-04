@@ -43,9 +43,13 @@ export default function Clubs() {
           />
         ))}
 
-        <button className="club-add" type="button" onClick={() => setFormOpen(true)}>
-          <IconPlus aria-hidden="true" />
-          Создать клуб
+        {/* Та же карточка, что у клубов: на месте снимка — плюс, под ним что это и что спросят */}
+        <button className="club" type="button" onClick={() => setFormOpen(true)}>
+          <span className="club__photo club__photo--add">
+            <IconPlus aria-hidden="true" />
+          </span>
+          <span className="club__name">Создать клуб</span>
+          <span className="club__meta">Название и фото</span>
         </button>
       </div>
 
