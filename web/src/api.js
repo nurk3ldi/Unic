@@ -135,6 +135,10 @@ export const api = {
   createPost: (body) => request('/posts', { method: 'POST', body }),
   deletePost: (id) => request(`/posts/${id}`, { method: 'DELETE' }),
   likePost: (id, liked) => request(`/posts/${id}/like`, { method: 'PUT', body: { liked } }),
+  postComments: (id) => request(`/posts/${id}/comments`),
+  addPostComment: (id, text) => request(`/posts/${id}/comments`, { method: 'POST', body: { text } }),
+  deletePostComment: (id, commentId) =>
+    request(`/posts/${id}/comments/${commentId}`, { method: 'DELETE' }),
   stories: () => request('/stories'),
   deleteStory: (id) => request(`/stories/${id}`, { method: 'DELETE' }),
   viewStory: (id) => request(`/stories/${id}/view`, { method: 'PUT' }),

@@ -1,8 +1,10 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { api } from '../api.js';
 import { ago } from '../chat.js';
 import {
   IconChevronLeft,
   IconChevronRight,
+  IconComment,
   IconDots,
   IconHeart,
   IconSend,
@@ -17,8 +19,9 @@ const RATIO_MAX = 1.91;
 
 /**
  * Публикация в ленте — по образцу Instagram: строка «кто · когда», под ней снимки
- * по одному, ниже — лайк слева и «отправить» справа, в самом низу подпись: имя
- * и текст одной строкой, длинный свёрнут до двух строк.
+ * по одному, ниже — лайк и комментарии слева, «отправить» справа, затем подпись:
+ * имя и текст одной строкой, длинный свёрнут до двух строк. Комментарии
+ * раскрываются под подписью по нажатию на их значок.
  *
  * Снимки — лента с прилипанием (`scroll-snap`): листают стрелками, пальцем или
  * тачпадом, точки под кадром показывают, который сейчас. Нажатие на снимок
@@ -34,6 +37,8 @@ export default function PostCard({ post, teller, onOpen, onDelete, onLike }) {
   const [long, setLong] = useState(false); // подпись не влезла в две строки
   const [open, setOpen] = useState(false); // «ещё» нажато — подпись целиком
   const [copied, setCopied] = useState(false);
+  const [talk, setTalk] = useState(false); // комментарии раскрыты
+  const [count, setCount] = useState(post.comments);
 
   // Влезла ли подпись, знает только раскладка: сравниваем высоту текста и коробки
   useLayoutEffect(() => {
@@ -200,7 +205,23 @@ export default function PostCard({ post, teller, onOpen, onDelete, onLike }) {
           {post.likes > 0 && <span className="post__count">{post.likes}</span>}
         </button>
 
-        <button className="post__action" type="button" aria-label="Отправить" onClick={send}>
+        <button
+          className="post__action"
+          type="button"
+          aria-label="Комментарии"
+          aria-expanded={talk}
+          onClick={() => setTalk((was) => !was)}
+        >
+          <IconComment aria-hidden="true" />
+          {count > 0 && <span className="post__count">{count}</span>}
+        </button>
+
+        <button
+          className="post__action post__action--end"
+          type="button"
+          aria-label="Отправить"
+          onClick={send}
+        >
           {copied && <span className="post__copied">Ссылка скопирована</span>}
           <IconSend aria-hidden="true" />
         </button>
@@ -211,7 +232,7 @@ export default function PostCard({ post, teller, onOpen, onDelete, onLike }) {
           {/* Между именем и текстом — неразрывный пробел: иначе длинное слово без
               пробелов целиком уходило бы на следующую строку, оставляя имя одно */}
           <strong>{teller.name}</strong>
-          {' '}
+          {'\u00A0'}
           {text}
         </p>
       )}
@@ -220,6 +241,136 @@ export default function PostCard({ post, teller, onOpen, onDelete, onLike }) {
           ещё
         </button>
       )}
+
+      {talk && <Comments postId={post.id} onCount={setCount} />}
     </article>
+  );
+}
+
+const COMMENT_LIMIT = 1000; // тот же предел на сервере (routes/posts.js)
+
+/**
+ * Комментарии под публикацией: список в порядке разговора и поле снизу.
+ * Читаются, когда их раскрыли, — лента не тянет чужие обсуждения заранее.
+ */
+function Comments({ postId, onCount }) {
+  const [list, setList] = useState(null); // null — ещё читаем
+  const [text, setText] = useState('');
+  const [sending, setSending] = useState(false);
+  const [error, setError] = useState('');
+
+  useEffect(() => {
+    let alive = true;
+    api
+      .postComments(postId)
+      .then(({ comments }) => {
+        if (!alive) return;
+        setList(comments);
+        onCount(comments.length);
+      })
+      .catch((failure) => alive && setError(failure.message));
+    return () => {
+      alive = false;
+    };
+  }, [postId, onCount]);
+
+  async function add(event) {
+    event.preventDefault();
+    const body = text.trim();
+    if (!body || sending) return;
+    setSending(true);
+    setError('');
+    try {
+      const { comment } = await api.addPostComment(postId, body);
+      setList((was) => [...(was ?? []), comment]);
+      onCount((was) => was + 1);
+      setText('');
+    } catch (failure) {
+      setError(failure.message);
+    } finally {
+      setSending(false);
+    }
+  }
+
+  async function remove(id) {
+    setError('');
+    try {
+      await api.deletePostComment(postId, id);
+      setList((was) => was.filter((comment) => comment.id !== id));
+      onCount((was) => was - 1);
+    } catch (failure) {
+      setError(failure.message);
+    }
+  }
+
+  return (
+    <section className="comments" aria-label="Комментарии">
+      {list?.length > 0 && (
+        <ul className="comments__list">
+          {list.map((comment) => (
+            <li className="comment" key={comment.id}>
+              <span className="post__avatar comment__avatar">
+                {comment.author.photo ? (
+                  <img src={comment.author.photo} alt="" />
+                ) : (
+                  initial(comment.author.name)
+                )}
+              </span>
+
+              <div className="comment__body">
+                <p className="comment__text">
+                  <strong>{comment.author.name}</strong>
+                  {'\u00A0'}
+                  {comment.text}
+                </p>
+                <p className="comment__meta">
+                  <time dateTime={comment.createdAt}>{ago(comment.createdAt)}</time>
+                  {comment.canDelete && (
+                    <button
+                      className="comment__delete"
+                      type="button"
+                      onClick={() => remove(comment.id)}
+                    >
+                      Удалить
+                    </button>
+                  )}
+                </p>
+              </div>
+            </li>
+          ))}
+        </ul>
+      )}
+
+      {list?.length === 0 && <p className="comments__empty">Комментариев пока нет</p>}
+      {!list && !error && <p className="comments__empty">Загружаем…</p>}
+
+      {error && (
+        <p className="comments__error" role="alert">
+          {error}
+        </p>
+      )}
+
+      <form className="comments__form" onSubmit={add}>
+        <label className="visually-hidden" htmlFor={`comment-${postId}`}>
+          Комментарий
+        </label>
+        <input
+          id={`comment-${postId}`}
+          className="comments__input"
+          value={text}
+          maxLength={COMMENT_LIMIT}
+          placeholder="Добавьте комментарий…"
+          autoComplete="off"
+          enterKeyHint="send"
+          autoFocus
+          onChange={(event) => setText(event.target.value)}
+        />
+        {text.trim() && (
+          <button className="comments__send" type="submit" disabled={sending}>
+            Опубликовать
+          </button>
+        )}
+      </form>
+    </section>
   );
 }

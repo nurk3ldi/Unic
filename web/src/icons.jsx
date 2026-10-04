@@ -12,6 +12,7 @@ import {
   Camera01Icon,
   Cancel01Icon,
   CloudUploadIcon,
+  MessageCircleIcon,
   Copy01Icon,
   Delete02Icon,
   Download01Icon,
@@ -94,6 +95,7 @@ export const IconSend = IconChats;
 export const IconCheck = icon(Tick02Icon);
 export const IconCheckDouble = icon(TickDouble01Icon);
 export const IconChevronDown = icon(ArrowDown01Icon);
+export const IconComment = icon(MessageCircleIcon);
 export const IconChevronLeft = icon(ArrowLeft01Icon);
 export const IconChevronRight = icon(ArrowRight01Icon);
 export const IconChevronUp = icon(ArrowUp01Icon);

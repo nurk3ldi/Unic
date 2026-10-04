@@ -14,6 +14,10 @@ const PHOTOS_LIMIT = 10;
 // ponytail: лента отдаётся одной страницей — подгрузка по прокрутке, когда
 // публикаций станет больше, чем помещается в этот предел
 const FEED_PAGE = 30;
+const COMMENT_LIMIT = 1000;
+// ponytail: комментарии отдаются разом — подгрузка частями, когда под одной
+// публикацией их станет больше этого предела
+const COMMENTS_PAGE = 200;
 
 /**
  * Лента публикаций, новые сверху. Публикует тот же круг, что и истории: клуб
@@ -32,6 +36,7 @@ router.get('/', requireAuth, async (req, res) => {
             exists (
               select 1 from post_likes l where l.post_id = p.id and l.user_id = $2
             ) as liked,
+            (select count(*)::int from post_comments pc where pc.post_id = p.id) as comments,
             coalesce((
               select json_agg(json_build_object('n', ph.position, 'w', ph.width, 'h', ph.height)
                               order by ph.position)
@@ -68,6 +73,7 @@ router.get('/', requireAuth, async (req, res) => {
       })),
       likes: row.likes,
       liked: row.liked,
+      comments: row.comments,
       canDelete: boss || row.author_id === req.user.id,
     };
   });
@@ -194,6 +200,91 @@ router.put('/:id/like', requireAuth, async (req, res) => {
     [req.params.id],
   );
   res.json({ liked: req.body.liked, likes: rows[0].likes });
+});
+
+const publicComment = (row, user) => ({
+  id: row.id,
+  text: row.body,
+  createdAt: row.created_at,
+  author: {
+    id: row.author_id,
+    name: row.full_name,
+    username: row.username,
+    photo: row.has_photo ? `/api/users/${row.author_id}/photo` : null,
+  },
+  // Убрать комментарий может его автор, автор публикации и те, кто убирает сами публикации
+  canDelete:
+    row.author_id === user.id ||
+    row.post_author_id === user.id ||
+    user.role === 'university' ||
+    user.role === 'admin',
+});
+
+const COMMENT_FIELDS = `c.id, c.body, c.created_at, c.author_id, p.author_id as post_author_id,
+            u.full_name, u.username, u.photo is not null as has_photo`;
+
+/** Комментарии к публикации — в порядке разговора, старые сверху. */
+router.get('/:id/comments', requireAuth, async (req, res) => {
+  if (!UUID.test(req.params.id)) return res.status(404).json({ error: 'Публикация не найдена' });
+
+  const { rows } = await query(
+    `select ${COMMENT_FIELDS}
+       from post_comments c
+       join posts p on p.id = c.post_id
+       join users u on u.id = c.author_id
+      where c.post_id = $1
+      order by c.created_at
+      limit $2`,
+    [req.params.id, COMMENTS_PAGE],
+  );
+  res.json({ comments: rows.map((row) => publicComment(row, req.user)) });
+});
+
+/** Написать комментарий может любой вошедший — не только тот, кто публикует. */
+router.post('/:id/comments', requireAuth, async (req, res) => {
+  const text = typeof req.body?.text === 'string' ? req.body.text.trim() : '';
+  if (!text) return res.status(400).json({ error: 'Комментарий пустой' });
+  if (text.length > COMMENT_LIMIT) {
+    return res.status(400).json({ error: 'Комментарий слишком длинный' });
+  }
+  if (!UUID.test(req.params.id)) return res.status(404).json({ error: 'Публикация не найдена' });
+
+  // Вставка только если публикация есть: иначе внешний ключ ответил бы ошибкой сервера
+  const { rows } = await query(
+    `with created as (
+       insert into post_comments (post_id, author_id, body)
+       select p.id, $2, $3 from posts p where p.id = $1
+       returning *
+     )
+     select ${COMMENT_FIELDS}
+       from created c
+       join posts p on p.id = c.post_id
+       join users u on u.id = c.author_id`,
+    [req.params.id, req.user.id, text],
+  );
+  if (!rows[0]) return res.status(404).json({ error: 'Публикация не найдена' });
+
+  res.status(201).json({ comment: publicComment(rows[0], req.user) });
+});
+
+router.delete('/:id/comments/:commentId', requireAuth, async (req, res) => {
+  const { id, commentId } = req.params;
+  if (!UUID.test(id) || !UUID.test(commentId)) {
+    return res.status(404).json({ error: 'Комментарий не найден' });
+  }
+
+  const boss = req.user.role === 'university' || req.user.role === 'admin';
+  const { rows } = await query(
+    `delete from post_comments c
+      using posts p
+      where c.id = $1 and c.post_id = $2 and p.id = c.post_id
+        and ($3 or c.author_id = $4 or p.author_id = $4)
+      returning c.id`,
+    [commentId, id, boss, req.user.id],
+  );
+  if (!rows.length) return res.status(404).json({ error: 'Комментарий не найден' });
+
+  res.json({ ok: true });
 });
 
 /** Убрать свою публикацию; университет и админ убирают любую. Снимки уходят каскадом. */

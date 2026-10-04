@@ -300,6 +300,16 @@ create table if not exists post_likes (
   primary key (post_id, user_id)
 );
 
+-- Комментарии к публикации: пишет любой вошедший, читают все
+create table if not exists post_comments (
+  id uuid primary key default gen_random_uuid(),
+  post_id uuid not null references posts (id) on delete cascade,
+  author_id uuid not null references users (id) on delete cascade,
+  body text not null check (length(body) between 1 and 1000),
+  created_at timestamptz not null default now()
+);
+create index if not exists post_comments_post on post_comments (post_id, created_at);
+
 -- Кто какую историю открыл. По нему карточка рассказчика обведена, пока у него
 -- есть несмотренное; у каждого человека отметки свои
 create table if not exists story_views (
