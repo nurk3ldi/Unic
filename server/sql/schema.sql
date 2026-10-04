@@ -311,6 +311,9 @@ create table if not exists post_comments (
 create index if not exists post_comments_post on post_comments (post_id, created_at);
 -- Когда комментарий правили: рядом с ним стоит «изменено» — читавшие прежний текст видят, что он другой
 alter table post_comments add column if not exists edited_at timestamptz;
+-- Ответ на комментарий: под каким он стоит. Ветка в один уровень — ответ на ответ
+-- встаёт под тот же верхний комментарий. Убрали комментарий — ушли и ответы под ним
+alter table post_comments add column if not exists parent_id uuid references post_comments (id) on delete cascade;
 
 -- Кто какую историю открыл. По нему карточка рассказчика обведена, пока у него
 -- есть несмотренное; у каждого человека отметки свои

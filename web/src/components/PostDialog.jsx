@@ -81,6 +81,10 @@ function Thread({ post, teller, live, onCount }) {
   // Чей «···» нажат (меню одно на весь список) и какой комментарий сейчас правят
   const [menuId, setMenuId] = useState(null);
   const [editingId, setEditingId] = useState(null);
+  // Кому отвечают: { root — верхний комментарий ветки, nick — чей ник встал в поле }
+  const [replying, setReplying] = useState(null);
+  // Какие ветки ответов раскрыты (id верхних комментариев)
+  const [opened, setOpened] = useState(() => new Set());
 
   useEffect(() => {
     let alive = true;
@@ -110,12 +114,12 @@ function Thread({ post, teller, live, onCount }) {
 
   /**
    * Enter — отправить, Shift+Enter — новая строка; пока идёт набор через IME, Enter его.
-   * Esc во время правки отменяет правку, а не закрывает всё окно.
+   * Esc во время правки или ответа отменяет их, а не закрывает всё окно.
    */
   function onKey(event) {
-    if (event.key === 'Escape' && editingId) {
+    if (event.key === 'Escape' && (editingId || replying)) {
       event.preventDefault();
-      stopEditing();
+      reset();
       return;
     }
     if (event.key !== 'Enter' || event.shiftKey || event.nativeEvent.isComposing) return;
@@ -141,6 +145,7 @@ function Thread({ post, teller, live, onCount }) {
   /** Правят в том же поле, где пишут: текст комментария встаёт в него целиком. */
   function startEditing(comment) {
     menuRef.current.hidePopover();
+    setReplying(null);
     setEditingId(comment.id);
     setText(comment.text);
     setError('');
@@ -148,19 +153,28 @@ function Thread({ post, teller, live, onCount }) {
   }
 
   /**
-   * «Ответить»: в поле встаёт ник того, кому отвечают, — дальше пишут как обычно.
-   * Ответ остаётся обычным комментарием в общем списке: ник в начале и есть связь.
+   * «Ответить»: в поле встаёт ник того, кому отвечают, а сам ответ ляжет в ветку
+   * под комментарием. Ветка в один уровень: ответ на ответ встаёт под тот же верхний.
    */
   function replyTo(comment) {
     setEditingId(null);
+    setReplying({ root: comment.parentId ?? comment.id, nick: comment.author.username });
     setText(`@${comment.author.username} `);
     setError('');
     inputRef.current?.focus();
   }
 
-  function stopEditing() {
+  /** Поле снова пустое и ничьё: ни правки, ни ответа. */
+  function reset() {
     setEditingId(null);
+    setReplying(null);
     setText('');
+  }
+
+  function toggle(id) {
+    const next = new Set(opened);
+    if (!next.delete(id)) next.add(id);
+    setOpened(next);
   }
 
   async function submit(event) {
@@ -173,16 +187,18 @@ function Thread({ post, teller, live, onCount }) {
       if (editingId) {
         const { comment } = await api.editPostComment(post.id, editingId, body);
         setList(list.map((item) => (item.id === comment.id ? comment : item)));
-        stopEditing();
+        reset();
       } else {
-        const { comment } = await api.addPostComment(post.id, body);
+        const { comment } = await api.addPostComment(post.id, body, replying?.root);
         const next = [...(list ?? []), comment];
         setList(next);
         onCount(next.length);
-        setText('');
-        // Свой комментарий — в конце списка: показываем его, а не оставляем за краем
+        reset();
+        // Свой ответ раскрывает ветку, в которую лёг
+        if (comment.parentId) setOpened(new Set(opened).add(comment.parentId));
+        // Написанное показываем, а не оставляем за краем списка
         requestAnimationFrame(() => {
-          listRef.current?.scrollTo({ top: listRef.current.scrollHeight });
+          document.getElementById(`comment-${comment.id}`)?.scrollIntoView({ block: 'nearest' });
         });
       }
     } catch (failure) {
@@ -194,11 +210,13 @@ function Thread({ post, teller, live, onCount }) {
 
   async function remove(id) {
     menuRef.current.hidePopover();
-    if (id === editingId) stopEditing();
+    // Убрали то, что правили или на что отвечали, — поле снова ничьё
+    if (id === editingId || id === replying?.root) reset();
     setError('');
     try {
       await api.deletePostComment(post.id, id);
-      const next = list.filter((comment) => comment.id !== id);
+      // Вместе с комментарием уходят ответы под ним — так же, как на сервере
+      const next = list.filter((comment) => comment.id !== id && comment.parentId !== id);
       setList(next);
       onCount(next.length);
     } catch (failure) {
@@ -207,6 +225,23 @@ function Thread({ post, teller, live, onCount }) {
   }
 
   const target = list?.find((comment) => comment.id === menuId);
+
+  const row = (comment, children) => (
+    <Entry
+      key={comment.id}
+      id={comment.id}
+      person={comment.author}
+      text={comment.text}
+      createdAt={comment.createdAt}
+      edited={comment.edited}
+      onReply={comment.author.username ? () => replyTo(comment) : undefined}
+      onMenu={
+        comment.canEdit || comment.canDelete ? (event) => aim(event, comment.id) : undefined
+      }
+    >
+      {children}
+    </Entry>
+  );
 
   return (
     <section className="post-dialog__side">
@@ -221,21 +256,31 @@ function Thread({ post, teller, live, onCount }) {
           <Entry person={teller} text={post.text} createdAt={post.createdAt} />
         )}
 
-        {list?.map((comment) => (
-          <Entry
-            key={comment.id}
-            person={comment.author}
-            text={comment.text}
-            createdAt={comment.createdAt}
-            edited={comment.edited}
-            onReply={comment.author.username ? () => replyTo(comment) : undefined}
-            onMenu={
-              comment.canEdit || comment.canDelete
-                ? (event) => aim(event, comment.id)
-                : undefined
-            }
-          />
-        ))}
+        {/* Ответы стоят под своим комментарием и свёрнуты, пока их не откроют */}
+        {list
+          ?.filter((comment) => !comment.parentId)
+          .map((comment) => {
+            const replies = list.filter((reply) => reply.parentId === comment.id);
+            const open = opened.has(comment.id);
+            return row(
+              comment,
+              replies.length > 0 && (
+                <>
+                  {open && (
+                    <ul className="post-dialog__replies">{replies.map((reply) => row(reply))}</ul>
+                  )}
+                  <button
+                    className="post-dialog__thread"
+                    type="button"
+                    aria-expanded={open}
+                    onClick={() => toggle(comment.id)}
+                  >
+                    {open ? 'Скрыть ответы' : `Посмотреть ответы (${replies.length})`}
+                  </button>
+                </>
+              ),
+            );
+          })}
 
         {list?.length === 0 && <li className="post-dialog__empty">Комментариев пока нет</li>}
         {!list && !error && <li className="post-dialog__empty">Загружаем…</li>}
@@ -262,11 +307,11 @@ function Thread({ post, teller, live, onCount }) {
       </div>
 
       <footer className="post-dialog__foot">
-        {/* Правка идёт в том же поле — полоска над ним говорит, что это не новый комментарий */}
-        {editingId && (
+        {/* Правка и ответ идут в том же поле — полоска над ним говорит, что это не новый комментарий */}
+        {(editingId || replying) && (
           <p className="post-dialog__editing">
-            Редактирование комментария
-            <button type="button" onClick={stopEditing}>
+            {editingId ? 'Редактирование комментария' : `Ответ для @${replying.nick}`}
+            <button type="button" onClick={reset}>
               Отмена
             </button>
           </p>
@@ -313,48 +358,54 @@ function Thread({ post, teller, live, onCount }) {
 /**
  * Строка разговора: кружок, имя с текстом, под ними — когда, «Ответить» и «···».
  * Человек подписан ником, а не ФИО — как в Instagram; у клуба ника нет, там имя.
+ * `children` — ветка ответов: стоит под текстом, поэтому сдвинута на ширину кружка.
  */
-function Entry({ person, text, createdAt, edited, onReply, onMenu }) {
+function Entry({ id, person, text, createdAt, edited, onReply, onMenu, children }) {
   return (
-    <li className="post-dialog__entry">
+    <li className="post-dialog__entry" id={id && `comment-${id}`}>
       <Face person={person} />
       <div className="post-dialog__body">
-        <p className="post-dialog__text">
-          <strong>{person.username ?? person.name}</strong>
-          {'\u00A0'}
-          {/* Ник в тексте выделен цветом: по нему видно, кому отвечают. Слева от «@»
-              не должно быть буквы или точки — почта не ник */}
-          {text.split(MENTION).map((part, index) =>
-            index % 2 ? (
-              <span className="post-dialog__mention" key={index}>
-                {part}
-              </span>
-            ) : (
-              part
-            ),
-          )}
-        </p>
-        <p className="post-dialog__meta">
-          <time dateTime={createdAt}>{ago(createdAt)}</time>
-          {edited && <span>изменено</span>}
-          {onReply && (
-            <button className="post-dialog__reply" type="button" onClick={onReply}>
-              Ответить
-            </button>
-          )}
-          {/* «···» проявляется, когда курсор над комментарием: в покое строка чистая */}
-          {onMenu && (
-            <button
-              className="post-dialog__more"
-              type="button"
-              aria-label="Действия с комментарием"
-              popoverTarget="comment-menu"
-              onClick={onMenu}
-            >
-              <IconDots aria-hidden="true" />
-            </button>
-          )}
-        </p>
+        {/* Свои слова — отдельным блоком: «···» проявляется под курсором над ними,
+            а не над всей веткой ответов */}
+        <div className="post-dialog__words">
+          <p className="post-dialog__text">
+            <strong>{person.username ?? person.name}</strong>
+            {'\u00A0'}
+            {/* Ник в тексте выделен цветом: по нему видно, кому отвечают. Слева от «@»
+                не должно быть буквы или точки — почта не ник */}
+            {text.split(MENTION).map((part, index) =>
+              index % 2 ? (
+                <span className="post-dialog__mention" key={index}>
+                  {part}
+                </span>
+              ) : (
+                part
+              ),
+            )}
+          </p>
+          <p className="post-dialog__meta">
+            <time dateTime={createdAt}>{ago(createdAt)}</time>
+            {edited && <span>изменено</span>}
+            {onReply && (
+              <button className="post-dialog__reply" type="button" onClick={onReply}>
+                Ответить
+              </button>
+            )}
+            {/* «···» проявляется, когда курсор над комментарием: в покое строка чистая */}
+            {onMenu && (
+              <button
+                className="post-dialog__more"
+                type="button"
+                aria-label="Действия с комментарием"
+                popoverTarget="comment-menu"
+                onClick={onMenu}
+              >
+                <IconDots aria-hidden="true" />
+              </button>
+            )}
+          </p>
+        </div>
+        {children}
       </div>
     </li>
   );

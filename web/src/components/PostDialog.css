@@ -144,7 +144,52 @@
 }
 
 .post-dialog__body {
+  flex: 1;
   min-width: 0;
+}
+
+/* Ответы — под текстом комментария: сдвиг даёт сам кружок слева. Появляются
+   растворением, а не скачком */
+.post-dialog__replies {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  margin: var(--space-4) 0 0;
+  padding: 0;
+  list-style: none;
+  animation: content-in var(--duration-fast) var(--ease-out) backwards;
+}
+
+/* «Посмотреть ответы (N)» / «Скрыть ответы»: чёрточка и тихая надпись, как в
+   Instagram. Зона нажатия — 44px */
+.post-dialog__thread {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  margin-top: var(--space-4);
+  font-size: 0.8125rem;
+  font-weight: 600;
+  letter-spacing: var(--tracking-caption);
+  color: var(--text-tertiary);
+  transition: color var(--duration-fast) var(--ease-out);
+}
+
+.post-dialog__thread::before {
+  content: '';
+  width: var(--space-6);
+  height: 1px;
+  background: currentColor;
+}
+
+.post-dialog__thread::after {
+  content: '';
+  position: absolute;
+  inset: -0.875rem 0;
+}
+
+.post-dialog__thread:hover {
+  color: var(--text);
 }
 
 .post-dialog__text {
@@ -211,7 +256,7 @@
   inset: -0.875rem -0.75rem;
 }
 
-.post-dialog__entry:hover .post-dialog__more,
+.post-dialog__words:hover .post-dialog__more,
 .post-dialog__more:focus-visible {
   opacity: 1;
 }

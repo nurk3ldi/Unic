@@ -204,6 +204,8 @@ router.put('/:id/like', requireAuth, async (req, res) => {
 
 const publicComment = (row, user) => ({
   id: row.id,
+  // Под каким комментарием стоит этот ответ; у обычного комментария — null
+  parentId: row.parent_id,
   text: row.body,
   createdAt: row.created_at,
   author: {
@@ -223,7 +225,7 @@ const publicComment = (row, user) => ({
     user.role === 'admin',
 });
 
-const COMMENT_FIELDS = `c.id, c.body, c.created_at, c.edited_at, c.author_id,
+const COMMENT_FIELDS = `c.id, c.parent_id, c.body, c.created_at, c.edited_at, c.author_id,
             p.author_id as post_author_id,
             u.full_name, u.username, u.photo is not null as has_photo`;
 
@@ -253,18 +255,25 @@ router.post('/:id/comments', requireAuth, async (req, res) => {
   }
   if (!UUID.test(req.params.id)) return res.status(404).json({ error: 'Публикация не найдена' });
 
-  // Вставка только если публикация есть: иначе внешний ключ ответил бы ошибкой сервера
+  const parent = UUID.test(req.body?.parent) ? req.body.parent : null;
+
+  // Вставка только если публикация есть: иначе внешний ключ ответил бы ошибкой сервера.
+  // Ответ привязывается к комментарию этой же публикации и всегда к верхнему: ответ
+  // на ответ встаёт в ту же ветку. Комментария уже нет — выйдет обычный комментарий
   const { rows } = await query(
     `with created as (
-       insert into post_comments (post_id, author_id, body)
-       select p.id, $2, $3 from posts p where p.id = $1
+       insert into post_comments (post_id, author_id, body, parent_id)
+       select p.id, $2, $3, coalesce(r.parent_id, r.id)
+         from posts p
+         left join post_comments r on r.id = $4 and r.post_id = p.id
+        where p.id = $1
        returning *
      )
      select ${COMMENT_FIELDS}
        from created c
        join posts p on p.id = c.post_id
        join users u on u.id = c.author_id`,
-    [req.params.id, req.user.id, text],
+    [req.params.id, req.user.id, text, parent],
   );
   if (!rows[0]) return res.status(404).json({ error: 'Публикация не найдена' });
 
