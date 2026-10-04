@@ -1,23 +1,25 @@
 import { useEffect, useRef, useState } from 'react';
 import { api } from '../api.js';
 import { ago } from '../chat.js';
-import { IconClose } from '../icons.jsx';
+import { IconClose, IconSend } from '../icons.jsx';
 import { initial } from '../people.js';
-import { PostActions, PostGallery, postRatio } from './PostCard.jsx';
+import { PostGallery, postRatio } from './PostCard.jsx';
 import './PostDialog.css';
 
 const COMMENT_LIMIT = 1000; // тот же предел на сервере (routes/posts.js)
 
 /**
  * Публикация в окне — как пост в Instagram: слева снимки, справа автор, подпись
- * и комментарии, внизу лайк, «отправить» и поле комментария.
+ * и комментарии, внизу поле комментария. Лайк и «отправить» остаются в карточке
+ * ленты — окно только про разговор.
  *
  * Нативный <dialog>: затемнение, Esc и ловушка фокуса — от платформы; нажатие
- * мимо окна тоже закрывает. Окно одно на всю ленту: публикация приходит пропсом,
+ * мимо карточки тоже закрывает. Сам <dialog> — прозрачный слой во весь экран:
+ * карточка стоит в его центре, а ✕ — в углу экрана, вне карточки. Окно одно на всю ленту: публикация приходит пропсом,
  * а пока окно растворяется, держится последняя — иначе оно опустело бы раньше,
  * чем ушло.
  */
-export default function PostDialog({ post, teller, onClose, onLike, onCount }) {
+export default function PostDialog({ post, teller, onClose, onCount }) {
   const dialogRef = useRef(null);
   const shown = useRef(null);
   if (post) shown.current = { post, teller };
@@ -52,18 +54,21 @@ export default function PostDialog({ post, teller, onClose, onLike, onCount }) {
             post={open.post}
             teller={open.teller}
             live={Boolean(post)}
-            onClose={onClose}
-            onLike={onLike}
             onCount={onCount}
           />
         </div>
       )}
+
+      {/* ✕ — вне карточки, в углу экрана, как в окне просмотра снимков */}
+      <button className="post-dialog__close" type="button" aria-label="Закрыть" onClick={onClose}>
+        <IconClose aria-hidden="true" />
+      </button>
     </dialog>
   );
 }
 
-/** Правая часть окна: кто, подпись и комментарии, действия, поле ввода. */
-function Thread({ post, teller, live, onClose, onLike, onCount }) {
+/** Правая часть окна: кто, подпись и комментарии, поле ввода. */
+function Thread({ post, teller, live, onCount }) {
   const listRef = useRef(null);
   const [list, setList] = useState(null); // null — ещё читаем
   const [text, setText] = useState('');
@@ -127,14 +132,6 @@ function Thread({ post, teller, live, onClose, onLike, onCount }) {
       <header className="post-dialog__head">
         <Face person={teller} />
         <strong className="post-dialog__name">{teller.name}</strong>
-        <button
-          className="post-dialog__close"
-          type="button"
-          aria-label="Закрыть"
-          onClick={onClose}
-        >
-          <IconClose aria-hidden="true" />
-        </button>
       </header>
 
       <ul className="post-dialog__list" ref={listRef}>
@@ -158,8 +155,6 @@ function Thread({ post, teller, live, onClose, onLike, onCount }) {
       </ul>
 
       <footer className="post-dialog__foot">
-        <PostActions post={post} teller={teller} onLike={onLike} />
-
         {error && (
           <p className="post-dialog__error" role="alert">
             {error}
@@ -185,9 +180,10 @@ function Thread({ post, teller, live, onClose, onLike, onCount }) {
           <button
             className="post-dialog__send"
             type="submit"
+            aria-label="Опубликовать комментарий"
             disabled={!text.trim() || sending}
           >
-            Опубликовать
+            <IconSend aria-hidden="true" />
           </button>
         </form>
       </footer>

@@ -90,7 +90,6 @@ export default function Home() {
         post={open}
         teller={open && feed.tellers[open.teller]}
         onClose={() => setTalking(null)}
-        onLike={() => like(open)}
         onCount={(comments) => patch(talking, { comments })}
       />
 

@@ -1,22 +1,42 @@
 /* ── Публикация в окне ───────────────────────────────────── */
-/* Общее у окон проекта (.modal: затемнение, приход с масштабом) остаётся;
-   здесь — свои размеры: слева снимок, справа столбец разговора */
+/* Приход с масштабом — общий у окон проекта (.modal). Сам <dialog> здесь —
+   прозрачный слой во весь экран: карточка стоит в его центре, ✕ — в углу экрана */
 .modal.post-dialog {
   --panel: 26rem;
-  /* Высота окна — по снимку: не выше 90% экрана, а у широкого кадра — сколько
+  /* Высота карточки — по снимку: не выше 90% экрана, а у широкого кадра — сколько
      позволяет ширина, оставшаяся рядом со столбцом. --ratio ставит сама публикация */
-  --height: min(90dvh, 52rem, calc((100vw - 4rem - var(--panel)) / var(--ratio, 1)));
-  /* По содержимому: auto у окна значило бы «во всю ширину до max-width» */
-  width: fit-content;
-  max-width: calc(100vw - 2rem);
+  --height: min(90dvh, 52rem, calc((100vw - 8rem - var(--panel)) / var(--ratio, 1)));
+  width: 100vw;
+  max-width: none;
+  height: 100dvh;
+  max-height: none;
+  margin: 0;
   padding: 0;
   overflow: hidden;
-  border-radius: var(--radius-control);
+  border-radius: 0;
+  background: none;
+  box-shadow: none;
+}
+
+/* display только у открытого: закрытому его прячет сам браузер */
+.modal.post-dialog[open] {
+  display: grid;
+  place-items: center;
+}
+
+/* Страница позади не читается: тёмный материал и размытие — на них же виден белый ✕ */
+.modal.post-dialog::backdrop {
+  background: var(--viewer-material);
+  backdrop-filter: var(--material-blur);
 }
 
 .post-dialog__box {
   display: flex;
   height: var(--height);
+  overflow: hidden;
+  border-radius: var(--radius-control);
+  background: var(--surface);
+  box-shadow: var(--shadow-raised);
 }
 
 /* Снимок занимает всю высоту окна, ширина — из его пропорции: кадр не режется */
@@ -62,7 +82,7 @@
   align-items: center;
   gap: var(--space-3);
   flex: none;
-  padding: var(--space-2) var(--space-2) var(--space-2) var(--space-4);
+  padding: var(--space-3) var(--space-4);
   border-bottom: 1px solid var(--separator);
 }
 
@@ -75,22 +95,30 @@
   white-space: nowrap;
 }
 
+/* ✕ — в правом верхнем углу экрана, вне карточки: просто белый знак без
+   подложки, как в окне просмотра снимков. Знак крупный, зона нажатия — 44px */
 .post-dialog__close {
+  position: absolute;
+  top: var(--space-3);
+  right: var(--space-3);
   display: grid;
   place-items: center;
-  flex: none;
   width: 2.75rem;
   height: 2.75rem;
-  margin-left: auto;
-  color: var(--text-secondary);
-  font-size: 1.375rem;
+  color: var(--viewer-fg);
+  font-size: 2.25rem;
   transition:
-    color var(--duration-fast) var(--ease-out),
+    opacity var(--duration-fast) var(--ease-out),
     transform var(--duration-press) var(--ease-out);
 }
 
+/* Тонкий знак: обычный штрих на размытом фоне выглядел бы тяжёлым */
+.post-dialog__close svg * {
+  stroke-width: 1.2;
+}
+
 .post-dialog__close:hover {
-  color: var(--text);
+  opacity: 0.7;
 }
 
 .post-dialog__close:active {
@@ -156,28 +184,24 @@
   color: var(--text-tertiary);
 }
 
-/* Низ: действия и поле. Строка действий сама выносит знаки на линию отступа */
+/* Низ: поле комментария, от разговора отделено волоском */
 .post-dialog__foot {
   flex: none;
-  padding: var(--space-2) var(--space-4) 0;
   border-top: 1px solid var(--separator);
 }
 
 .post-dialog__error {
-  margin-top: var(--space-2);
+  padding: var(--space-2) var(--space-4) 0;
   font-size: 0.8125rem;
   color: var(--red);
 }
 
-/* Поле — строка без рамки, как под постом в Instagram: фокус показывает курсор,
-   кольца нет (§4.5). Волосок сверху — во всю ширину столбца */
+/* Поле — строка без рамки, как под постом в Instagram */
 .post-dialog__form {
   display: flex;
   align-items: center;
-  gap: var(--space-3);
-  margin: var(--space-2) calc(-1 * var(--space-4)) 0;
-  padding: 0 var(--space-4);
-  border-top: 1px solid var(--separator);
+  gap: var(--space-2);
+  padding: 0 var(--space-2) 0 var(--space-4);
 }
 
 .post-dialog__input {
@@ -189,29 +213,46 @@
   color: var(--text);
   font: inherit;
   font-size: 0.9375rem;
+}
+
+/* Фокус показывает курсор: общее кольцо :focus-visible в поле без рамки
+   выглядело чужой синей рамкой вокруг текста (§4.5 — ореола нет) */
+.post-dialog__input:focus,
+.post-dialog__input:focus-visible {
   outline: none;
+  box-shadow: none;
 }
 
 .post-dialog__input::placeholder {
   color: var(--text-tertiary);
 }
 
-/* «Опубликовать» стоит всегда; пока писать нечего — приглушено */
+/* Отправить — бумажный самолёт в цвет бренда. Стоит всегда; пока писать
+   нечего — приглушён. Знак 24px, зона нажатия 44px */
 .post-dialog__send {
+  display: grid;
+  place-items: center;
   flex: none;
-  min-height: 2.75rem;
+  width: 2.75rem;
+  height: 2.75rem;
   color: var(--accent);
-  font-size: 0.9375rem;
-  font-weight: 600;
-  transition: opacity var(--duration-fast) var(--ease-out);
+  font-size: 1.5rem;
+  transition:
+    opacity var(--duration-fast) var(--ease-out),
+    transform var(--duration-press) var(--ease-out);
 }
 
 .post-dialog__send:hover {
   color: var(--accent-hover);
 }
 
+.post-dialog__send:active {
+  transform: scale(0.92);
+}
+
 .post-dialog__send:disabled {
   opacity: 0.4;
+  transform: none;
 }
 
 /* На узком экране снимок и разговор рядом не помещаются: в окне — только разговор,
@@ -219,7 +260,8 @@
 @media (max-width: 48rem) {
   .modal.post-dialog {
     --panel: min(26rem, calc(100vw - 2rem));
-    --height: min(85dvh, 40rem);
+    /* Сверху остаётся место под ✕ */
+    --height: min(calc(100dvh - 8rem), 40rem);
   }
 
   .post-dialog__media {
