@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { api } from '../api.js';
 import { ago } from '../chat.js';
 import { IconClose, IconSend } from '../icons.jsx';
@@ -70,6 +70,7 @@ export default function PostDialog({ post, teller, onClose, onCount }) {
 /** Правая часть окна: кто, подпись и комментарии, поле ввода. */
 function Thread({ post, teller, live, onCount }) {
   const listRef = useRef(null);
+  const inputRef = useRef(null);
   const [list, setList] = useState(null); // null — ещё читаем
   const [text, setText] = useState('');
   const [sending, setSending] = useState(false);
@@ -91,6 +92,22 @@ function Thread({ post, teller, live, onCount }) {
     // Читаем раз на открытие: onCount — новая функция на каждый рендер ленты,
     // в зависимостях она перечитывала бы комментарии без конца
   }, [post.id]);
+
+  // Поле растёт вместе с текстом: что не влезло в строку, уходит на следующую.
+  // Высота ставится до отрисовки — кадра со старой высотой не бывает
+  useLayoutEffect(() => {
+    const field = inputRef.current;
+    if (!field) return;
+    field.style.height = 'auto';
+    field.style.height = `${field.scrollHeight}px`;
+  }, [text]);
+
+  /** Enter — отправить, Shift+Enter — новая строка; пока идёт набор через IME, Enter его. */
+  function onKey(event) {
+    if (event.key !== 'Enter' || event.shiftKey || event.nativeEvent.isComposing) return;
+    event.preventDefault();
+    event.currentTarget.form.requestSubmit();
+  }
 
   async function add(event) {
     event.preventDefault();
@@ -165,17 +182,19 @@ function Thread({ post, teller, live, onCount }) {
           <label className="visually-hidden" htmlFor="post-comment">
             Комментарий
           </label>
-          <input
+          <textarea
             id="post-comment"
             className="post-dialog__input"
+            ref={inputRef}
+            rows={1}
             value={text}
             maxLength={COMMENT_LIMIT}
             placeholder="Добавьте комментарий…"
-            autoComplete="off"
             enterKeyHint="send"
             // Закрывающееся окно поле не трогает — иначе оно перехватило бы фокус
             disabled={!live}
             onChange={(event) => setText(event.target.value)}
+            onKeyDown={onKey}
           />
           <button
             className="post-dialog__send"
