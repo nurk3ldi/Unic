@@ -1,7 +1,7 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { api } from '../api.js';
 import { ago } from '../chat.js';
-import { IconClose, IconSend } from '../icons.jsx';
+import { IconClose, IconDots, IconEdit, IconSend, IconTrash } from '../icons.jsx';
 import { initial } from '../people.js';
 import { PostGallery, postRatio } from './PostCard.jsx';
 import './PostDialog.css';
@@ -75,6 +75,10 @@ function Thread({ post, teller, live, onCount }) {
   const [text, setText] = useState('');
   const [sending, setSending] = useState(false);
   const [error, setError] = useState('');
+  const menuRef = useRef(null);
+  // Чей «···» нажат (меню одно на весь список) и какой комментарий сейчас правят
+  const [menuId, setMenuId] = useState(null);
+  const [editingId, setEditingId] = useState(null);
 
   useEffect(() => {
     let alive = true;
@@ -102,29 +106,72 @@ function Thread({ post, teller, live, onCount }) {
     field.style.height = `${field.scrollHeight}px`;
   }, [text]);
 
-  /** Enter — отправить, Shift+Enter — новая строка; пока идёт набор через IME, Enter его. */
+  /**
+   * Enter — отправить, Shift+Enter — новая строка; пока идёт набор через IME, Enter его.
+   * Esc во время правки отменяет правку, а не закрывает всё окно.
+   */
   function onKey(event) {
+    if (event.key === 'Escape' && editingId) {
+      event.preventDefault();
+      stopEditing();
+      return;
+    }
     if (event.key !== 'Enter' || event.shiftKey || event.nativeEvent.isComposing) return;
     event.preventDefault();
     event.currentTarget.form.requestSubmit();
   }
 
-  async function add(event) {
+  /**
+   * Меню открывает сам браузер (popovertarget), здесь — только чьё оно и где.
+   * Лежит в верхнем слое, поэтому прокручиваемый список его не обрезает; у нижнего
+   * края экрана встаёт над кнопкой, а не под ней.
+   */
+  function aim(event, id) {
+    const rect = event.currentTarget.getBoundingClientRect();
+    const menu = menuRef.current;
+    const below = window.innerHeight - rect.bottom > 120;
+    menu.style.top = below ? `${rect.bottom + 4}px` : 'auto';
+    menu.style.bottom = below ? 'auto' : `${window.innerHeight - rect.top + 4}px`;
+    menu.style.left = `${rect.left}px`;
+    setMenuId(id);
+  }
+
+  /** Правят в том же поле, где пишут: текст комментария встаёт в него целиком. */
+  function startEditing(comment) {
+    menuRef.current.hidePopover();
+    setEditingId(comment.id);
+    setText(comment.text);
+    setError('');
+    inputRef.current?.focus();
+  }
+
+  function stopEditing() {
+    setEditingId(null);
+    setText('');
+  }
+
+  async function submit(event) {
     event.preventDefault();
     const body = text.trim();
     if (!body || sending) return;
     setSending(true);
     setError('');
     try {
-      const { comment } = await api.addPostComment(post.id, body);
-      const next = [...(list ?? []), comment];
-      setList(next);
-      onCount(next.length);
-      setText('');
-      // Свой комментарий — в конце списка: показываем его, а не оставляем за краем
-      requestAnimationFrame(() => {
-        listRef.current?.scrollTo({ top: listRef.current.scrollHeight });
-      });
+      if (editingId) {
+        const { comment } = await api.editPostComment(post.id, editingId, body);
+        setList(list.map((item) => (item.id === comment.id ? comment : item)));
+        stopEditing();
+      } else {
+        const { comment } = await api.addPostComment(post.id, body);
+        const next = [...(list ?? []), comment];
+        setList(next);
+        onCount(next.length);
+        setText('');
+        // Свой комментарий — в конце списка: показываем его, а не оставляем за краем
+        requestAnimationFrame(() => {
+          listRef.current?.scrollTo({ top: listRef.current.scrollHeight });
+        });
+      }
     } catch (failure) {
       setError(failure.message);
     } finally {
@@ -133,6 +180,8 @@ function Thread({ post, teller, live, onCount }) {
   }
 
   async function remove(id) {
+    menuRef.current.hidePopover();
+    if (id === editingId) stopEditing();
     setError('');
     try {
       await api.deletePostComment(post.id, id);
@@ -143,6 +192,8 @@ function Thread({ post, teller, live, onCount }) {
       setError(failure.message);
     }
   }
+
+  const target = list?.find((comment) => comment.id === menuId);
 
   return (
     <section className="post-dialog__side">
@@ -163,7 +214,12 @@ function Thread({ post, teller, live, onCount }) {
             person={comment.author}
             text={comment.text}
             createdAt={comment.createdAt}
-            onDelete={comment.canDelete ? () => remove(comment.id) : undefined}
+            edited={comment.edited}
+            onMenu={
+              comment.canEdit || comment.canDelete
+                ? (event) => aim(event, comment.id)
+                : undefined
+            }
           />
         ))}
 
@@ -171,14 +227,44 @@ function Thread({ post, teller, live, onCount }) {
         {!list && !error && <li className="post-dialog__empty">Загружаем…</li>}
       </ul>
 
+      {/* Меню комментария — одно на весь список; что в нём, зависит от того, чей комментарий */}
+      <div className="row-menu post-dialog__menu" id="comment-menu" popover="auto" ref={menuRef}>
+        {target?.canEdit && (
+          <button className="row-menu__item" type="button" onClick={() => startEditing(target)}>
+            <IconEdit aria-hidden="true" />
+            Редактировать
+          </button>
+        )}
+        {target?.canDelete && (
+          <button
+            className="row-menu__item row-menu__item--danger"
+            type="button"
+            onClick={() => remove(target.id)}
+          >
+            <IconTrash aria-hidden="true" />
+            Удалить
+          </button>
+        )}
+      </div>
+
       <footer className="post-dialog__foot">
+        {/* Правка идёт в том же поле — полоска над ним говорит, что это не новый комментарий */}
+        {editingId && (
+          <p className="post-dialog__editing">
+            Редактирование комментария
+            <button type="button" onClick={stopEditing}>
+              Отмена
+            </button>
+          </p>
+        )}
+
         {error && (
           <p className="post-dialog__error" role="alert">
             {error}
           </p>
         )}
 
-        <form className="post-dialog__form" onSubmit={add}>
+        <form className="post-dialog__form" onSubmit={submit}>
           <label className="visually-hidden" htmlFor="post-comment">
             Комментарий
           </label>
@@ -199,7 +285,7 @@ function Thread({ post, teller, live, onCount }) {
           <button
             className="post-dialog__send"
             type="submit"
-            aria-label="Опубликовать комментарий"
+            aria-label={editingId ? 'Сохранить комментарий' : 'Опубликовать комментарий'}
             disabled={!text.trim() || sending}
           >
             <IconSend aria-hidden="true" />
@@ -210,22 +296,33 @@ function Thread({ post, teller, live, onCount }) {
   );
 }
 
-/** Строка разговора: кружок, имя с текстом, под ними — когда и «Удалить». */
-function Entry({ person, text, createdAt, onDelete }) {
+/**
+ * Строка разговора: кружок, имя с текстом, под ними — когда и «···» с действиями.
+ * Человек подписан ником, а не ФИО — как в Instagram; у клуба ника нет, там имя.
+ */
+function Entry({ person, text, createdAt, edited, onMenu }) {
   return (
     <li className="post-dialog__entry">
       <Face person={person} />
       <div className="post-dialog__body">
         <p className="post-dialog__text">
-          <strong>{person.name}</strong>
+          <strong>{person.username ?? person.name}</strong>
           {'\u00A0'}
           {text}
         </p>
         <p className="post-dialog__meta">
           <time dateTime={createdAt}>{ago(createdAt)}</time>
-          {onDelete && (
-            <button className="post-dialog__delete" type="button" onClick={onDelete}>
-              Удалить
+          {edited && <span>изменено</span>}
+          {/* «···» проявляется, когда курсор над комментарием: в покое строка чистая */}
+          {onMenu && (
+            <button
+              className="post-dialog__more"
+              type="button"
+              aria-label="Действия с комментарием"
+              popoverTarget="comment-menu"
+              onClick={onMenu}
+            >
+              <IconDots aria-hidden="true" />
             </button>
           )}
         </p>

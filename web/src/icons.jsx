@@ -35,6 +35,7 @@ import {
   PauseIcon,
   PinIcon,
   PlayIcon,
+  PencilEdit02Icon,
   PlusSignIcon,
   Search01Icon,
   SendIcon,
@@ -122,6 +123,7 @@ export const IconPause = solid(PauseIcon);
 export const IconPin = icon(PinIcon);
 export const IconPlane = icon(Airplane01Icon);
 export const IconPlay = solid(PlayIcon);
+export const IconEdit = icon(PencilEdit02Icon);
 export const IconPlus = icon(PlusSignIcon);
 export const IconReply = icon(ArrowTurnBackwardIcon);
 export const IconSearch = icon(Search01Icon);

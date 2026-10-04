@@ -167,14 +167,67 @@
   color: var(--text-tertiary);
 }
 
-.post-dialog__delete {
-  font: inherit;
-  font-weight: 500;
+/* «···» в строке под комментарием: в покое не видна, проявляется под курсором
+   (и при фокусе с клавиатуры). Знак мал, зона нажатия — 44px */
+.post-dialog__more {
+  position: relative;
+  display: grid;
+  place-items: center;
   color: inherit;
+  font-size: 1.125rem;
+  line-height: 1;
+  opacity: 0;
+  transition:
+    opacity var(--duration-fast) var(--ease-out),
+    color var(--duration-fast) var(--ease-out);
 }
 
-.post-dialog__delete:hover {
-  color: var(--red);
+.post-dialog__more::before {
+  content: '';
+  position: absolute;
+  inset: -0.875rem -0.75rem;
+}
+
+.post-dialog__entry:hover .post-dialog__more,
+.post-dialog__more:focus-visible {
+  opacity: 1;
+}
+
+.post-dialog__more:hover {
+  color: var(--text);
+}
+
+/* Где курсора нет, кнопку иначе не найти — она видна всегда */
+@media (hover: none) {
+  .post-dialog__more {
+    opacity: 1;
+  }
+}
+
+/* Меню лежит в верхнем слое и встаёт у кнопки (место ставит PostDialog.jsx) */
+.row-menu.post-dialog__menu {
+  position: fixed;
+  inset: auto;
+  margin: 0;
+  max-width: none;
+  transform-origin: top left;
+}
+
+/* Полоска над полем на время правки */
+.post-dialog__editing {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-2) var(--space-4) 0;
+  font-size: 0.8125rem;
+  letter-spacing: var(--tracking-caption);
+  color: var(--text-tertiary);
+}
+
+.post-dialog__editing button {
+  font: inherit;
+  font-weight: 600;
+  color: var(--accent);
 }
 
 .post-dialog__empty {

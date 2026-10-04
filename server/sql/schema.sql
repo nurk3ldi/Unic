@@ -309,6 +309,8 @@ create table if not exists post_comments (
   created_at timestamptz not null default now()
 );
 create index if not exists post_comments_post on post_comments (post_id, created_at);
+-- Когда комментарий правили: рядом с ним стоит «изменено» — читавшие прежний текст видят, что он другой
+alter table post_comments add column if not exists edited_at timestamptz;
 
 -- Кто какую историю открыл. По нему карточка рассказчика обведена, пока у него
 -- есть несмотренное; у каждого человека отметки свои

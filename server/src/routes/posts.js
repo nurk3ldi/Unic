@@ -212,6 +212,9 @@ const publicComment = (row, user) => ({
     username: row.username,
     photo: row.has_photo ? `/api/users/${row.author_id}/photo` : null,
   },
+  edited: Boolean(row.edited_at),
+  // Править комментарий может только тот, кто его написал
+  canEdit: row.author_id === user.id,
   // Убрать комментарий может его автор, автор публикации и те, кто убирает сами публикации
   canDelete:
     row.author_id === user.id ||
@@ -220,7 +223,8 @@ const publicComment = (row, user) => ({
     user.role === 'admin',
 });
 
-const COMMENT_FIELDS = `c.id, c.body, c.created_at, c.author_id, p.author_id as post_author_id,
+const COMMENT_FIELDS = `c.id, c.body, c.created_at, c.edited_at, c.author_id,
+            p.author_id as post_author_id,
             u.full_name, u.username, u.photo is not null as has_photo`;
 
 /** Комментарии к публикации — в порядке разговора, старые сверху. */
@@ -265,6 +269,35 @@ router.post('/:id/comments', requireAuth, async (req, res) => {
   if (!rows[0]) return res.status(404).json({ error: 'Публикация не найдена' });
 
   res.status(201).json({ comment: publicComment(rows[0], req.user) });
+});
+
+/** Правка своего комментария. Чужой править нельзя никому — только убрать. */
+router.patch('/:id/comments/:commentId', requireAuth, async (req, res) => {
+  const { id, commentId } = req.params;
+  const text = typeof req.body?.text === 'string' ? req.body.text.trim() : '';
+  if (!text) return res.status(400).json({ error: 'Комментарий пустой' });
+  if (text.length > COMMENT_LIMIT) {
+    return res.status(400).json({ error: 'Комментарий слишком длинный' });
+  }
+  if (!UUID.test(id) || !UUID.test(commentId)) {
+    return res.status(404).json({ error: 'Комментарий не найден' });
+  }
+
+  const { rows } = await query(
+    `with changed as (
+       update post_comments set body = $3, edited_at = now()
+        where id = $1 and post_id = $2 and author_id = $4
+       returning *
+     )
+     select ${COMMENT_FIELDS}
+       from changed c
+       join posts p on p.id = c.post_id
+       join users u on u.id = c.author_id`,
+    [commentId, id, text, req.user.id],
+  );
+  if (!rows[0]) return res.status(404).json({ error: 'Комментарий не найден' });
+
+  res.json({ comment: publicComment(rows[0], req.user) });
 });
 
 router.delete('/:id/comments/:commentId', requireAuth, async (req, res) => {
