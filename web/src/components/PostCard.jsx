@@ -207,7 +207,7 @@ export function PostGallery({ photos, onOpen }) {
 }
 
 /**
- * Лайк и комментарии — слева, «отправить» — у правого края. Число рядом со
+ * Лайк, комментарии и «отправить» — слева подряд. Число рядом со
  * знаком — когда есть что считать. Без `onTalk` значка комментариев нет: в окне
  * публикации они и так перед глазами.
  */
@@ -250,14 +250,9 @@ export function PostActions({ post, teller, onLike, onTalk }) {
         </button>
       )}
 
-      <button
-        className="post__action post__action--end"
-        type="button"
-        aria-label="Отправить"
-        onClick={send}
-      >
-        {copied && <span className="post__copied">Ссылка скопирована</span>}
+      <button className="post__action" type="button" aria-label="Отправить" onClick={send}>
         <IconSend aria-hidden="true" />
+        {copied && <span className="post__copied">Ссылка скопирована</span>}
       </button>
     </div>
   );
