@@ -167,6 +167,29 @@
   color: var(--text-tertiary);
 }
 
+/* «Ответить» — рядом с временем, тем же тихим цветом, но плотнее; зона нажатия 44px */
+.post-dialog__reply {
+  position: relative;
+  font: inherit;
+  font-weight: 600;
+  color: inherit;
+  transition: color var(--duration-fast) var(--ease-out);
+}
+
+.post-dialog__reply::before {
+  content: '';
+  position: absolute;
+  inset: -0.875rem -0.375rem;
+}
+
+.post-dialog__reply:hover {
+  color: var(--text);
+}
+
+.post-dialog__mention {
+  color: var(--accent);
+}
+
 /* «···» в строке под комментарием: в покое не видна, проявляется под курсором
    (и при фокусе с клавиатуры). Знак мал, зона нажатия — 44px */
 .post-dialog__more {

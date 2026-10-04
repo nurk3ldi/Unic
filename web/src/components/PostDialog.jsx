@@ -7,6 +7,8 @@ import { PostGallery, postRatio } from './PostCard.jsx';
 import './PostDialog.css';
 
 const COMMENT_LIMIT = 1000; // тот же предел на сервере (routes/posts.js)
+// Ник в тексте комментария; скобки — чтобы split оставил его отдельным куском
+const MENTION = /(?<![a-z0-9_@.])(@[a-z0-9_]+)/gi;
 
 /**
  * Публикация в окне — как пост в Instagram: слева снимки, справа автор, подпись
@@ -145,6 +147,17 @@ function Thread({ post, teller, live, onCount }) {
     inputRef.current?.focus();
   }
 
+  /**
+   * «Ответить»: в поле встаёт ник того, кому отвечают, — дальше пишут как обычно.
+   * Ответ остаётся обычным комментарием в общем списке: ник в начале и есть связь.
+   */
+  function replyTo(comment) {
+    setEditingId(null);
+    setText(`@${comment.author.username} `);
+    setError('');
+    inputRef.current?.focus();
+  }
+
   function stopEditing() {
     setEditingId(null);
     setText('');
@@ -215,6 +228,7 @@ function Thread({ post, teller, live, onCount }) {
             text={comment.text}
             createdAt={comment.createdAt}
             edited={comment.edited}
+            onReply={comment.author.username ? () => replyTo(comment) : undefined}
             onMenu={
               comment.canEdit || comment.canDelete
                 ? (event) => aim(event, comment.id)
@@ -297,10 +311,10 @@ function Thread({ post, teller, live, onCount }) {
 }
 
 /**
- * Строка разговора: кружок, имя с текстом, под ними — когда и «···» с действиями.
+ * Строка разговора: кружок, имя с текстом, под ними — когда, «Ответить» и «···».
  * Человек подписан ником, а не ФИО — как в Instagram; у клуба ника нет, там имя.
  */
-function Entry({ person, text, createdAt, edited, onMenu }) {
+function Entry({ person, text, createdAt, edited, onReply, onMenu }) {
   return (
     <li className="post-dialog__entry">
       <Face person={person} />
@@ -308,11 +322,26 @@ function Entry({ person, text, createdAt, edited, onMenu }) {
         <p className="post-dialog__text">
           <strong>{person.username ?? person.name}</strong>
           {'\u00A0'}
-          {text}
+          {/* Ник в тексте выделен цветом: по нему видно, кому отвечают. Слева от «@»
+              не должно быть буквы или точки — почта не ник */}
+          {text.split(MENTION).map((part, index) =>
+            index % 2 ? (
+              <span className="post-dialog__mention" key={index}>
+                {part}
+              </span>
+            ) : (
+              part
+            ),
+          )}
         </p>
         <p className="post-dialog__meta">
           <time dateTime={createdAt}>{ago(createdAt)}</time>
           {edited && <span>изменено</span>}
+          {onReply && (
+            <button className="post-dialog__reply" type="button" onClick={onReply}>
+              Ответить
+            </button>
+          )}
           {/* «···» проявляется, когда курсор над комментарием: в покое строка чистая */}
           {onMenu && (
             <button
