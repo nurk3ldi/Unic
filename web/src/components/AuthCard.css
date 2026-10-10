@@ -78,6 +78,11 @@
   animation-delay: 190ms;
 }
 
+/* Подпись есть только на телефоне — на большом экране карточка и так заметна */
+.auth__signature {
+  display: none;
+}
+
 /* Переход между входом и регистрацией */
 .auth__footer {
   margin-top: var(--space-6);
@@ -127,5 +132,24 @@
     border: none;
     border-radius: 0;
     box-shadow: none;
+  }
+
+  /* Колонкой: форма по центру свободного места, подпись прижата к низу и не наезжает на поля */
+  .auth {
+    flex-direction: column;
+    padding-bottom: calc(var(--space-6) + env(safe-area-inset-bottom));
+  }
+
+  .auth__card {
+    margin-block: auto;
+  }
+
+  .auth__signature {
+    display: block;
+    flex: none;
+    font-size: 0.9375rem;
+    font-weight: 600;
+    letter-spacing: var(--tracking-caption);
+    color: var(--text-secondary);
   }
 }

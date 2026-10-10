@@ -52,6 +52,7 @@ export default function Login() {
   return (
     <AuthCard
       title="Добро пожаловать"
+      signature="Synaps"
       footer={
         <>
           Нет аккаунта? <Link to="/register" viewTransition>Зарегистрироваться</Link>
