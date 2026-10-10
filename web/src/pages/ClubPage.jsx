@@ -4,17 +4,15 @@ import {
   IconCamera,
   IconChevronLeft,
   IconChevronRight,
-  IconClubs,
 } from '../icons.jsx';
 import { api } from '../api.js';
 import { useAuth } from '../AuthContext.jsx';
 import { squareDataUrl } from '../photo.js';
-import { membersLabel } from '../club.js';
+import { STATUS_LABELS, membersLabel } from '../club.js';
 import { eventDay, eventMonth, eventTime } from '../events.js';
 import ClubChatCard from '../components/ClubChatCard.jsx';
 import ClubControls from '../components/ClubControls.jsx';
 import MembersPanel from '../components/MembersPanel.jsx';
-import Person from '../components/Person.jsx';
 import './Page.css';
 import './ClubPage.css';
 
@@ -23,9 +21,6 @@ const SHOWN_EVENTS = 4;
 
 // Правят клуб те же роли, что и создают его
 const CAN_EDIT = ['university', 'admin'];
-const CLUB_DATE = new Intl.DateTimeFormat('ru-RU', {
-  day: 'numeric', month: 'long', year: 'numeric',
-});
 
 /** Что держит форма, прочитанное из записи клуба. */
 const formOf = (club) => ({
@@ -42,7 +37,6 @@ export default function ClubPage() {
   const nameRef = useRef(null);
 
   const [club, setClub] = useState(null);
-  const [lead, setLead] = useState(null);
   const [error, setError] = useState('');
 
   const [form, setForm] = useState(() => formOf(null));
@@ -122,10 +116,9 @@ export default function ClubPage() {
     }
   }
 
-  // Состав уже загружен панелью: берём из него число участников и руководителя
+  // Состав уже загружен панелью: берём из него число участников
   const syncMembers = useCallback(
     (members) => {
-      setLead(members.find((member) => member.role === 'lead') ?? null);
       setClub((current) => (
         current && current.members !== members.length
           ? { ...current, members: members.length }
@@ -222,7 +215,7 @@ export default function ClubPage() {
                       </span>
                     </button>
 
-                    <div className={`club-hero__info${editing ? ' club-hero__info--editing' : ''}`}>
+                    <div className="club-hero__info">
                       {/* Поля не подменяются на текст и обратно: значение видно всегда,
                           а правка снимает с них только запрет на ввод (readOnly, не disabled —
                           disabled гасит ровно то, что пришли прочитать) */}
@@ -251,52 +244,39 @@ export default function ClubPage() {
                         }}
                       />
 
-                      {editing ? (
-                        <>
-                          <label className="visually-hidden" htmlFor="club-about">
-                            Информация о клубе
-                          </label>
-                          <textarea
-                            id="club-about"
-                            className="club-field club-field--about club-field--editing"
-                            value={form.description}
-                            placeholder="Информация о клубе"
-                            rows={3}
-                            maxLength={2000}
-                            onChange={(event) =>
-                              setForm((was) => ({ ...was, description: event.target.value }))
-                            }
-                          />
-                        </>
-                      ) : (
-                        <p className={`club-hero__description${summary ? '' : ' club-hero__description--empty'}`}>
-                          {summary || 'Описание клуба пока не добавлено.'}
-                        </p>
-                      )}
-
-                      <p className="club-hero__status">
-                        <IconClubs aria-hidden="true" />
-                        {membersLabel(club.members)}
+                      {/* Одна тихая строка под названием: цвет несёт точка, текст серый.
+                          Состояние меняется в «Управлении клубом» — строка следует за ним */}
+                      <p className="club-hero__meta">
+                        <span className="club-hero__part">
+                          <span className={`club-hero__dot club-hero__dot--${club.status}`} />
+                          {STATUS_LABELS[club.status] ?? club.status}
+                        </span>
+                        <span className="club-hero__sep" aria-hidden="true"> · </span>
+                        <span className="club-hero__part">{membersLabel(club.members)}</span>
                       </p>
 
-                      <dl className="club-hero__details">
-                        <div>
-                          <dt>Руководитель</dt>
-                          <dd className="club-hero__lead">
-                            {lead ? <Person person={lead} /> : 'Не назначен'}
-                          </dd>
-                        </div>
-                        {club.createdAt && (
-                          <div>
-                            <dt>Дата создания</dt>
-                            <dd>
-                              <time dateTime={club.createdAt}>
-                                {CLUB_DATE.format(new Date(club.createdAt))}
-                              </time>
-                            </dd>
-                          </div>
-                        )}
-                      </dl>
+                      {/* Описание — то же поле, что и в правке, как и название: вне правки
+                          оно только для чтения, рамка прозрачна. Так у обоих режимов одна
+                          геометрия — по «Редактировать» ничего не сдвигается, лишь проступают рамки */}
+                      <label className="visually-hidden" htmlFor="club-about">
+                        Информация о клубе
+                      </label>
+                      <textarea
+                        id="club-about"
+                        className={`club-field club-field--about${editing ? ' club-field--editing' : ''}`}
+                        value={editing ? form.description : summary}
+                        /* Подсказка о пустом описании — тому, кто может его добавить;
+                           остальным она лишь шум */
+                        placeholder={
+                          editing ? 'Информация о клубе' : mayEdit ? 'Описание пока не добавлено' : ''
+                        }
+                        readOnly={!editing}
+                        tabIndex={editing ? undefined : -1}
+                        maxLength={2000}
+                        onChange={(event) =>
+                          setForm((was) => ({ ...was, description: event.target.value }))
+                        }
+                      />
 
                       <div className={`reveal-y${formError ? ' reveal-y--open' : ''}`}>
                         <div className="reveal-y__clip">

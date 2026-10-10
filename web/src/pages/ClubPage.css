@@ -358,8 +358,8 @@
 .club-hero__photo {
   display: grid;
   place-items: center;
-  /* Фото занимает не больше 40% ширины и помещается под верхними действиями */
-  width: min(40cqw, 100cqh);
+  /* Фото занимает не больше 45% ширины и помещается под верхними действиями */
+  width: min(45cqw, 100cqh);
   aspect-ratio: 1;
   align-self: center;
   flex: none;
@@ -374,6 +374,14 @@
   object-fit: cover;
 }
 
+/* Узкая карточка (ноутбук): фото уступает место тексту, иначе на название
+   и описание оставалась полоска в сотню пикселей */
+@container (max-width: 22rem) {
+  .club-hero__photo {
+    width: min(30cqw, 100cqh);
+  }
+}
+
 /* Пока фото нет — первая буква названия */
 .club-hero__letter {
   font-size: 2.5rem;
@@ -382,94 +390,62 @@
   color: var(--accent);
 }
 
-/* Сведения рядом с фото, без разделительной линии */
+/* Сведения рядом с фото, на всю высоту — в обоих режимах одинаково: название
+   сверху, описание забирает остаток. Прокрутка — страховка для узкой карточки */
 .club-hero__info {
   display: flex;
   flex-direction: column;
+  align-self: stretch;
   min-width: 0;
   flex: 1;
   min-height: 0;
   max-height: 100%;
+  overflow-x: hidden;
   overflow-y: auto;
 }
 
-/* Краткое описание идёт сразу после названия, без пустого поля вокруг текста */
-.club-hero__description {
-  max-height: calc(1.47em * 3);
-  overflow-y: auto;
-  overflow-wrap: anywhere;
+/* Под названием — одна тихая строка: «● Активен · 2 участника». Цвет несёт точка,
+   текст серый: синий в проекте — только для действий. Отступ слева тот же, что
+   у текста в поле названия, — строки стоят по одной линии */
+/* Узкая карточка — строка переносится между частями, а не посреди «Нет участников».
+   Отступы те же в обоих режимах: от рамки поля названия и до рамки поля описания */
+.club-hero__meta {
+  flex: none;
   margin-top: var(--space-2);
   padding: 0 var(--space-3);
   font-size: 0.9375rem;
-  line-height: 1.47;
+  letter-spacing: var(--tracking-caption);
   color: var(--text-secondary);
 }
 
-.club-hero__description--empty {
+.club-hero__part {
+  white-space: nowrap;
+}
+
+/* Разделитель «·» как в App Store («Игры · 4+»): на тон светлее слов —
+   читается как граница, а не спорит с текстом */
+.club-hero__sep {
   color: var(--text-tertiary);
 }
 
-/* Число участников — компактный значок после описания */
-.club-hero__status {
-  display: inline-flex;
-  align-items: center;
-  align-self: flex-start;
-  gap: var(--space-2);
-  flex: none;
-  margin-top: var(--space-2);
-  margin-left: var(--space-3);
-  padding: var(--space-1) var(--space-2);
-  border-radius: var(--radius-pill);
-  background: var(--accent-soft);
-  font-size: 0.8125rem;
-  color: var(--accent);
+.club-hero__dot {
+  display: inline-block;
+  margin-right: var(--space-2);
+  vertical-align: 0.0625rem;
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 50%;
+  background: var(--text-tertiary);
 }
 
-.club-hero__status svg {
-  width: 1rem;
-  height: 1rem;
-  flex: none;
+.club-hero__dot--active {
+  background: var(--green);
 }
 
-.club-hero__details {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-3);
-  flex: none;
-  margin-top: var(--space-3);
-  padding: 0 var(--space-3);
+.club-hero__dot--pending {
+  background: var(--orange);
 }
 
-.club-hero__details dt {
-  margin-bottom: var(--space-1);
-  font-size: 0.75rem;
-  color: var(--text-tertiary);
-}
-
-.club-hero__details dd {
-  font-size: 0.875rem;
-}
-
-.club-hero__lead {
-  display: flex;
-  align-items: center;
-  gap: var(--space-2);
-  min-width: 0;
-}
-
-.club-hero__lead .member__avatar {
-  width: 2rem;
-  height: 2rem;
-  font-size: 0.875rem;
-}
-
-.club-hero__info--editing {
-  align-self: stretch;
-}
-
-.club-hero__info--editing .club-field--about {
-  flex: 1;
-}
 
 /* На узком экране фото уходит наверх */
 @media (max-width: 60rem) {
@@ -652,11 +628,12 @@
   letter-spacing: var(--tracking-title);
 }
 
-/* Три строки под краткое описание; длинный текст прокручивается внутри поля */
+/* Описание забирает оставшуюся высоту колонки — в обоих режимах; длинный текст
+   прокручивается внутри поля */
 .club-field--about {
-  flex: none;
+  flex: 1;
   min-height: 0;
-  margin-top: var(--space-1);
+  margin-top: var(--space-2);
   font-size: 0.9375rem;
   line-height: 1.47;
   color: var(--text-secondary);
