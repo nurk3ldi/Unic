@@ -41,14 +41,12 @@ export default function Clubs() {
           />
         ))}
 
-        {/* Та же карточка, что у клубов, но поле занимает её целиком: плюс и под ним —
-            что это и что спросят */}
+        {/* Та же карточка, что у клубов: белая обложка с плюсом и подпись под ней */}
         <button className="club" type="button" onClick={() => setFormOpen(true)}>
           <span className="club__photo club__photo--add">
             <IconPlus aria-hidden="true" />
-            <span className="club__name">Создать клуб</span>
-            <span className="club__meta">Название и фото</span>
           </span>
+          <span className="club__name">Создать клуб</span>
         </button>
       </div>
 

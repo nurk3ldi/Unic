@@ -1,12 +1,10 @@
-/* Карточка клуба и «Создать клуб» рядом с ней — одна форма: белая плашка без
-   рамки на сером полотне, как публикация в ленте. Синий остаётся действиям */
+/* Клуб в каталоге — как обложка в Apple Music / App Store: скруглённый снимок прямо
+   на сером полотне, название — подпись под ним. Белой плашки вокруг нет: снимок сам
+   по себе и есть карточка, рамка вокруг рамки только шумела. Синий остаётся действиям */
 .club {
   display: flex;
   flex-direction: column;
   min-width: 0;
-  padding: var(--space-4);
-  border-radius: var(--radius-widget);
-  background: var(--surface);
   color: inherit;
   text-align: left;
   text-decoration: none;
@@ -23,13 +21,14 @@
   transform: scale(0.97);
 }
 
-/* Снимок — квадрат внутри полей карточки, со своими скруглениями, как снимок
-   публикации. Пока клуб без снимка, на его месте буква на мягком акценте */
+/* Снимок — квадрат со своими скруглениями. Тонкий край отделяет светлые логотипы
+   от светлого полотна. Пока клуб без снимка, на его месте буква на мягком акценте */
 .club__photo {
   display: grid;
   place-items: center;
   aspect-ratio: 1;
   overflow: hidden;
+  border: 1px solid var(--separator);
   border-radius: var(--radius-control);
   background: var(--accent-soft);
   color: var(--accent);
@@ -43,9 +42,9 @@
   object-fit: cover;
 }
 
-/* Длинное название не растягивает карточку — обрезается многоточием */
+/* Подпись под обложкой. Длинное название не растягивает карточку — многоточие */
 .club__name {
-  margin-top: var(--space-3);
+  margin-top: var(--space-2);
   overflow: hidden;
   font-size: 1.0625rem;
   font-weight: 600;
@@ -54,34 +53,11 @@
   white-space: nowrap;
 }
 
-/* Серая строка под названием — пояснение у «Создать клуб» */
-.club__meta {
-  display: flex;
-  align-items: center;
-  gap: var(--space-2);
-  margin-top: 0.125rem;
-  overflow: hidden;
-  font-size: 0.8125rem;
-  line-height: 1.4;
-  letter-spacing: var(--tracking-caption);
-  color: var(--text-secondary);
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-/* «Создать клуб»: серое поле занимает карточку целиком — и место снимка, и место
-   подписи; плюс, название и пояснение стоят в его середине столбцом. Квадрат —
-   лишь наименьшая высота: рядом с клубами поле дорастает до их карточек.
+/* «Создать клуб» — такая же обложка, только белая, с плюсом; подпись под ней та же.
    Под курсором поле и знак берут акцент: это действие, а не ещё один клуб */
 .club__photo--add {
-  display: flex;
-  flex: 1 1 auto;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  background: var(--bg-secondary);
+  background: var(--surface);
   color: var(--text-secondary);
-  font-weight: 400;
   transition:
     background-color var(--duration-fast) var(--ease-out),
     color var(--duration-fast) var(--ease-out);
@@ -89,12 +65,6 @@
 
 .club__photo--add svg {
   font-size: 2rem;
-}
-
-/* Цвет поля — для плюса; название остаётся обычным текстом */
-.club__photo--add .club__name {
-  max-width: 100%;
-  color: var(--text);
 }
 
 .club:hover .club__photo--add {
