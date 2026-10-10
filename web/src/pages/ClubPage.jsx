@@ -37,6 +37,7 @@ export default function ClubPage() {
   const nameRef = useRef(null);
 
   const [club, setClub] = useState(null);
+  const [members, setMembers] = useState([]);
   const [error, setError] = useState('');
 
   const [form, setForm] = useState(() => formOf(null));
@@ -116,9 +117,10 @@ export default function ClubPage() {
     }
   }
 
-  // Состав уже загружен панелью: берём из него число участников
+  // Состав уже загружен панелью: берём из него число участников и лица для чата
   const syncMembers = useCallback(
     (members) => {
+      setMembers(members);
       setClub((current) => (
         current && current.members !== members.length
           ? { ...current, members: members.length }
@@ -308,10 +310,11 @@ export default function ClubPage() {
           </div>
 
           <div className="club-bottom">
-            {/* Карточка целиком ведёт в чат: свёрнутый вид только читают */}
-            <Link className="club-card club-card--tap" to={`/chats/${id}`} viewTransition>
-              <ClubChatCard clubId={id} />
-            </Link>
+            {/* В чат ведут шапка и лента; поле внизу отвечает прямо отсюда,
+                поэтому сама карточка не ссылка (поле в ссылку не вложить) */}
+            <div className="club-card">
+              <ClubChatCard clubId={id} members={members} />
+            </div>
 
             {/* Как чат: карточка целиком ведёт в календарь */}
             <Link className="club-card club-card--tap" to="/events" viewTransition>

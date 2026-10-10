@@ -638,6 +638,9 @@
   line-height: 1.47;
   color: var(--text-secondary);
   resize: none;
+  /* Длинное описание прокручивается внутри — тонкой полосой без стрелок,
+     толстая системная со стрелками ⇕ спорила с текстом в узкой карточке */
+  scrollbar-width: thin;
 }
 
 .club-hero__error {

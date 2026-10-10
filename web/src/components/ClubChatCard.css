@@ -1,4 +1,4 @@
-/* Лента сверху во всю высоту, переход в чат — полосой снизу */
+/* Шапка — кто здесь, лента — что пишут, снизу — поле, чтобы ответить сразу */
 .chat-card {
   display: flex;
   flex-direction: column;
@@ -7,7 +7,90 @@
   background: var(--surface);
 }
 
-/* Старые реплики растворяются под верхним краем, фон остаётся сплошным */
+/* ── Шапка: как у виджета — название, лица, шеврон ──────────────── */
+.chat-card__head {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  flex: none;
+  padding: var(--space-4) var(--space-5) var(--space-2);
+  color: var(--text);
+  text-decoration: none;
+}
+
+.chat-card__head:hover {
+  text-decoration: none;
+}
+
+.chat-card__title {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-width: 0;
+  font-size: 0.9375rem;
+  font-weight: 600;
+  line-height: 1.3;
+}
+
+.chat-card__count {
+  font-size: 0.8125rem;
+  font-weight: 400;
+  letter-spacing: var(--tracking-caption);
+  color: var(--text-secondary);
+}
+
+/* Лица внахлёст: каждое следующее заходит на предыдущее, белое кольцо их разделяет */
+.chat-card__faces {
+  display: flex;
+  flex: none;
+}
+
+.chat-card__face {
+  display: grid;
+  place-items: center;
+  width: 1.75rem;
+  height: 1.75rem;
+  overflow: hidden;
+  border: 2px solid var(--surface);
+  border-radius: 50%;
+  /* Буквой — на подложке своего цвета, как аватары в составе клуба */
+  background: color-mix(in srgb, currentColor 14%, var(--surface));
+  font-size: 0.6875rem;
+  font-weight: 600;
+}
+
+.chat-card__face + .chat-card__face {
+  margin-left: -0.5rem;
+}
+
+.chat-card__face img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.chat-card__face--more {
+  background: var(--bg-secondary);
+  color: var(--text-secondary);
+  font-size: 0.625rem;
+}
+
+.chat-card__chevron {
+  flex: none;
+  width: 1rem;
+  height: 1rem;
+  color: var(--text-tertiary);
+  transition: transform var(--duration-fast) var(--ease-out);
+}
+
+/* Шеврон подаётся вперёд под курсором — шапка и правда ведёт дальше */
+@media (hover: hover) {
+  .chat-card__head:hover .chat-card__chevron {
+    transform: translateX(0.125rem);
+  }
+}
+
+/* ── Лента ─────────────────────────────────────────────────────── */
 .chat-card__feed {
   display: flex;
   flex-direction: column;
@@ -17,10 +100,40 @@
   min-height: 0;
   overflow: hidden;
   /* По бокам 20px — как поля остальных карточек страницы клуба */
-  padding: var(--space-3) var(--space-5);
+  padding: var(--space-2) var(--space-5);
+  color: var(--text);
+  text-decoration: none;
   /* Старые реплики не обрезаются по линейке, а растворяются под верхним краем.
      У маски важна только прозрачность, цвет не виден — поэтому просто black */
-  mask-image: linear-gradient(to bottom, transparent, black var(--space-8));
+  mask-image: linear-gradient(to bottom, transparent, black var(--space-6));
+}
+
+.chat-card__feed:hover {
+  text-decoration: none;
+}
+
+/* Пока реплик мало, пустое место не молчит: что это за чат и что здесь делать.
+   Занимает свободную высоту и стоит в её середине, реплики остаются внизу */
+.chat-card__invite {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-1);
+  flex: 1;
+  padding: var(--space-4) 0;
+  font-size: 0.8125rem;
+  line-height: 1.4;
+  letter-spacing: var(--tracking-caption);
+  text-align: center;
+  color: var(--text-tertiary);
+}
+
+.chat-card__invite-title {
+  font-size: 0.9375rem;
+  font-weight: 600;
+  letter-spacing: 0;
+  color: var(--text-secondary);
 }
 
 /* Пузырь — уменьшенная копия пузыря из чата. Новый поднимается снизу, как в самом
@@ -72,9 +185,75 @@
   overflow-wrap: anywhere;
 }
 
-/* Полоса «Открыть чат» — общая .card-more (ClubPage.css) */
-.chat-card > .card-more {
-  background: var(--surface);
+/* ── Быстрый ответ: капсула с полем и кнопкой, как в самом чате ────── */
+.chat-card__compose {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  flex: none;
+  margin: var(--space-2) var(--space-4) var(--space-4);
+  padding: var(--space-1) var(--space-1) var(--space-1) var(--space-4);
+  border-radius: var(--radius-pill);
+  background: var(--bg-secondary);
+}
+
+.chat-card__input {
+  flex: 1;
+  min-width: 0;
+  height: 2rem;
+  padding: 0;
+  border: none;
+  background: none;
+  font: inherit;
+  font-size: 0.9375rem;
+  color: var(--text);
+}
+
+.chat-card__input::placeholder {
+  color: var(--text-tertiary);
+}
+
+/* Фокус виден по курсору в поле — без кольца вокруг капсулы (§4.5) */
+.chat-card__input:focus,
+.chat-card__input:focus-visible {
+  outline: none;
+  box-shadow: none;
+}
+
+.chat-card__send {
+  display: grid;
+  place-items: center;
+  width: 2rem;
+  height: 2rem;
+  flex: none;
+  border-radius: 50%;
+  background: var(--accent);
+  color: var(--text-on-accent);
+  transition:
+    opacity var(--duration-fast) var(--ease-out),
+    transform var(--duration-press) var(--ease-out);
+}
+
+.chat-card__send svg {
+  width: 1.125rem;
+  height: 1.125rem;
+}
+
+.chat-card__send:active:not(:disabled) {
+  transform: scale(0.94);
+}
+
+/* Пустое поле — отправлять нечего: кнопка гаснет, но остаётся на месте */
+.chat-card__send:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+
+.chat-card__error {
+  flex: none;
+  margin: calc(-1 * var(--space-2)) var(--space-5) var(--space-3);
+  font-size: 0.8125rem;
+  color: var(--red);
 }
 
 .chat-card__empty {
@@ -83,4 +262,16 @@
   font-size: 0.875rem;
   text-align: center;
   color: var(--text-tertiary);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .chat-card__chevron,
+  .chat-card__send {
+    transition: none;
+  }
+
+  .chat-card__head:hover .chat-card__chevron,
+  .chat-card__send:active:not(:disabled) {
+    transform: none;
+  }
 }
