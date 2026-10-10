@@ -37,7 +37,6 @@ export default function Clubs() {
             key={club.id}
             id={club.id}
             name={club.name}
-            status={club.status}
             photo={club.photo}
           />
         ))}

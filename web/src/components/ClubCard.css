@@ -54,8 +54,7 @@
   white-space: nowrap;
 }
 
-/* Строка контекста: состояние клуба. Цвет несёт точка, текст серый —
-   цветной мелкий текст на белом читался бы хуже */
+/* Серая строка под названием — пояснение у «Создать клуб» */
 .club__meta {
   display: flex;
   align-items: center;
@@ -68,22 +67,6 @@
   color: var(--text-secondary);
   text-overflow: ellipsis;
   white-space: nowrap;
-}
-
-.club__dot {
-  flex: none;
-  width: 0.5rem;
-  height: 0.5rem;
-  border-radius: 50%;
-  background: var(--text-tertiary);
-}
-
-.club__dot--active {
-  background: var(--green);
-}
-
-.club__dot--pending {
-  background: var(--orange);
 }
 
 /* «Создать клуб»: серое поле занимает карточку целиком — и место снимка, и место
