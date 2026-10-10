@@ -1,0 +1,40 @@
+.landing {
+  min-height: 100dvh;
+  background: var(--bg);
+}
+
+/* Кнопка входа прижата к углу с теми же полями, что у шапки приложения */
+.landing__login {
+  position: fixed;
+  top: var(--space-4);
+  right: var(--gutter);
+  display: inline-flex;
+  align-items: center;
+  height: 2.5rem;
+  padding: 0 var(--space-5);
+  border-radius: var(--radius-pill);
+  background: var(--accent);
+  color: var(--text-on-accent);
+  font-size: 0.9375rem;
+  font-weight: 500;
+  text-decoration: none;
+  transition:
+    background-color var(--duration-fast) var(--ease-out),
+    transform var(--duration-press) var(--ease-out);
+}
+
+.landing__login:hover {
+  background: var(--accent-hover);
+}
+
+/* Отклик на нажатие, как у остальных кнопок (§4.3) */
+.landing__login:active {
+  background: var(--accent-active);
+  transform: scale(0.97);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .landing__login:active {
+    transform: none;
+  }
+}

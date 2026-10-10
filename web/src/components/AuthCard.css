@@ -118,8 +118,14 @@
   }
 }
 
-@media (max-width: 26rem) {
+/* На телефоне карточки нет: экран и так узкий, рамка вокруг формы лишь съедает поля.
+   Форма лежит прямо на странице, боковые поля даёт сам .auth */
+@media (max-width: 34rem) {
   .auth__card {
-    padding: var(--space-8) var(--space-5) var(--space-6);
+    padding: var(--space-6) 0;
+    background: none;
+    border: none;
+    border-radius: 0;
+    box-shadow: none;
   }
 }

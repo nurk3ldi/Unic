@@ -1,4 +1,4 @@
-import { Navigate, Route, Routes } from 'react-router-dom';
+import { Navigate, Route, Routes, useLocation } from 'react-router-dom';
 import { useAuth } from './AuthContext.jsx';
 import AppLayout from './components/AppLayout.jsx';
 import Chats from './pages/Chats.jsx';
@@ -8,6 +8,7 @@ import Create from './pages/Create.jsx';
 import CreatePost from './pages/CreatePost.jsx';
 import Events from './pages/Events.jsx';
 import Home from './pages/Home.jsx';
+import Landing from './pages/Landing.jsx';
 import Login from './pages/Login.jsx';
 import Profile from './pages/Profile.jsx';
 import Register from './pages/Register.jsx';
@@ -15,6 +16,7 @@ import Restore from './pages/Restore.jsx';
 
 export default function App() {
   const { user, ready } = useAuth();
+  const { pathname } = useLocation();
 
   // Пока сессия не проверена, не показываем ни вход, ни кабинет — иначе экран мигает
   if (!ready) return null;
@@ -22,9 +24,12 @@ export default function App() {
   // Вошедшему незачем видеть экраны входа, гостю — главный
   const guestOnly = (element) => (user ? <Navigate to="/" replace /> : element);
 
+  // Гость на главной видит лендинг, на остальных внутренних экранах — вход
+  const guestGate = pathname === '/' ? <Landing /> : <Navigate to="/login" replace />;
+
   return (
     <Routes>
-      <Route element={user ? <AppLayout /> : <Navigate to="/login" replace />}>
+      <Route element={user ? <AppLayout /> : guestGate}>
         <Route path="/" element={<Home />} />
         <Route path="/clubs" element={<Clubs />} />
         <Route path="/clubs/:id" element={<ClubPage />} />

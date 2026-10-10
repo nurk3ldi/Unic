@@ -4,12 +4,10 @@
   flex-direction: column;
   flex: 1;
   min-height: 0;
-  /* Обои лежат под лентой: её маска растворяет реплики, а не фон карточки */
-  background: var(--bg-secondary) url('../assets/chat-background.webp') center / cover;
-  background-blend-mode: multiply;
+  background: var(--surface);
 }
 
-/* Лента поверх обоев: старые реплики растворяются, фон остаётся сплошным */
+/* Старые реплики растворяются под верхним краем, фон остаётся сплошным */
 .chat-card__feed {
   display: flex;
   flex-direction: column;
@@ -36,7 +34,8 @@
   max-width: 85%;
   padding: 0.3125rem var(--space-2);
   border-radius: 14px;
-  background: var(--surface);
+  /* Фон карточки белый — чужой пузырь серый, иначе он с ним сольётся */
+  background: var(--bg-secondary);
 }
 
 .chat-card__msg--own {
