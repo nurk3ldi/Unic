@@ -18,7 +18,9 @@ import {
   Download01Icon,
   FavouriteIcon,
   File01Icon,
+  FilterHorizontalIcon,
   FootballIcon,
+  GridViewIcon,
   Hamburger01Icon,
   HappyIcon,
   Home09Icon,
@@ -108,7 +110,9 @@ export const IconDots = solid(MoreHorizontalIcon);
 export const IconDownload = icon(Download01Icon);
 export const IconEye = icon(ViewIcon);
 export const IconEyeOff = icon(ViewOffSlashIcon);
+export const IconFilter = icon(FilterHorizontalIcon);
 export const IconFood = icon(Hamburger01Icon);
+export const IconGrid = icon(GridViewIcon);
 export const IconHeart = icon(FavouriteIcon);
 export const IconHome = icon(Home09Icon);
 export const IconImage = icon(Image01Icon);

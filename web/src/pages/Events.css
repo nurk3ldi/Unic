@@ -1,0 +1,220 @@
+/* ── Верхняя полоса афиши ───────────────────────────────────
+   Слева — вкладки по времени, справа — поиск, фильтры и вид. Всё лежит прямо
+   на сером полотне белыми капсулами: рамок и теней нет, их отделяет контраст,
+   как карточки вокруг. Контейнер — чтобы полоса перестраивалась по своей
+   ширине, а не по окну: слева от страницы ещё стоит столбец разделов */
+.events-bar {
+  --control: 2.75rem; /* 44px: и высота кнопок полосы, и зона нажатия */
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-3) var(--space-4);
+  container-type: inline-size;
+}
+
+/* Общее у всех кнопок полосы: белая капсула одной высоты */
+.events-tab,
+.events-select,
+.events-view {
+  flex: none;
+  height: var(--control);
+  border-radius: var(--radius-pill);
+  background: var(--surface);
+  color: var(--text);
+  font-size: 0.9375rem;
+  font-weight: 500;
+  white-space: nowrap;
+  transition:
+    background-color var(--duration-fast) var(--ease-out),
+    color var(--duration-fast) var(--ease-out),
+    transform var(--duration-press) var(--ease-out);
+}
+
+/* Отклик наступает на нажатии, а не на отпускании */
+.events-tab:active,
+.events-select:active,
+.events-view:active {
+  transform: scale(0.97);
+}
+
+/* ── Вкладки ────────────────────────────────────────────── */
+.events-tabs {
+  display: flex;
+  gap: var(--space-2);
+  min-width: 0;
+}
+
+.events-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: 0 var(--space-5);
+}
+
+/* Счётчик тише названия: он уточняет, а не зовёт */
+.events-tab__count {
+  font-size: 0.8125rem;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-tertiary);
+  transition: color var(--duration-fast) var(--ease-out);
+}
+
+.events-tab:not([aria-selected='true']):hover {
+  color: var(--accent);
+}
+
+/* Выбранная — единственное синее пятно полосы: «я здесь» */
+.events-tab[aria-selected='true'] {
+  background: var(--accent);
+  color: var(--text-on-accent);
+}
+
+.events-tab[aria-selected='true'] .events-tab__count {
+  color: var(--on-accent-secondary);
+}
+
+/* ── Поиск, фильтры, вид ────────────────────────────────── */
+.events-tools {
+  display: flex;
+  flex: 1 1 auto;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--space-2);
+  min-width: 0;
+}
+
+/* Общее поле поиска (SearchField), здесь — белое и той же высоты, что кнопки:
+   на сером полотне его обычная серая заливка пропала бы */
+.events-tools .search {
+  flex: 1 1 12rem;
+  max-width: 20rem;
+  padding: 0;
+}
+
+.events-tools .search__field,
+.events-tools .search__field:focus-within {
+  height: var(--control);
+  padding-inline: var(--space-4);
+  border-radius: var(--radius-pill);
+  background: var(--surface);
+}
+
+.events-select {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  max-width: 14rem;
+  padding: 0 var(--space-4);
+}
+
+.events-select svg {
+  width: 1.125rem;
+  height: 1.125rem;
+  flex: none;
+}
+
+/* Длинное название клуба не раздвигает полосу */
+.events-select__label {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.events-select .events-select__chevron {
+  width: 1rem;
+  height: 1rem;
+  color: var(--text-tertiary);
+  transition: transform var(--duration-fast) var(--ease-out);
+}
+
+/* Шеврон смотрит на меню, пока оно открыто */
+.events-select:has(+ .events-menu:popover-open) .events-select__chevron {
+  transform: rotate(180deg);
+}
+
+/* Меню — в верхнем слое (popover), место ему ставит Dropdown под кнопкой.
+   Селектор составной: базовый .row-menu живёт в index.css с тем же весом,
+   и порядок файлов в сборке решал бы, чья позиция победит */
+.row-menu.events-menu {
+  position: fixed;
+  inset: auto;
+  min-width: 12rem;
+  max-width: 20rem;
+  max-height: 60dvh;
+  margin: 0;
+  overflow-y: auto;
+}
+
+.events-menu__label {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Галочка у выбранного — акцентом и без приглушения, которое меню даёт знакам */
+.events-menu .events-menu__check {
+  color: var(--accent);
+  opacity: 1;
+}
+
+.events-views {
+  display: flex;
+  flex: none;
+  gap: var(--space-1);
+}
+
+.events-view {
+  display: grid;
+  place-items: center;
+  width: var(--control);
+  color: var(--text-secondary);
+}
+
+.events-view svg {
+  width: 1.25rem;
+  height: 1.25rem;
+}
+
+.events-view:not([aria-pressed='true']):hover {
+  color: var(--text);
+}
+
+/* Выбранный вид — тёмный, не синий: синее в полосе уже занято вкладкой */
+.events-view[aria-pressed='true'] {
+  background: var(--text);
+  color: var(--surface);
+}
+
+/* Полосе тесно в одну строку — инструменты уходят на свою, поиск её заполняет */
+@container (max-width: 66rem) {
+  .events-tools {
+    flex-basis: 100%;
+  }
+
+  .events-tools .search {
+    max-width: none;
+  }
+}
+
+/* Телефон: поиск отдельной строкой, под ним фильтры; вкладки листаются пальцем */
+@container (max-width: 34rem) {
+  .events-tabs {
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+
+  .events-tools {
+    flex-wrap: wrap;
+  }
+
+  .events-tools .search {
+    flex-basis: 100%;
+  }
+
+  .events-select {
+    flex: 1 1 0;
+    justify-content: space-between;
+    min-width: 0;
+  }
+}
