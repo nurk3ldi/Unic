@@ -15,8 +15,8 @@ const PLACE_LIMIT = 200;
 const NOTE_LIMIT = 1000;
 
 const AUDIENCES = [
-  { value: 'all', title: 'Для всех', note: 'Событие увидят все в Unic' },
-  { value: 'club', title: 'Только клуб', note: 'Внутренняя встреча — увидят участники клуба' },
+  { value: 'all', title: 'Для всех' },
+  { value: 'club', title: 'Только клуб' },
 ];
 
 const EMPTY = { title: '', startsAt: '', place: '', note: '' };
@@ -228,7 +228,7 @@ export default function CreateEvent() {
 
             <fieldset className="new-event__block new-event__audience">
               <legend className="new-event__label">Кто увидит</legend>
-              {AUDIENCES.map(({ value, title, note }) => (
+              {AUDIENCES.map(({ value, title }) => (
                 <label className="new-event__option" key={value}>
                   <input
                     type="radio"
@@ -237,8 +237,7 @@ export default function CreateEvent() {
                     checked={audience === value}
                     onChange={() => setAudience(value)}
                   />
-                  <span className="new-event__option-title">{title}</span>
-                  <span className="new-event__option-note">{note}</span>
+                  {title}
                 </label>
               ))}
             </fieldset>

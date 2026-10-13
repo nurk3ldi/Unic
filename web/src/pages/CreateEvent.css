@@ -99,11 +99,13 @@
 }
 
 .new-event__option {
-  display: grid;
-  grid-template-columns: auto minmax(0, 1fr);
-  align-content: start; /* у соседа подпись длиннее — строки не растягиваются под него */
-  gap: var(--space-1) var(--space-3);
-  padding: var(--space-3) var(--space-4);
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  min-height: 3rem; /* 48px, как у полей формы */
+  padding: 0 var(--space-4);
+  font-size: 0.9375rem;
+  font-weight: 500;
   border: 1px solid var(--separator-strong);
   border-radius: var(--radius-control);
   cursor: pointer;
@@ -115,22 +117,9 @@
 .new-event__option input {
   width: 1.125rem;
   height: 1.125rem;
+  flex: none;
   margin: 0;
-  align-self: center;
   accent-color: var(--accent);
-}
-
-.new-event__option-title {
-  font-size: 0.9375rem;
-  font-weight: 500;
-}
-
-.new-event__option-note {
-  grid-column: 2;
-  font-size: 0.8125rem;
-  line-height: 1.4;
-  letter-spacing: var(--tracking-caption);
-  color: var(--text-secondary);
 }
 
 /* Выбранный вариант показывает граница и мягкий акцент — кольца нет (§4.5) */
@@ -177,9 +166,5 @@
 @media (max-width: 34rem) {
   .new-event__form {
     padding: var(--space-4);
-  }
-
-  .new-event__audience {
-    grid-template-columns: minmax(0, 1fr);
   }
 }
