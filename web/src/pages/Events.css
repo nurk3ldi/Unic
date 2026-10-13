@@ -180,10 +180,10 @@
   color: var(--text);
 }
 
-/* Выбранный вид — тёмный, не синий: синее в полосе уже занято вкладкой */
+/* Выбранный вид — в цвете бренда, как и выбранная вкладка */
 .events-view[aria-pressed='true'] {
-  background: var(--text);
-  color: var(--surface);
+  background: var(--accent);
+  color: var(--text-on-accent);
 }
 
 /* Полосе тесно в одну строку — инструменты уходят на свою, поиск её заполняет */
