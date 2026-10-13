@@ -1,0 +1,307 @@
+/* ── Поле даты и времени ────────────────────────────────────
+   Рамка — от обычного поля (Field.css), внутри — кнопка, открывающая календарь */
+.datetime__trigger {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  min-height: 3rem;
+  color: var(--text);
+  text-align: left;
+}
+
+.datetime__trigger span {
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+/* Ещё не выбрано целиком — тише, как подписи в соседних полях */
+.datetime__trigger--empty {
+  color: var(--text-tertiary);
+}
+
+.datetime__trigger svg {
+  flex: none;
+  width: 1.25rem;
+  height: 1.25rem;
+  color: var(--text-secondary);
+}
+
+/* Пока календарь открыт, поле остаётся «в фокусе» — границей, без кольца (§4.5) */
+.field:has(.datetime:popover-open) .field__box {
+  border-color: var(--accent);
+}
+
+/* ── Календарь ──────────────────────────────────────────────
+   В верхнем слое (popover); место ему ставит DateTimeField — в координатах
+   страницы, поэтому absolute, а не fixed. display не трогаем: закрытое окно
+   прячет сам браузер */
+.datetime {
+  --cell: 2.5rem; /* день: 40px */
+  position: absolute;
+  inset: auto;
+  margin: 0;
+  padding: var(--space-3);
+  border: 1px solid var(--separator);
+  border-radius: var(--radius-card);
+  background: var(--surface);
+  color: var(--text);
+  box-shadow: var(--shadow-raised);
+
+  /* Вырастает из поля и уходит тем же путём */
+  opacity: 0;
+  transform: scale(0.96);
+  transform-origin: top left;
+  transition:
+    opacity var(--duration-fast) var(--ease-out),
+    transform var(--duration-fast) var(--ease-out),
+    overlay var(--duration-fast) allow-discrete,
+    display var(--duration-fast) allow-discrete;
+}
+
+.datetime[data-side='above'] {
+  transform-origin: bottom left;
+}
+
+/* До первой расстановки места ещё нет — не мелькаем в углу страницы */
+.datetime:not([data-side]) {
+  visibility: hidden;
+}
+
+.datetime:popover-open {
+  opacity: 1;
+  transform: none;
+}
+
+@starting-style {
+  .datetime:popover-open {
+    opacity: 0;
+    transform: scale(0.96);
+  }
+}
+
+.datetime__body {
+  display: flex;
+  gap: var(--space-3);
+}
+
+.datetime__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 2.75rem;
+  padding-inline: var(--space-2);
+}
+
+/* Месяц — весом, год — тише: как в «Календаре» */
+.datetime__month {
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+.datetime__month span {
+  font-weight: 400;
+  color: var(--text-secondary);
+}
+
+.datetime__turns {
+  display: flex;
+  margin-right: calc(var(--space-2) * -1);
+}
+
+.datetime__turn {
+  display: grid;
+  place-items: center;
+  width: 2.25rem;
+  height: 2.25rem;
+  border-radius: 50%;
+  color: var(--accent);
+  transition:
+    background-color var(--duration-fast) var(--ease-out),
+    transform var(--duration-press) var(--ease-out);
+}
+
+.datetime__turn svg {
+  width: 1.125rem;
+  height: 1.125rem;
+}
+
+.datetime__turn:hover {
+  background: var(--fill);
+}
+
+.datetime__turn:active {
+  transform: scale(0.92);
+}
+
+.datetime__weekdays,
+.datetime__days {
+  display: grid;
+  grid-template-columns: repeat(7, var(--cell));
+}
+
+.datetime__weekdays {
+  height: 2rem;
+  align-items: center;
+  font-size: 0.75rem;
+  font-weight: 500;
+  letter-spacing: var(--tracking-caption);
+  text-align: center;
+  color: var(--text-tertiary);
+}
+
+.datetime__day {
+  display: grid;
+  place-items: center;
+  width: var(--cell);
+  height: var(--cell);
+  border-radius: 50%;
+  font-size: 0.9375rem;
+  font-variant-numeric: tabular-nums;
+  transition:
+    background-color var(--duration-fast) var(--ease-out),
+    color var(--duration-fast) var(--ease-out),
+    transform var(--duration-press) var(--ease-out);
+}
+
+/* Дни соседних месяцев видны, но не спорят со своими */
+.datetime__day--away {
+  color: var(--text-tertiary);
+}
+
+.datetime__day--today {
+  color: var(--accent);
+  font-weight: 600;
+}
+
+.datetime__day:hover,
+.datetime__slot:hover {
+  background: var(--fill-hover);
+}
+
+.datetime__day:active,
+.datetime__slot:active {
+  transform: scale(0.92);
+}
+
+/* Выбранное — единственное залитое акцентом: день, час и минута */
+.datetime__day[aria-pressed='true'],
+.datetime__slot[aria-pressed='true'] {
+  background: var(--accent);
+  color: var(--text-on-accent);
+  font-weight: 600;
+}
+
+/* ── Время ──────────────────────────────────────────────────
+   Два списка рядом с календарём, одной с ним высоты: часы и минуты */
+.datetime__time {
+  padding-left: var(--space-3);
+  border-left: 1px solid var(--separator);
+}
+
+.datetime__columns {
+  display: flex;
+  gap: var(--space-1);
+}
+
+.datetime__column {
+  position: relative; /* от неё считается, куда прокрутить к выбранному */
+  display: flex;
+  flex-direction: column;
+  gap: 0.125rem;
+  height: calc(2rem + var(--cell) * 6); /* дни недели + шесть недель */
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: none;
+}
+
+.datetime__slot {
+  flex: none;
+  width: 3rem;
+  height: 2.25rem;
+  border-radius: var(--radius-control);
+  font-size: 0.9375rem;
+  font-variant-numeric: tabular-nums;
+  transition:
+    background-color var(--duration-fast) var(--ease-out),
+    color var(--duration-fast) var(--ease-out),
+    transform var(--duration-press) var(--ease-out);
+}
+
+/* ── Низ ────────────────────────────────────────────────── */
+.datetime__foot {
+  display: flex;
+  justify-content: space-between;
+  margin-top: var(--space-2);
+  padding-top: var(--space-2);
+  border-top: 1px solid var(--separator);
+}
+
+.datetime__action {
+  min-height: 2.75rem;
+  padding: 0 var(--space-3);
+  border-radius: var(--radius-control);
+  color: var(--accent);
+  font-size: 0.9375rem;
+  font-weight: 500;
+  transition:
+    background-color var(--duration-fast) var(--ease-out),
+    transform var(--duration-press) var(--ease-out);
+}
+
+.datetime__action--done {
+  font-weight: 600;
+}
+
+.datetime__action:hover {
+  background: var(--fill);
+}
+
+.datetime__action:active {
+  transform: scale(0.97);
+}
+
+/* Телефон: рядом не помещаются — время встаёт под календарь, дни тянутся по ширине */
+@media (max-width: 34rem) {
+  .datetime {
+    width: calc(100vw - var(--space-4) * 2);
+  }
+
+  .datetime__body {
+    flex-direction: column;
+  }
+
+  .datetime__weekdays,
+  .datetime__days {
+    grid-template-columns: repeat(7, minmax(0, 1fr));
+    justify-items: center;
+  }
+
+  .datetime__time {
+    padding-top: var(--space-2);
+    padding-left: 0;
+    border-top: 1px solid var(--separator);
+    border-left: none;
+  }
+
+  .datetime__column {
+    flex: 1 1 0;
+    height: 9.5rem;
+  }
+
+  .datetime__slot {
+    width: 100%;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .datetime {
+    transform: none;
+    transition:
+      opacity 120ms linear,
+      overlay 120ms allow-discrete,
+      display 120ms allow-discrete;
+  }
+}

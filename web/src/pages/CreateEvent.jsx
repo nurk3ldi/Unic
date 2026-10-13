@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { api } from '../api.js';
 import { IconChevronDown, IconChevronLeft, IconImage } from '../icons.jsx';
 import { chatPhoto } from '../photo.js';
+import DateTimeField from '../components/DateTimeField.jsx';
 import EventCard from '../components/EventCard.jsx';
 import Field from '../components/Field.jsx';
 import './Page.css';
@@ -188,14 +189,14 @@ export default function CreateEvent() {
               onChange={change}
             />
 
-            <Field
+            <DateTimeField
               label="Дата и время"
-              name="startsAt"
-              type="datetime-local"
-              className={`new-event__date${form.startsAt ? '' : ' new-event__date--empty'}`}
               value={form.startsAt}
               error={errors.startsAt}
-              onChange={change}
+              onChange={(startsAt) => {
+                setForm((current) => ({ ...current, startsAt }));
+                setErrors((current) => ({ ...current, startsAt: '', form: '' }));
+              }}
             />
 
             <Field

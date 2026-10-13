@@ -77,18 +77,6 @@
   pointer-events: none; /* нажатие проходит к самому списку */
 }
 
-/* У системного поля даты свои внутренние отступы — высота задаётся прямо,
-   чтобы оно не выходило на пару пикселей выше соседей */
-.new-event__date {
-  min-height: 3rem;
-  padding-block: 0;
-}
-
-/* Пустая дата — браузерный шаблон «дд.мм.гггг»: он тише, как подписи в соседних полях */
-.new-event__date--empty {
-  color: var(--text-tertiary);
-}
-
 .new-event__note {
   display: block;
   color: var(--text);
