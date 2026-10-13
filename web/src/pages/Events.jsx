@@ -1,4 +1,5 @@
 import { useEffect, useId, useMemo, useRef, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { api } from '../api.js';
 import {
   IconCalendar,
@@ -8,7 +9,6 @@ import {
   IconGrid,
   IconPlus,
 } from '../icons.jsx';
-import EventFormModal from '../components/EventFormModal.jsx';
 import SearchField from '../components/SearchField.jsx';
 import './Page.css';
 import './Events.css';
@@ -50,30 +50,19 @@ export default function Events() {
   const [club, setClub] = useState(ALL_CLUBS.value);
   const [period, setPeriod] = useState('all');
   const [view, setView] = useState('cards');
-  // Клубы, которым этот человек может добавить событие; пусто — кнопки «+» нет
-  const [targets, setTargets] = useState([]);
-  const [adding, setAdding] = useState(false);
+  // Есть ли клуб, которому этот человек может добавить событие; нет — нет и «+»
+  const [canAdd, setCanAdd] = useState(false);
 
-  function load() {
+  useEffect(() => {
     api
       .events(EVERYTHING)
       .then(({ events }) => setEvents(events))
       .catch(() => {}); // без событий полоса остаётся рабочей — счётчики просто нули
-  }
-
-  useEffect(() => {
-    load();
     api
       .eventTargets()
-      .then(({ clubs }) => setTargets(clubs))
+      .then(({ clubs }) => setCanAdd(clubs.length > 0))
       .catch(() => {});
   }, []);
-
-  /** Ошибку ловит окно и показывает её у себя; после удачи афиша перечитывается. */
-  async function addEvent(clubId, payload) {
-    await api.createClubEvent(clubId, payload);
-    load();
-  }
 
   const counts = useMemo(() => {
     const now = new Date();
@@ -148,26 +137,19 @@ export default function Events() {
             ))}
           </div>
 
-          {targets.length > 0 && (
-            <button
+          {canAdd && (
+            <Link
               className="events-add"
-              type="button"
+              to="/create/event"
+              viewTransition
               aria-label="Добавить событие"
               title="Добавить событие"
-              onClick={() => setAdding(true)}
             >
               <IconPlus aria-hidden="true" />
-            </button>
+            </Link>
           )}
         </div>
       </div>
-
-      <EventFormModal
-        open={adding}
-        clubs={targets}
-        onClose={() => setAdding(false)}
-        onCreate={addEvent}
-      />
     </main>
   );
 }

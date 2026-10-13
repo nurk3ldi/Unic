@@ -1,11 +1,11 @@
 import { Link } from 'react-router-dom';
-import { IconCamera, IconImages } from '../icons.jsx';
+import { IconCalendar, IconCamera, IconImages } from '../icons.jsx';
 import './Page.css';
 import './Create.css';
 
 /**
- * «Создать»: что можно выложить. «Публикация» ведёт на свою страницу; «История»
- * пока без действия — истории выкладывают из их ряда на главной.
+ * «Создать»: что можно выложить. «Публикация» и «Событие» ведут на свои
+ * страницы; «История» пока без действия — истории выкладывают из их ряда на главной.
  */
 export default function Create() {
   return (
@@ -27,6 +27,14 @@ export default function Create() {
           </span>
           <span className="create__title">Публикация</span>
           <span className="create__note">Запись в ленте с текстом и фото</span>
+        </Link>
+
+        <Link className="create__kind" to="/create/event" viewTransition>
+          <span className="create__icon">
+            <IconCalendar aria-hidden="true" />
+          </span>
+          <span className="create__title">Событие</span>
+          <span className="create__note">Встреча клуба на афише</span>
         </Link>
       </div>
     </main>

@@ -1,10 +1,10 @@
 /* ── Создать ─────────────────────────────────────────────── */
-/* Две равные карточки-кнопки на сером полотне — той же породы, что карточки слева */
+/* Равные карточки-кнопки на сером полотне — той же породы, что карточки слева */
 .create {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: var(--space-4);
-  max-width: 44rem;
+  max-width: 66rem;
   margin-top: var(--space-4);
 }
 

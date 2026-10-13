@@ -5,7 +5,6 @@ import {
 } from '../icons.jsx';
 import Field from './Field.jsx';
 import { squareDataUrl } from '../photo.js';
-import './ClubFormModal.css';
 
 /**
  * Создание клуба. Нативный <dialog>: затемнение, Esc и ловушка фокуса — от платформы.

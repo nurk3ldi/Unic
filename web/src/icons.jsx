@@ -28,6 +28,7 @@ import {
   Image01Icon,
   Leaf01Icon,
   Link01Icon,
+  Location01Icon,
   Logout01Icon,
   Mic01Icon,
   MinusSignCircleIcon,
@@ -119,6 +120,7 @@ export const IconImage = icon(Image01Icon);
 export const IconImages = icon(Album02Icon);
 export const IconLeaf = icon(Leaf01Icon);
 export const IconLink = icon(Link01Icon);
+export const IconLocation = icon(Location01Icon);
 export const IconMic = icon(Mic01Icon);
 export const IconMicSolid = solid(Mic01Icon);
 export const IconMinusCircle = icon(MinusSignCircleIcon);

@@ -1331,26 +1331,47 @@ router.delete('/:id/messages/:messageId', requireAuth, async (req, res) => {
 
 const TITLE_LIMIT = 120;
 const PLACE_LIMIT = 200;
+const EVENT_NOTE_LIMIT = 1000;
+// Кому видно событие: только участникам клуба или всем вошедшим
+const AUDIENCES = ['club', 'all'];
 
-const publicEvent = (row) => ({
+// Афиша (routes/events.js) отдаёт события в том же виде — поэтому наружу
+export const EVENT_FIELDS = `e.id, e.title, e.place, e.starts_at, e.note, e.audience,
+                             e.photo is not null as has_photo`;
+
+/**
+ * Видит ли человек событие `e`: общее — любой вошедший, внутреннее — участник
+ * клуба и тот, кто клубами управляет. Кусок SQL: $1 — человек, $2 — управляет ли.
+ */
+export const EVENT_VISIBLE = `(
+  e.audience = 'all' or $2 or exists (
+    select 1 from club_members cm
+     where cm.club_id = e.club_id and cm.user_id = $1 and cm.status = 'active'
+  ))`;
+
+// Обложка — отдельным адресом, как снимки в чате: списки событий перечитываются
+export const publicEvent = (row) => ({
   id: row.id,
   title: row.title,
   place: row.place,
   startsAt: row.starts_at,
+  note: row.note,
+  audience: row.audience,
+  photo: row.has_photo ? `/api/events/${row.id}/photo` : null,
 });
 
-/** Мероприятия клуба. Видны всем вошедшим — страница клуба тоже открыта. */
+/** Мероприятия клуба — те, что этому человеку видны (см. EVENT_VISIBLE). */
 router.get('/:id/events', requireAuth, async (req, res) => {
   if (!(await findClub(req.params.id))) {
     return res.status(404).json({ error: 'Клуб не найден' });
   }
 
   const { rows } = await query(
-    `select id, title, place, starts_at
-       from club_events
-      where club_id = $1
-      order by starts_at`,
-    [req.params.id],
+    `select ${EVENT_FIELDS}
+       from club_events e
+      where e.club_id = $3 and ${EVENT_VISIBLE}
+      order by e.starts_at`,
+    [req.user.id, canManage(req.user), req.params.id],
   );
 
   res.json({ events: rows.map(publicEvent) });
@@ -1379,11 +1400,29 @@ router.post('/:id/events', requireAuth, async (req, res) => {
     return res.status(400).json({ error: 'Укажите дату и время' });
   }
 
+  const note = String(req.body?.note ?? '').trim() || null;
+  if (note && note.length > EVENT_NOTE_LIMIT) {
+    return res.status(400).json({ error: 'Комментарий слишком длинный' });
+  }
+  // Без указания — внутреннее: показать лишнее хуже, чем не показать
+  const audience = req.body?.audience ?? 'club';
+  if (!AUDIENCES.includes(audience)) {
+    return res.status(400).json({ error: 'Укажите, кто увидит событие' });
+  }
+  // Обложку сжимает браузер, как снимок в чате, — правила те же
+  const photo = req.body?.photo ?? null;
+  if (photo !== null && (typeof photo !== 'string' || !CHAT_PHOTO_RE.test(photo))) {
+    return res.status(400).json({ error: 'Обложка должна быть изображением' });
+  }
+  if (photo && photo.length > CHAT_PHOTO_LIMIT) {
+    return res.status(400).json({ error: 'Обложка слишком большая' });
+  }
+
   const { rows } = await query(
-    `insert into club_events (club_id, title, place, starts_at, created_by)
-     values ($1, $2, $3, $4, $5)
-     returning id, title, place, starts_at`,
-    [req.params.id, title, place, startsAt.toISOString(), req.user.id],
+    `insert into club_events as e (club_id, title, place, starts_at, created_by, note, audience, photo)
+     values ($1, $2, $3, $4, $5, $6, $7, $8)
+     returning ${EVENT_FIELDS}`,
+    [req.params.id, title, place, startsAt.toISOString(), req.user.id, note, audience, photo],
   );
 
   res.status(201).json({ event: publicEvent(rows[0]) });

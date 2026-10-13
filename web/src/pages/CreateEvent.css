@@ -1,0 +1,197 @@
+/* ── Новое событие ───────────────────────────────────────────
+   Слева форма, справа — карточка афиши, какой её увидят. Поля (.field*) — из
+   Field.css, плитка обложки (.photo-picker) и кнопка (.modal__button) — из index.css */
+.new-event {
+  display: grid;
+  grid-template-columns: minmax(0, 40rem) minmax(0, 20rem);
+  align-items: start;
+  gap: var(--space-4);
+}
+
+/* Одна белая карточка на сером полотне — той же породы, что карточки слева */
+.new-event__form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  max-width: 40rem;
+  padding: var(--space-6);
+  border-radius: var(--radius-control);
+  background: var(--surface);
+}
+
+.new-event__hint {
+  font-size: 0.9375rem;
+  line-height: 1.45;
+  color: var(--text-secondary);
+}
+
+/* Блок с подписью над собой: обложка и «кто увидит» */
+.new-event__block {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: none;
+}
+
+.new-event__label {
+  padding: 0;
+  font-size: 0.9375rem;
+  font-weight: 600;
+}
+
+/* Обложка — в пропорции карточки афиши, а не квадратом, как фото клуба.
+   Селектор составной: базовая плитка живёт в index.css с тем же весом */
+.new-event .photo-picker {
+  aspect-ratio: 6 / 5;
+  max-width: 20rem;
+}
+
+/* ── Выбор клуба ────────────────────────────────────────────
+   Системный <select> в рамке обычного поля: свой список не пишем,
+   а стрелку браузера заменяет шеврон проекта */
+.new-event__select {
+  position: relative;
+}
+
+.new-event__select select {
+  appearance: none;
+  min-height: 3rem; /* 48px, как у соседних полей: у списка своя высота строки */
+  padding-right: calc(var(--space-5) + 1.5rem); /* место под шеврон */
+  color: var(--text);
+  font: inherit;
+  text-overflow: ellipsis;
+  cursor: pointer;
+}
+
+.new-event__select svg {
+  position: absolute;
+  inset-block: 0;
+  right: var(--space-4);
+  width: 1rem;
+  height: 1rem;
+  margin-block: auto;
+  color: var(--text-tertiary);
+  pointer-events: none; /* нажатие проходит к самому списку */
+}
+
+/* У системного поля даты свои внутренние отступы — высота задаётся прямо,
+   чтобы оно не выходило на пару пикселей выше соседей */
+.new-event__date {
+  min-height: 3rem;
+  padding-block: 0;
+}
+
+/* Пустая дата — браузерный шаблон «дд.мм.гггг»: он тише, как подписи в соседних полях */
+.new-event__date--empty {
+  color: var(--text-tertiary);
+}
+
+.new-event__note {
+  display: block;
+  color: var(--text);
+  font: inherit;
+  line-height: 1.47;
+  resize: vertical;
+}
+
+/* ── Кто увидит ─────────────────────────────────────────────
+   Два равных варианта рядом. Кружок — системный, окрашен акцентом */
+.new-event__audience {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-2) var(--space-3);
+}
+
+.new-event__audience legend {
+  grid-column: 1 / -1;
+  margin-bottom: var(--space-2);
+}
+
+.new-event__option {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-content: start; /* у соседа подпись длиннее — строки не растягиваются под него */
+  gap: var(--space-1) var(--space-3);
+  padding: var(--space-3) var(--space-4);
+  border: 1px solid var(--separator-strong);
+  border-radius: var(--radius-control);
+  cursor: pointer;
+  transition:
+    border-color 250ms var(--ease-out),
+    background-color var(--duration-fast) var(--ease-out);
+}
+
+.new-event__option input {
+  width: 1.125rem;
+  height: 1.125rem;
+  margin: 0;
+  align-self: center;
+  accent-color: var(--accent);
+}
+
+.new-event__option-title {
+  font-size: 0.9375rem;
+  font-weight: 500;
+}
+
+.new-event__option-note {
+  grid-column: 2;
+  font-size: 0.8125rem;
+  line-height: 1.4;
+  letter-spacing: var(--tracking-caption);
+  color: var(--text-secondary);
+}
+
+/* Выбранный вариант показывает граница и мягкий акцент — кольца нет (§4.5) */
+.new-event__option:has(input:checked) {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+}
+
+.new-event__option input:focus-visible {
+  box-shadow: none;
+}
+
+/* Кнопка окна (.modal__button) растягивается на строку — здесь она по тексту.
+   Селектор составной: базовая живёт в index.css с тем же весом */
+.new-event .new-event__submit {
+  flex: none;
+  align-self: flex-start;
+  padding-inline: var(--space-6);
+  font-weight: 600;
+}
+
+/* ── Так увидят ─────────────────────────────────────────────
+   Остаётся на виду, пока форма листается */
+.new-event__preview {
+  position: sticky;
+  top: var(--space-4);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+/* Рядом не помещаются — карточка встаёт под форму */
+@media (max-width: 72rem) {
+  .new-event {
+    grid-template-columns: minmax(0, 40rem);
+  }
+
+  .new-event__preview {
+    position: static;
+    max-width: 20rem;
+  }
+}
+
+@media (max-width: 34rem) {
+  .new-event__form {
+    padding: var(--space-4);
+  }
+
+  .new-event__audience {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

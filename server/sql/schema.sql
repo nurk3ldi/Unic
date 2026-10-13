@@ -119,6 +119,16 @@ create table if not exists club_events (
 -- Читают их по времени: сначала ближайшие
 create index if not exists club_events_time_idx on club_events (starts_at);
 
+-- Событие на афише: комментарий, обложка (data URL, как фото в чате) и кому оно
+-- видно — 'club' (внутренняя встреча: только участникам клуба) или 'all' (всем
+-- вошедшим). Прежние события видели только участники, поэтому по умолчанию 'club'
+alter table club_events add column if not exists note text;
+alter table club_events add column if not exists photo text;
+alter table club_events add column if not exists audience text not null default 'club';
+alter table club_events drop constraint if exists club_events_audience_check;
+alter table club_events add constraint club_events_audience_check
+  check (audience in ('club', 'all'));
+
 -- Ответ — ссылка на другое сообщение того же клуба. on delete set null:
 -- процитированное могли удалить, но сам ответ от этого не пропадает
 alter table club_messages
