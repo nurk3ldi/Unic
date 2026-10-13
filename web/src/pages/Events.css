@@ -254,3 +254,156 @@
     min-width: 0;
   }
 }
+
+/* ── Афиша ──────────────────────────────────────────────────
+   Четыре карточки в ряд. Контейнер — чтобы число столбцов зависело от ширины
+   самой афиши, а не окна: слева от страницы ещё стоит столбец разделов */
+.events-body {
+  margin-top: var(--space-4);
+  container-type: inline-size;
+}
+
+.events-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: var(--space-4);
+}
+
+/* Пусто — тихая строка посередине, как в остальных списках */
+.events-empty {
+  padding: var(--space-10) var(--space-4);
+  font-size: 0.9375rem;
+  text-align: center;
+  color: var(--text-secondary);
+}
+
+/* ── Страницы ───────────────────────────────────────────────
+   Слева — по сколько показывать и сколько всего, справа — номера */
+.events-foot {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3) var(--space-4);
+  margin-top: var(--space-5);
+}
+
+.events-size {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: 0.9375rem;
+  color: var(--text-secondary);
+}
+
+/* Системный список в белой капсуле: стрелку браузера заменяет шеврон проекта */
+.events-size__box {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.events-size select {
+  appearance: none;
+  height: 2.25rem;
+  padding: 0 calc(var(--space-3) + 1.25rem) 0 var(--space-4);
+  border: none;
+  border-radius: var(--radius-pill);
+  background: var(--surface);
+  color: var(--text);
+  font: inherit;
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+  cursor: pointer;
+}
+
+.events-size svg {
+  position: absolute;
+  right: var(--space-3);
+  width: 1rem;
+  height: 1rem;
+  color: var(--text-tertiary);
+  pointer-events: none; /* нажатие проходит к самому списку */
+}
+
+.events-pages {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+/* Кружок в 36px, а нажать можно по всем 44px вокруг */
+.events-page {
+  position: relative;
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 2.25rem;
+  height: 2.25rem;
+  border-radius: 50%;
+  background: var(--surface);
+  color: var(--text);
+  font-size: 0.875rem;
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+  transition:
+    background-color var(--duration-fast) var(--ease-out),
+    color var(--duration-fast) var(--ease-out),
+    transform var(--duration-press) var(--ease-out);
+}
+
+.events-page::before {
+  content: '';
+  position: absolute;
+  inset: -0.25rem;
+}
+
+.events-page svg {
+  width: 1rem;
+  height: 1rem;
+}
+
+button.events-page:not([aria-current]):not(:disabled):hover {
+  color: var(--accent);
+}
+
+button.events-page:active {
+  transform: scale(0.92);
+}
+
+/* Открытая страница — акцентом, как выбранная вкладка */
+.events-page[aria-current='page'] {
+  background: var(--accent);
+  color: var(--text-on-accent);
+}
+
+/* Дальше листать некуда — стрелка есть, но не нажимается */
+.events-page:disabled {
+  opacity: 0.4;
+  cursor: default;
+  transform: none;
+}
+
+.events-page--gap {
+  background: none;
+  color: var(--text-tertiary);
+}
+
+/* Афише тесно — столбцов меньше, карточки не мельчают */
+@container (max-width: 60rem) {
+  .events-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@container (max-width: 44rem) {
+  .events-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@container (max-width: 26rem) {
+  .events-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
