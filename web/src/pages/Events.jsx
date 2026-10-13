@@ -77,8 +77,9 @@ function pageNumbers(current, total) {
 }
 
 /**
- * «События»: афиша карточками. Сверху полоса — вкладки по времени, поиск,
- * фильтры, вид и добавление события; под ней сетка, внизу страницы.
+ * «События»: афиша карточками, всё в одной общей карточке. Сверху полоса —
+ * вкладки по времени, поиск, фильтры, вид и добавление события; под ней сетка,
+ * внизу страницы.
  */
 export default function Events() {
   const [events, setEvents] = useState(null); // null — ещё не загружены
@@ -161,6 +162,8 @@ export default function Events() {
     <main className="page">
       <h1 className="visually-hidden">События</h1>
 
+      {/* Полоса, афиша и страницы — одна общая карточка */}
+      <section className="events-panel" aria-label="Афиша">
       <div className="events-bar">
         <div className="events-tabs" role="tablist" aria-label="Какие события показать">
           {TABS.map(({ id, label }) => (
@@ -300,6 +303,7 @@ export default function Events() {
           )}
         </div>
       )}
+      </section>
     </main>
   );
 }
