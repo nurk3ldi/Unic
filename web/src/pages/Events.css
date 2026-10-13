@@ -1,12 +1,12 @@
 /* ── Общая карточка афиши ───────────────────────────────────
-   Полоса, события и страницы лежат в одной общей карточке. Она — светло-серая
-   подложка, на тон темнее полотна страницы, а всё внутри белое: капсулы полосы
-   и карточки событий отделяет от неё контраст, рамок и теней нет. Высотой — по
+   Полоса, события и страницы лежат в одной белой карточке на сером полотне —
+   той же породы, что карточки слева. Внутри всё серое на белом: капсулы полосы
+   и плитки событий отделяет контраст, рамок и теней нет. Высотой — по
    содержимому: страницы стоят сразу под сеткой */
 .events-panel {
   padding: var(--space-4);
-  border-radius: var(--radius-card);
-  background: var(--fill);
+  border-radius: var(--radius-control);
+  background: var(--surface);
 }
 
 /* ── Верхняя полоса афиши ───────────────────────────────────
@@ -22,14 +22,14 @@
   container-type: inline-size;
 }
 
-/* Общее у всех кнопок полосы: белая капсула одной высоты */
+/* Общее у всех кнопок полосы: серая капсула одной высоты */
 .events-tab,
 .events-select,
 .events-view {
   flex: none;
   height: var(--control);
   border-radius: var(--radius-pill);
-  background: var(--surface);
+  background: var(--bg-secondary);
   color: var(--text);
   font-size: 0.9375rem;
   font-weight: 500;
@@ -93,8 +93,8 @@
   min-width: 0;
 }
 
-/* Общее поле поиска (SearchField), здесь — белое и той же высоты, что кнопки:
-   на серой подложке его обычная серая заливка пропала бы */
+/* Общее поле поиска (SearchField), здесь — капсулой той же высоты и той же
+   заливки, что кнопки полосы */
 .events-tools .search {
   flex: 1 1 12rem;
   max-width: 20rem;
@@ -106,7 +106,7 @@
   height: var(--control);
   padding-inline: var(--space-4);
   border-radius: var(--radius-pill);
-  background: var(--surface);
+  background: var(--bg-secondary);
 }
 
 .events-select {
@@ -280,6 +280,12 @@
   container-type: inline-size;
 }
 
+/* В белой карточке плитка события — серая: белая на белом пропала бы.
+   Селектор составной: сама плитка описана в EventCard.css с тем же весом */
+.events-grid .event-card {
+  background: var(--bg-secondary);
+}
+
 .events-grid {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
@@ -313,7 +319,7 @@
   color: var(--text-secondary);
 }
 
-/* Системный список в белой капсуле: стрелку браузера заменяет шеврон проекта */
+/* Системный список в серой капсуле: стрелку браузера заменяет шеврон проекта */
 .events-size__box {
   position: relative;
   display: flex;
@@ -326,7 +332,7 @@
   padding: 0 calc(var(--space-3) + 1.25rem) 0 var(--space-4);
   border: none;
   border-radius: var(--radius-pill);
-  background: var(--surface);
+  background: var(--bg-secondary);
   color: var(--text);
   font: inherit;
   font-weight: 500;
@@ -358,7 +364,7 @@
   width: 2.25rem;
   height: 2.25rem;
   border-radius: 50%;
-  background: var(--surface);
+  background: var(--bg-secondary);
   color: var(--text);
   font-size: 0.875rem;
   font-weight: 500;
