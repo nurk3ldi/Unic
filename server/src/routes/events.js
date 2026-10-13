@@ -50,4 +50,25 @@ router.get('/', requireAuth, async (req, res) => {
   });
 });
 
+/**
+ * Клубы, которым этот человек может добавить событие: университету и админу —
+ * любой, лидеру — свои. Пустой список значит «кнопки нет».
+ */
+router.get('/targets', requireAuth, async (req, res) => {
+  const { rows } = await query(
+    `select c.id, c.name
+       from clubs c
+      where c.direct_user_id is null
+        and ($2 or exists (
+          select 1 from club_members cm
+           where cm.club_id = c.id and cm.user_id = $1
+             and cm.role = 'lead' and cm.status = 'active'
+        ))
+      order by c.name`,
+    [req.user.id, MANAGE_ROLES.includes(req.user.role)],
+  );
+
+  res.json({ clubs: rows });
+});
+
 export default router;

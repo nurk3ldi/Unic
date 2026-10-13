@@ -1356,9 +1356,13 @@ router.get('/:id/events', requireAuth, async (req, res) => {
   res.json({ events: rows.map(publicEvent) });
 });
 
-router.post('/:id/events', requireAuth, requireRole(...MANAGE_ROLES), async (req, res) => {
+router.post('/:id/events', requireAuth, async (req, res) => {
   if (!(await findClub(req.params.id))) {
     return res.status(404).json({ error: 'Клуб не найден' });
+  }
+  // Событие клубу добавляет тот, кто им распоряжается: университет, админ или его лидер
+  if (!(await moderatorRole(req.params.id, req.user))) {
+    return res.status(403).json({ error: 'Недостаточно прав для этого действия' });
   }
 
   const title = String(req.body?.title ?? '').trim().replace(/\s+/g, ' ');
@@ -1385,24 +1389,23 @@ router.post('/:id/events', requireAuth, requireRole(...MANAGE_ROLES), async (req
   res.status(201).json({ event: publicEvent(rows[0]) });
 });
 
-router.delete(
-  '/:id/events/:eventId',
-  requireAuth,
-  requireRole(...MANAGE_ROLES),
-  async (req, res) => {
-    const { id, eventId } = req.params;
-    if (!UUID_RE.test(eventId) || !(await findClub(id))) {
-      return res.status(404).json({ error: 'Событие не найдено' });
-    }
+router.delete('/:id/events/:eventId', requireAuth, async (req, res) => {
+  const { id, eventId } = req.params;
+  if (!UUID_RE.test(eventId) || !(await findClub(id))) {
+    return res.status(404).json({ error: 'Событие не найдено' });
+  }
+  // Убирает тот же, кто добавляет
+  if (!(await moderatorRole(id, req.user))) {
+    return res.status(403).json({ error: 'Недостаточно прав для этого действия' });
+  }
 
-    const { rows } = await query(
-      'delete from club_events where id = $1 and club_id = $2 returning id',
-      [eventId, id],
-    );
-    if (!rows[0]) return res.status(404).json({ error: 'Событие не найдено' });
+  const { rows } = await query(
+    'delete from club_events where id = $1 and club_id = $2 returning id',
+    [eventId, id],
+  );
+  if (!rows[0]) return res.status(404).json({ error: 'Событие не найдено' });
 
-    res.json({ ok: true });
-  },
-);
+  res.json({ ok: true });
+});
 
 export default router;

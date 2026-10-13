@@ -58,6 +58,8 @@ export const api = {
         ? `/events?from=${encodeURIComponent(range.from)}&to=${encodeURIComponent(range.to)}`
         : '/events',
     ),
+  // Клубы, которым этот человек может добавить событие
+  eventTargets: () => request('/events/targets'),
   clubEvents: (id) => request(`/clubs/${id}/events`),
   createClubEvent: (id, payload) =>
     request(`/clubs/${id}/events`, { method: 'POST', body: payload }),

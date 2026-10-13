@@ -186,6 +186,36 @@
   color: var(--text-on-accent);
 }
 
+/* Новое событие — главное действие страницы: залито акцентом, в отличие от
+   белых соседей. Видят его только те, кому есть куда добавлять */
+.events-add {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: var(--control);
+  height: var(--control);
+  border-radius: var(--radius-pill);
+  background: var(--accent);
+  color: var(--text-on-accent);
+  transition:
+    background-color var(--duration-fast) var(--ease-out),
+    transform var(--duration-press) var(--ease-out);
+}
+
+.events-add svg {
+  width: 1.25rem;
+  height: 1.25rem;
+}
+
+.events-add:hover {
+  background: var(--accent-hover);
+}
+
+.events-add:active {
+  background: var(--accent-active);
+  transform: scale(0.97);
+}
+
 /* Полосе тесно в одну строку — инструменты уходят на свою, поиск её заполняет */
 @container (max-width: 66rem) {
   .events-tools {
@@ -208,8 +238,14 @@
     flex-wrap: wrap;
   }
 
+  /* «+» встаёт в строку поиска: рядом с фильтрами он сжимал бы их до одной буквы */
   .events-tools .search {
-    flex-basis: 100%;
+    order: -2;
+    flex-basis: calc(100% - var(--control) - var(--space-2));
+  }
+
+  .events-add {
+    order: -1;
   }
 
   .events-select {
